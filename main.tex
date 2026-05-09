@@ -1,0 +1,131 @@
+% ---------------------------------------------------------------------------
+% Pacific Graphics 2026 - Conference Paper Template
+% Based on EG publication style
+% ---------------------------------------------------------------------------
+
+\documentclass{egpubl}
+\usepackage{pg2026s}
+
+% --- Conference Paper（投稿阶段用这个）
+\ConferenceSubmission   % uncomment for Conference submission
+% \ConferencePaper      % uncomment for (final) Conference Paper
+
+% --- Journal Paper（如果投 CGF 期刊 track 用这个）
+% \JournalSubmission    % uncomment for submission to Computer Graphics Forum
+% \JournalPaper         % uncomment for final version of Journal Paper
+
+% --- Special Issue（PG 的 CGF special issue）
+% \SpecialIssueSubmission
+% \SpecialIssuePaper
+
+% License（最终版需要选）
+% \CGFStandardLicense
+% \CGFccby
+% \CGFccbync
+% \CGFccbyncnd
+
+% !! please don't change anything above unless you know what you are doing
+% ------------------------------------------------------------------------
+\usepackage[T1]{fontenc}
+\usepackage{dfadobe}
+
+% \usepackage{cite}  % incompatible with biblatex
+% ---------------------------
+\biberVersion
+% \BibtexOrBiblatex
+\usepackage[backend=biber,bibstyle=EG,citestyle=alphabetic,backref=true]{biblatex}
+\addbibresource{references.bib}
+% ---------------------------
+\electronicVersion
+\PrintedOrElectronic
+\ifpdf \usepackage[pdftex]{graphicx} \pdfcompresslevel=9
+\else \usepackage[dvips]{graphicx} \fi
+
+\usepackage{egweblnk}
+% end of prologue
+
+% ---------------------------------------------------------------------------
+% 自定义宏包（按需添加）
+% ---------------------------------------------------------------------------
+% \usepackage{amsmath,amssymb}
+% \usepackage{booktabs}
+% \usepackage{xcolor}
+% \usepackage{algorithm}
+% \usepackage{algorithmic}
+% \usepackage{subcaption}
+
+% ---------------------------------------------------------------------------
+% 标题和作者
+% ---------------------------------------------------------------------------
+% 投稿阶段：匿名，不需要作者信息
+\title{Your Paper Title Here}
+
+% 最终版需要填写作者信息（示例）：
+% \author[Author1 \& Author2]
+% {\parbox{\textwidth}{\centering First Author\orcid{0000-0000-0000-0000}
+%         and Second Author\orcid{0000-0000-0000-0000}
+%         }
+%         \\
+% {\parbox{\textwidth}{\centering $^1$Your University, Country
+%          $^2$Another University, Country
+%        }
+% }
+% }
+
+% ---------------------------------------------------------------------------
+\begin{document}
+
+% Teaser figure（可选）
+% \teaser{
+%  \includegraphics[width=\linewidth]{figures/teaser.pdf}
+%  \centering
+%   \caption{Teaser caption.}
+%  \label{fig:teaser}
+% }
+
+\maketitle
+
+% ---------------------------------------------------------------------------
+\begin{abstract}
+   Write your abstract here. The abstract should briefly summarize the
+   problem, your approach, key results, and conclusions. Recommended length
+   is 100--200 words.
+\end{abstract}
+
+% ---------------------------------------------------------------------------
+\section{Introduction}
+\label{sec:intro}
+
+Write your introduction here. Establish the problem, motivation, and
+contribution of your work.
+
+% ---------------------------------------------------------------------------
+\section{Related Work}
+\label{sec:related}
+
+Discuss related work and how your approach differs.
+
+% ---------------------------------------------------------------------------
+\section{Method}
+\label{sec:method}
+
+Describe your method in detail.
+
+% ---------------------------------------------------------------------------
+\section{Experiments}
+\label{sec:experiments}
+
+Present your experimental setup, results, and analysis.
+
+% ---------------------------------------------------------------------------
+\section{Conclusion}
+\label{sec:conclusion}
+
+Summarize your contributions and discuss future work.
+
+% ---------------------------------------------------------------------------
+% Bibliography
+% ---------------------------------------------------------------------------
+\printbibliography
+
+\end{document}
