@@ -87,25 +87,21 @@
 
 \subsection{稀疏视角 3D Gaussian Splatting}
 
-3D Gaussian Splatting 通过一组三维各向异性高斯显式表示场景，并依赖可微分栅格化实现高效渲染，在效率与质量之间取得了优于传统 NeRF 的平衡~\cite{kerbl20233d}。自 2023 年提出以来，围绕 3DGS 的工作迅速扩展到大尺度场景、视角自适应结构化表示、抗锯齿渲染、显式网格提取、动态时空建模与紧凑表示压缩等方向~\cite{survey3dgs2024,scaffoldgs2024,mipsplatting2024,sugar2024,fourdgs2024,xu2024grid,wu2024deformable,lu2024compact,roessle2024densification}。在密集视角条件下，这类方法已经广泛用于表面重建、动态场景建模与各类三维生成任务；但当输入视角显著减少时，3DGS 容易暴露几何不稳定、密化失真与过拟合等问题，因此“如何让 3DGS 适配 sparse-view setting”成为近一阶段的重要研究主线~\cite{zhang2024cor,li2024dn,zhu2024fsgs}.
+3D Gaussian Splatting 通过一组三维各向异性高斯显式表示场景，并依赖可微分栅格化实现高效渲染，在效率与质量之间取得了优于传统 NeRF 的平衡~\cite{kerbl20233d}。自 2023 年提出以来，围绕 3DGS 的工作迅速扩展到结构化表示、抗锯齿渲染、显式网格提取、动态时空建模与紧凑表示压缩等方向~\cite{survey3dgs2024,scaffoldgs2024,mipsplatting2024,sugar2024,fourdgs2024,xu2024grid,wu2024deformable,lu2024compact,roessle2024densification}。但当输入视角显著减少时，3DGS 容易暴露几何不稳定、密化失真与过拟合等问题，因此“如何让 3DGS 适配 sparse-view setting”成为近一阶段的重要研究主线~\cite{zhang2024cor,li2024dn,zhu2024fsgs}。
 
-FSGS 的写法非常典型地体现了这一方向的第一类思路：把问题理解为“稀疏初始化导致场景覆盖不足”，然后在原始 3DGS 的 densification 流程上引入 proximity-guided Gaussian unpooling，在已有高斯之间生成新的高斯，以提高表示密度并填补空洞区域~\cite{zhu2024fsgs}。同时，FSGS 还通过伪视角与单目深度先验来约束训练过程，避免有限视角下的过拟合。对自然 RGB 场景而言，这一设计非常合理，因为场景的几何支撑主要集中在可见表面，真实困难在于“表面之间有较大空隙、初始 SfM 点不够密”。
+现有 sparse-view 3DGS 方法大致可以按其主导假设分成三类。第一类把问题理解为“初始化过稀导致覆盖不足”。FSGS 代表了这一思路：它在原始 3DGS 的 densification 流程上引入 proximity-guided Gaussian unpooling，在已有高斯之间补点以提高表示密度，并借助伪视角与单目深度先验抑制过拟合~\cite{zhu2024fsgs}。第二类把问题理解为“单场优化不稳定”。CoR-GS 并行优化两个随机初始化但共享监督的高斯场，并把点位置与渲染结果的分歧当作无监督信号，再据此设计 co-pruning 与 pseudo-view co-regularization~\cite{zhang2024cor}。第三类则把问题归因于“几何恢复错误”。DNGaussian 引入 Hard/Soft Depth Regularization 和 Global-Local Depth Normalization，用单目深度先验直接修复 sparse-view 条件下的几何退化~\cite{li2024dn}。
 
-CoR-GS 代表了第二类思路：与其单独优化一个高斯场，不如并行优化两个随机初始化但共享监督的高斯场，并把二者在点位置与渲染结果上的分歧当作重建质量的无监督信号~\cite{zhang2024cor}。基于这一观察，CoR-GS 设计了 co-pruning 与 pseudo-view co-regularization，用以压制不一致几何与不稳定渲染。该方法的重要启发在于，它将“稀疏视角下的不确定性”显式转化成可观测的 disagreement，并将其纳入优化目标。
-
-DNGaussian 则更接近第三类思路：把 sparse-view 3DGS 的主要退化归因于几何错误，因此从深度监督角度进行修复~\cite{li2024dn}。该方法提出 Hard and Soft Depth Regularization 以及 Global-Local Depth Normalization，在保持显式高斯渲染效率的同时，引入单目深度先验来校正几何结构，并特别强调对局部细粒度深度变化的响应能力。与 FSGS、CoR-GS 相比，DNGaussian 更直接地把“几何恢复”置于问题核心。
-
-这些方法共同推动了 sparse-view 3DGS 的进展，但其隐含前提仍主要来自自然图像场景：观察对象由表面主导，视角约束不足时最关键的是如何补足几何、减少漂浮点、压制外部监督带来的噪声。与这些基于优化的方法并行，近期也有一批方法从前馈或泛化重建角度探索少视图高斯表示，例如围绕深度协同与多视图先验的工作不断出现~\cite{chen2022pixelnerf,freenerf2023,sparsenerf2023,depthsplat2025}. 然而在 CT 场景中，三维空间是被体密度连续占据的，问题不再只是“几何不准”或“表面覆盖不够”，而是高斯会在高对比边界被反复密化并形成结构冗余。我们的工作正是在这一差异之上，与 FSGS、CoR-GS、DNGaussian 拉开问题设定上的边界。
+这些方法都有效提升了自然图像场景下的 sparse-view 3DGS，但它们共享一个重要前提：观察对象主要由可见表面主导，核心困难在于表面覆盖不足、几何漂移或外部监督噪声。与这些基于优化的方法并行，近期也有一批工作从前馈或泛化重建角度探索少视图高斯表示，例如围绕深度协同与多视图先验的路线不断出现~\cite{chen2022pixelnerf,freenerf2023,sparsenerf2023,depthsplat2025}。然而在 CT 场景中，三维空间是被体密度连续占据的，问题不再只是“表面没补够”或“几何不够准”，而是高斯会在高对比边界被反复密化并形成结构冗余。我们的工作正是沿着这一区别，重新界定 sparse-view CT 中真正需要优先控制的量。
 
 \subsection{X 射线新视图合成与 CT 断层重建}
 
-传统 CT 重建方法大体可以分为解析法与迭代法。以 FDK 为代表的解析方法依赖滤波反投影，计算效率高，但在稀疏视角下容易产生条纹伪影；SART 等迭代方法能够更稳健地引入先验约束，但计算成本较高~\cite{feldkamp1984practical,andersen1984simultaneous}. 随着神经场方法的发展，越来越多工作开始用坐标网络建模体密度场，并通过自监督投影重建来进行病例级优化~\cite{mildenhall2021nerf,zha2023nerfsurvey,guan2024naf,shen2024saxnerf}. 虽然这类方法在表示能力上表现强劲，但由于体渲染依赖海量点采样，训练与推理开销通常难以满足高效应用场景的需求；为缓解这一问题，Instant-NGP、TensoRF 等高效表示也提供了启发~\cite{muller2022instant,chen2022tensorf}.
+传统 CT 重建方法大体可以分为解析法与迭代法。以 FDK 为代表的解析方法依赖滤波反投影，计算效率高，但在稀疏视角下容易产生条纹伪影；SART 等迭代方法能够更稳健地引入先验约束，但计算成本较高~\cite{feldkamp1984practical,andersen1984simultaneous}。随着神经场方法的发展，越来越多工作开始用坐标网络建模体密度场，并通过自监督投影重建来进行病例级优化~\cite{mildenhall2021nerf,zha2023nerfsurvey,guan2024naf,shen2024saxnerf}。这类方法在表示能力上表现强劲，但体渲染依赖海量点采样，训练与推理开销通常难以满足高效应用场景的需求；Instant-NGP、TensoRF 等高效表示为此提供了重要启发~\cite{muller2022instant,chen2022tensorf}。
 
-X-Gaussian 首次较为系统地把 3DGS 引入 X 射线新视图合成。与自然图像不同，X 射线投影满足穿透式成像而非表面反射，因此 X-Gaussian 重新定义了 radiative Gaussian point cloud，并提出可微辐射栅格化（Differentiable Radiative Rasterization）以及面向圆锥束扫描的 ACUI 初始化策略，从而显著提升了 X 射线 NVS 的训练与推理效率~\cite{cai2024xgaussian}. 这项工作的意义在于说明：3DGS 并非只能服务于 RGB 场景，只要渲染物理被正确改写，它同样可以成为 X 射线任务中的高效表示。随后，X$^2$-Gaussian 把 radiative Gaussian 表示推进到连续时间 4D CT，而 GR-Gaussian 从图结构梯度建模的角度进一步缓解针状伪影，说明 CT-3DGS 已经开始从“可用”走向“细化优化”阶段~\cite{x2gaussian2025,grgaussian2025}。
+X-Gaussian 首次较为系统地把 3DGS 引入 X 射线新视图合成。由于 X 射线投影满足穿透式成像而非表面反射，该方法重新定义了 radiative Gaussian point cloud，并提出可微辐射栅格化与面向圆锥束扫描的 ACUI 初始化策略，从而显著提升了 X 射线 NVS 的训练与推理效率~\cite{cai2024xgaussian}。随后，X$^2$-Gaussian 将 radiative Gaussian 表示推进到连续时间 4D CT，而 GR-Gaussian 从图结构梯度建模角度进一步缓解极稀疏条件下的针状伪影，说明 CT-3DGS 已经开始从“能用”走向“更稳、更细”的阶段~\cite{x2gaussian2025,grgaussian2025}。
 
-\rtwo\ 则向前推进到“直接体重建”的层面。该工作指出标准 3DGS 在从三维高斯投影到二维高斯的过程中存在积分偏差，这一偏差对普通图像渲染影响有限，但会严重破坏体密度恢复的一致性~\cite{hu2024r2}. 因此，\rtwo\ 通过新的 radiative kernel、X 射线栅格化与可微体素化，把 3DGS 真正扩展为可用于稀疏视角断层重建的框架。换言之，X-Gaussian 主要解决“如何高效合成 X 射线投影”，而 \rtwo\ 进一步解决“如何准确恢复体密度场”。
+\rtwo\ 则更进一步，把问题推进到“直接体重建”的层面。该工作指出标准 3DGS 在从三维高斯投影到二维高斯的过程中存在积分偏差，这一偏差对普通图像渲染影响有限，但会严重破坏体密度恢复的一致性~\cite{hu2024r2}。因此，\rtwo\ 通过新的 radiative kernel、X 射线栅格化与可微体素化，把 3DGS 真正扩展为可用于稀疏视角断层重建的框架。换言之，X-Gaussian 主要回答“如何高效合成 X 射线投影”，而 \rtwo\ 进一步回答“如何更准确地恢复体密度场”。
 
-从我们的角度看，X-Gaussian 与 \rtwo\ 已经搭好了 CT 领域 3DGS 的物理基础与渲染基础，但在优化层面仍保留了较多来自通用 3DGS 的默认假设。例如，初始化虽然已不再依赖 SfM，但仍缺乏对具体解剖复杂度的自适应分配；密度控制虽然可以借助梯度进行克隆与分裂，但并未显式约束边界区域的冗余堆叠；密度参数本身也仍主要依赖逐点梯度更新，而缺少连续空间上下文。因此，我们将 \spags\ 的定位放在“继承 CT-3DGS 物理正确性之后，补足其空间分布建模能力”这一层面。
+从我们的角度看，X-Gaussian 与 \rtwo\ 已经为 CT 场景搭好了物理正确性与高效渲染的基础，但在优化层面仍保留了较多来自通用 3DGS 的默认假设。例如，初始化虽然已不再依赖 SfM，但仍缺乏对具体解剖复杂度的自适应分配；密度控制虽然可以借助梯度进行克隆与分裂，但并未显式约束边界区域的冗余堆叠；密度参数本身也仍主要依赖逐点梯度更新，而缺少连续空间上下文。因此，我们将 \spags\ 的定位放在“继承 CT-3DGS 物理基础之后，补足其空间分布建模能力”这一层面。
 
 \subsection{我们与五个核心对比方法的关系}
 
@@ -245,7 +241,7 @@ X-Gaussian & \best{22.34} & 25.48 & 26.92 & \best{23.21} & 25.12 & 25.55 & \thir
 \renewcommand{\arraystretch}{1.0}
 \end{table*}
 
-从结果上看，3-view 是最能体现 \spags\ 优势的设定。此时输入信息尚不足以让基线自然收敛到理想几何，但又不至于像 2-view 那样过于病态，因此初始化先验、冗余控制与密度调制都能发挥作用。相比之下，2-view 设定中所有方法都受到强烈欠定约束；4-view 则因为观测已相对充分，各方法差距被压缩。这个趋势与我们的方法动机一致：\spags\ 的收益主要来自在“信息紧张但仍可被空间先验有效利用”的区间内增强表示能力。
+从结果上看，3-view 是最能体现 \spags\ 优势的设定。此时输入信息尚不足以让基线自然收敛到理想几何，但又不至于像 2-view 那样病态到任何局部优化都难以稳定工作，因此初始化先验、冗余控制与密度调制都能真正发挥作用。相比之下，2-view 设定中所有方法都受到更强的欠定约束；4-view 则因为观测已相对充分，各方法差距被明显压缩。这个趋势与我们的方法动机一致：\spags\ 的收益主要出现在“信息紧张但空间先验仍然有效”的区间，而这正是稀疏视角 CT 最有现实价值的工作点。
 
 图~\ref{fig:qual-main} 展示了 3-view 设定下的主定性对比。面向自然图像的 3DGS 基线更容易出现条纹状或云雾状伪影，且结构边界会随视角稀疏程度加剧漂移；\rtwo\ 与 \spags\ 则能更稳定地恢复符合 X 射线成像特性的整体解剖轮廓。在 Chest 与 Pancreas 等更具挑战的场景中，\spags\ 在保持主体灰度分布的同时，进一步压低了背景噪声与边缘扩散。
 
@@ -268,7 +264,7 @@ X-Gaussian & \best{22.34} & 25.48 & 26.92 & \best{23.21} & 25.12 & 25.55 & \thir
 
 \subsection{消融实验}
 
-表~\ref{tab:ablation} 采用更接近顶会常见写法的“单模块剥离 + 渐进构建”结构汇报 3-view 消融结果。可以看到，\gap\ 单独使用就带来了最明显的收益，说明结构冗余控制是当前任务中的主导因素；\sps\ 与 \adm\ 则分别从初始化与空间密度修正两个角度提供补充，因此完整模型保留三者联合。
+表~\ref{tab:ablation} 采用“单模块剥离 + 渐进构建”的结构汇报 3-view 消融结果。可以看到，\gap\ 单独使用就带来了最明显的收益，且其平均 PSNR 已经达到完整模型水平，说明结构冗余控制是当前任务中的主导因素；\sps\ 与 \adm\ 则分别从初始化与空间密度修正两个角度提供补充，使完整模型在可视化表现与整体稳定性上更一致。
 
 \begin{table}[t]
 \centering
@@ -311,7 +307,7 @@ Full & \checkmark & \checkmark & \checkmark & \best{28.22} & \best{+0.42} \\
 
 \subsection{超参数设置与效率分析}
 
-我们将最终采用的关键超参数整理在表~\ref{tab:hyperparams} 中。整体来看，\sps\ 与 \adm\ 的可行区间相对较宽，而 \gap\ 的阈值与最大剪枝比更敏感，因此我们优先固定其余模块，再围绕冗余控制强度做小范围调参。
+我们将最终采用的关键超参数整理在表~\ref{tab:hyperparams} 中。整体来看，\sps\ 与 \adm\ 的可行区间相对较宽，而 \gap\ 的阈值与最大剪枝比更敏感。这一现象与本文的整体结论一致：决定性能上限的关键不在于是否继续增加高斯，而在于冗余控制强度是否落在合适区间。
 
 \begin{table}[t]
 \centering
@@ -358,7 +354,7 @@ Full & \checkmark & \checkmark & \checkmark & \best{28.22} & \best{+0.42} \\
 
 \subsection{讨论}
 
-主结果与消融实验共同支持了一个结论：在稀疏视角 CT 场景中，真正决定性能上限的往往不是“是否继续补更多高斯”，而是“能否在空间上把高斯放对位置，并及时移除错误冗余”。这也是为什么 \gap\ 在我们的设定里表现得比 \sps\ 与 \adm\ 更强。另一方面，\sps\ 与 \adm\ 的价值更多体现在为训练过程提供更好的起点和更稳定的密度修正机制，它们让 \gap\ 的剪枝判断更可靠、让最终密度分布更平滑，从而在更广泛的器官与视角设置下保持稳定收益。
+主结果与消融实验共同支持了一个更具体的结论：在稀疏视角 CT 场景中，真正决定性能上限的往往不是“是否继续补更多高斯”，而是“能否在空间上把高斯放对位置，并及时回收被错误放大的冗余结构”。这也是为什么 \gap\ 在我们的设定里表现得比 \sps\ 与 \adm\ 更强。另一方面，\sps\ 与 \adm\ 的价值并不主要体现在单独拉高平均分数，而是为训练过程提供更好的起点和更稳定的密度修正机制；它们使 \gap\ 的剪枝判断更可靠，也使最终密度分布更平滑，从而在更广泛的器官与视角设置下保持稳定收益。
 
 \FloatBarrier
 \section{结论}
