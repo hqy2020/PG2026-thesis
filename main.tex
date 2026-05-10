@@ -66,12 +66,12 @@
 
 与现有五个核心对比方法相比，我们的定位是明确而互补的。FSGS 更强调扩张稀疏高斯覆盖~\cite{zhu2024fsgs}；CoR-GS 借由双场分歧来抑制不一致几何~\cite{zhang2024cor}；DNGaussian 聚焦于用外部深度先验修复几何退化~\cite{li2024dn}；X-Gaussian 改造了 X 射线成像条件下的高斯表示与初始化方式~\cite{cai2024xgaussian}；\rtwo\ 则从体重建角度修复了 3DGS 的积分偏差并提供可微体素化能力~\cite{hu2024r2}。而 \spags\ 进一步关注的是：在已经具备辐射渲染基础之后，如何让高斯的空间分布与密度更新机制真正适配 CT 体数据的结构规律。图~\ref{fig:intro-compare} 对这一差异做了一个压缩的总览。
 
-\begin{figure}[t]
+\begin{figure*}[t]
 \centering
-\includegraphics[width=\linewidth]{figures/fig_intro_compare.png}
-\caption{与两类代表性 3DGS 路线的核心差异。左侧主流 sparse-view 3DGS 主要围绕补点扩张、双场协同或深度约束展开；中间的 CT/X 射线 3DGS 主要解决辐射建模与积分偏差问题；右侧的 \spags\ 则在初始化、冗余控制与密度更新三个阶段都显式引入空间感知。}
+\includegraphics[width=0.97\textwidth]{figures/fig_intro_compare.png}
+\caption{三类代表性 3DGS 路线的核心差异。主流 sparse-view 3DGS 更强调补点扩张、双场协同或深度约束；CT/X-ray 3DGS 主要解决辐射建模与积分偏差；\spags\ 则把空间感知显式引入初始化、冗余控制与密度更新三个阶段。}
 \label{fig:intro-compare}
-\end{figure}
+\end{figure*}
 
 我们的贡献可以概括为三点：
 \begin{itemize}[leftmargin=1.5em]
@@ -114,12 +114,12 @@ X-Gaussian 首次较为系统地把 3DGS 引入 X 射线新视图合成。由于
 
 我们将稀疏视角 CT 新视图合成拆分为三个彼此衔接的子问题：如何让初始高斯尽量落在有意义的解剖区域，如何在训练过程中抑制边界区域的冗余堆叠，以及如何让密度更新显式响应空间上下文。围绕这三个问题，我们提出 \spags\ 的三阶段框架，如图~\ref{fig:pipeline} 所示。其核心思路并不是再引入一套额外渲染分支，而是在同一条 3DGS 优化链路上依次回答三个问题：\sps\ 负责“从哪里开始”，\gap\ 负责“哪些该删”，\adm\ 负责“留下来的该如何调密度”。
 
-\begin{figure}[t]
+\begin{figure*}[t]
 \centering
-\includegraphics[width=\linewidth]{figures/fig_pipeline.png}
-\caption{\spags\ 的总体流程。给定稀疏 CT 投影与 FDK 粗重建，\sps\ 先把高斯初始化到更有意义的解剖区域，\gap\ 再回收局部冗余高斯，\adm\ 最后进行位置相关的密度修正，从而生成目标新视角 X 射线投影。}
+\includegraphics[width=0.98\textwidth]{figures/fig_pipeline.png}
+\caption{\spags\ 的总体流程。给定稀疏 CT 投影与 FDK 粗重建，\sps\ 负责空间先验播种，\gap\ 负责几何冗余回收，\adm\ 负责位置相关的密度修正，最终生成目标新视角 X 射线投影。}
 \label{fig:pipeline}
-\end{figure}
+\end{figure*}
 
 \subsection{阶段一：Spatial Prior Seeding（\sps）}
 
@@ -138,7 +138,7 @@ p(\mathbf{x}) \propto \max(V_{\text{FDK}}(\mathbf{x}), \epsilon)^\gamma,
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{figures/fig_sps.png}
-\caption{\sps\ 模块示意。利用 FDK 粗重建引导密度加权采样，使更多初始高斯落在解剖相关区域，同时保留少量均匀补偿采样以维持全局覆盖。}
+\caption{\sps\ 模块示意。利用 FDK 粗重建引导密度加权采样，使更多初始高斯落在解剖相关区域，并保留少量均匀补偿采样维持全局覆盖。}
 \label{fig:sps}
 \end{figure}
 
@@ -174,7 +174,7 @@ s(\mathbf{p}_i)=\frac{1}{K}\sum_{j=1}^{K}\|\mathbf{p}_i-\mathbf{p}_j\|_2.
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{figures/fig_adm.png}
-\caption{\adm\ 模块示意。利用 K-Planes 提供连续空间上下文，并预测位置相关的密度偏移与置信度，从而实现解剖区域相关的密度调制。}
+\caption{\adm\ 模块示意。利用 K-Planes 提供连续空间上下文，并预测位置相关的密度偏移与置信度，实现解剖区域相关的密度调制。}
 \label{fig:adm}
 \end{figure}
 
@@ -199,7 +199,7 @@ s(\mathbf{p}_i)=\frac{1}{K}\sum_{j=1}^{K}\|\mathbf{p}_i-\mathbf{p}_j\|_2.
 
 \begin{table*}[t]
 \centering
-\caption{五个器官在 2/3/4 视角下与五个基线方法的 PSNR 对比（dB）。最优和次优结果分别以加粗和下划线标出。}
+\caption{五个器官在 2/3/4 视角下的 PSNR 对比（dB，$\uparrow$）。最优加粗，次优下划线。}
 \label{tab:comparison}
 \small
 \renewcommand{\arraystretch}{1.08}
@@ -264,15 +264,15 @@ X-Gaussian & \best{22.34} & 25.48 & 26.92 & \best{23.21} & 25.12 & 25.55 & \thir
 
 \subsection{消融实验}
 
-表~\ref{tab:ablation} 采用“单模块剥离 + 渐进构建”的结构汇报 3-view 消融结果，它直接回答了三个模块分别在支撑哪条主张。可以看到，\gap\ 单独使用就带来了最明显的收益，平均 PSNR 提升 +0.42 dB，且数值上已经达到完整模型水平，说明结构冗余控制是当前任务中的主导因素；\sps\ 单独带来 +0.21 dB，表明更合理的初始化能够改善后续优化起点；\adm\ 单独增益相对有限，但与前两者结合后能进一步稳定灰度过渡和空间分布，使完整模型在可视化表现与整体一致性上更可靠。
+表~\ref{tab:ablation} 汇报了 3-view 设定下的模块消融结果。结果最清楚地表明，\gap\ 是最稳定的增益来源：在最关键的 3-view 设定下，只加入 \gap\ 就能带来 +0.42 dB 的提升，并达到完整模型水平；\sps\ 提供更好的初始化起点，\adm\ 则更多体现在与前两者结合后的稳定修正作用。
 
 \begin{table}[t]
 \centering
-\caption{3-view 设定下的模块消融。基线为纯 \rtwo{}，表中汇报五个器官上的平均 PSNR，$\Delta$ 表示相对基线的提升，用于比较三个模块的单独作用与联合收益。}
+\caption{3-view 设定下的模块消融。汇报五个器官平均 PSNR 及相对 \rtwo{} 的增益 $\Delta$。}
 \label{tab:ablation}
 \footnotesize
 \renewcommand{\arraystretch}{1.08}
-\setlength{\tabcolsep}{3.0pt}
+\setlength{\tabcolsep}{2.8pt}
 \begin{tabular}{@{}lccccc@{}}
 \toprule
 \textbf{Config} & \textbf{\sps} & \textbf{\gap} & \textbf{\adm} & \textbf{PSNR} $\uparrow$ & \textbf{$\Delta$} $\uparrow$ \\
@@ -294,14 +294,14 @@ Full & \checkmark & \checkmark & \checkmark & \best{28.22} & \best{+0.42} \\
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{figures/fig_ablation_visual.png}
-\caption{3-view 设定下的渐进式消融可视化。展示 Baseline、+GAP 与 Full 三种配置在两组 Chest 案例上的预测结果及对应残差图（$|\mathrm{pred}-\mathrm{gt}|$）。仅加入 \gap\ 时已能去除主要伪影，完整模型则进一步稳定局部灰度过渡。}
+\caption{3-view 设定下的渐进式消融可视化。展示 Baseline、+GAP 与 Full 在两组 Chest 案例上的预测结果及残差图。仅加入 \gap\ 时已能去除主要伪影，完整模型则进一步稳定局部灰度过渡。}
 \label{fig:ablation-visual}
 \end{figure}
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{figures/fig_spatial_distribution.png}
-\caption{高斯空间分布的逐步收紧过程。从均匀初始化到 \sps\ 引导初始化，再到 \gap\ 剪枝与最终 \spags{}，高斯支撑逐步贴合有效结构区域，对应投影结果也随之更加稳定。}
+\caption{高斯空间分布的逐步收紧过程。从均匀初始化到 \sps\ 引导初始化，再到 \gap\ 剪枝与最终 \spags{}，高斯支撑逐步贴合有效结构区域。}
 \label{fig:spatial-structure}
 \end{figure}
 
@@ -311,7 +311,7 @@ Full & \checkmark & \checkmark & \checkmark & \best{28.22} & \best{+0.42} \\
 
 \begin{table}[t]
 \centering
-\caption{实验中使用的关键超参数设置。对于经过调参的项目，同时给出验证时使用的搜索空间，以说明各模块的调参重点与最终采用配置。}
+\caption{关键超参数与最终采用配置。对经过调参的项目，同时给出验证时使用的搜索空间。}
 \label{tab:hyperparams}
 \small
 \renewcommand{\arraystretch}{1.08}
@@ -340,15 +340,19 @@ Full & \checkmark & \checkmark & \checkmark & \best{28.22} & \best{+0.42} \\
 \renewcommand{\arraystretch}{1.0}
 \end{table}
 
-\begin{figure}[t]
+\begin{figure*}[t]
+\centering
+\begin{minipage}[t]{0.54\textwidth}
 \centering
 \includegraphics[width=\linewidth]{figures/fig_efficiency_tradeoff.pdf}
-
-\medskip
+\end{minipage}\hfill
+\begin{minipage}[t]{0.42\textwidth}
+\centering
 \includegraphics[width=\linewidth]{figures/fig_convergence.pdf}
-\caption{效率与收敛分析。上：不同方法的 PSNR--FPS 权衡，圆点大小表示最终 Gaussian 数量；下：\spags\ 与 \rtwo\ 在 3-view Chest 场景上的 PSNR 收敛曲线，分别按迭代次数和 wall-clock time 统计，用于展示额外训练开销与性能收益的关系。}
+\end{minipage}
+\caption{效率与收敛分析。左：不同方法的 PSNR--FPS 权衡，圆点大小表示最终 Gaussian 数量。右：\spags\ 与 \rtwo\ 在 3-view Chest 场景上的 PSNR 收敛曲线，分别按迭代次数和 wall-clock time 统计。}
 \label{fig:efficiency-convergence}
-\end{figure}
+\end{figure*}
 
 图~\ref{fig:efficiency-convergence} 从效率与优化过程两个角度给出了补充证据。上图显示，\spags\ 在接近 \rtwo\ 推理速度的同时位于更优的 PSNR--FPS 权衡前沿；下图则表明，无论按迭代次数还是按 wall-clock time 统计，\spags\ 都能更早达到更高的 PSNR 平台。这说明 \sps/\gap/\adm\ 的额外训练开销是可控的，并没有以明显牺牲推理效率为代价换取质量提升。
 
@@ -356,7 +360,6 @@ Full & \checkmark & \checkmark & \checkmark & \best{28.22} & \best{+0.42} \\
 
 主结果、消融实验与超参数分析共同支持了一个更具体的结论：在稀疏视角 CT 场景中，真正决定性能上限的往往不是“是否继续补更多高斯”，而是“能否在空间上把高斯放对位置，并及时回收被错误放大的冗余结构”。这也是为什么 \gap\ 在我们的设定里表现得比 \sps\ 与 \adm\ 更强。需要强调的是，这并不意味着稀疏 CT 完全不需要密化，而是说明密化必须建立在空间感知初始化和冗余回收之上；否则，新增表示容量往往会优先被高梯度边界吞噬。另一方面，\sps\ 与 \adm\ 的价值并不主要体现在单独拉高平均分数，而是为训练过程提供更好的起点和更稳定的密度修正机制；它们使 \gap\ 的剪枝判断更可靠，也使最终密度分布更平滑，从而在更广泛的器官与视角设置下保持稳定收益。
 
-\FloatBarrier
 \section{结论}
 \label{sec:conclusion}
 

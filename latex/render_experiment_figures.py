@@ -90,7 +90,6 @@ def render_ablation():
         ax.set_ylim(min(vals) - 0.18 * span, max(vals) + 0.28 * span)
         style_axis(ax)
 
-    fig.suptitle("消融结果：不同模块组合在 2/3/4 视角下的平均 PSNR", fontsize=12.5, fontweight="semibold", y=1.02)
     fig.savefig(os.path.join(FIG_DIR, "fig_ablation_final.png"), dpi=240, bbox_inches="tight")
     plt.close(fig)
 
