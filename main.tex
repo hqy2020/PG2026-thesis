@@ -13,6 +13,7 @@
 \else
   \usepackage[T1]{fontenc}
   \usepackage{dfadobe}
+  \usepackage{CJKutf8}
   \usepackage{graphicx}
 \fi
 
@@ -45,6 +46,7 @@
 \title{SPAGS: 面向稀疏视角 CT 新视图合成的空间感知渐进式自适应高斯泼溅}
 
 \begin{document}
+\ifXeTeX\else\begin{CJK*}{UTF8}{gbsn}\fi
 \maketitle
 
 \begin{abstract}
@@ -121,19 +123,42 @@ X-Gaussian 首次较为系统地把 3DGS 引入 X 射线新视图合成。由于
 \label{fig:pipeline}
 \end{figure*}
 
+\subsection{符号定义与优化目标}
+
+设稀疏视角观测集合为 $\mathcal{P}=\{(I_v,\pi_v)\}_{v=1}^{V}$，其中 $I_v$ 表示第 $v$ 个投影，$\pi_v$ 表示对应成像几何。给定 FDK 粗重建体 $V_{\text{FDK}}$，\spags\ 将场景表示为高斯集合 $\mathcal{G}=\{g_i\}_{i=1}^{N}$，其中每个高斯写作
+\begin{equation}
+g_i=(\mathbf{p}_i,\Sigma_i,\rho_i,\mathbf{c}_i),
+\end{equation}
+分别表示中心、协方差、密度与外观/辐射参数。对于任一视角 $\pi_v$，\rtwo\ 风格的辐射渲染记为
+\begin{equation}
+\hat{I}_v=\mathcal{R}(\mathcal{G};\pi_v).
+\end{equation}
+整体训练目标写为
+\begin{equation}
+\mathcal{L}=\mathcal{L}_{1}+\lambda_{\text{dssim}}\mathcal{L}_{\text{dssim}}+\lambda_{\text{3DTV}}\mathcal{L}_{\text{3DTV}}+\lambda_{\text{pTV}}\mathcal{L}_{\text{pTV}},
+\end{equation}
+其中
+\begin{align}
+\mathcal{L}_{1} &= \frac{1}{V}\sum_{v=1}^{V}\|I_v-\hat{I}_v\|_1, \\
+\mathcal{L}_{\text{dssim}} &= \frac{1}{V}\sum_{v=1}^{V}\operatorname{DSSIM}(I_v,\hat{I}_v), \\
+\mathcal{L}_{\text{3DTV}} &= \sum_{i=1}^{N}\sum_{d\in\{x,y,z\}}\left|\nabla_d \rho_i\right|, \\
+\mathcal{L}_{\text{pTV}} &= \sum_{p\in\{xy,xz,yz\}}\omega_p(t)\operatorname{TV}(P_p).
+\end{align}
+其中，$\omega_p(t)$ 为视角自适应权重，$\mathcal{L}_{\text{3DTV}}$ 用于约束体密度的空间平滑性，而 $\mathcal{L}_{\text{pTV}}$ 则对 K-Planes 特征施加平面总变分正则。
+
 \subsection{阶段一：Spatial Prior Seeding（\sps）}
 
 \sps\ 回答的第一个问题是：在极少视角条件下，高斯应该从哪里开始。初始化的好坏会显著影响后续优化轨迹。标准 3DGS 往往采用均匀采样或依赖 SfM 点云初始化，但这两种方式都不适合 CT 场景：前者无法区分空气、软组织与骨骼的解剖重要性，后者则因为 X 射线投影的灰度重叠与低纹理特征难以稳定工作~\cite{cai2024xgaussian}. 我们因此使用 FDK 重建产生的粗体密度图 $V_{\text{FDK}}$ 作为空间先验，对初始高斯进行密度加权采样：
 \begin{equation}
-p(\mathbf{x}) \propto \max(V_{\text{FDK}}(\mathbf{x}), \epsilon)^\gamma,
+p(\mathbf{x})=\frac{\left(\max(V_{\text{FDK}}(\mathbf{x}),\epsilon)\right)^\gamma}{\sum_{\mathbf{x}'\in\Omega}\left(\max(V_{\text{FDK}}(\mathbf{x}'),\epsilon)\right)^\gamma},
 \end{equation}
 其中 $\epsilon$ 用于避免背景区域出现零概率，$\gamma$ 控制采样集中度。
 
 仅靠密度加权会使高斯过度聚集在亮度最高的骨性结构附近，因此我们引入混合采样：
 \begin{equation}
-\mathbf{X} = \mathbf{X}_{\text{uniform}} \cup \mathbf{X}_{\text{weighted}},
+\mathcal{X}=\mathcal{X}_{\text{uni}}\cup\mathcal{X}_{\text{prior}},
 \end{equation}
-其中 20\% 的点来自均匀采样，80\% 的点来自密度加权采样。这样既能保证整体覆盖，又能让更多高斯优先分配给解剖复杂区域。采样位置确定后，我们将 FDK 值作为初始密度，并根据局部采样密度设定尺度参数，最终得到 50K 个初始高斯。
+其中 $|\mathcal{X}_{\text{uni}}|=\alpha M$、$|\mathcal{X}_{\text{prior}}|=(1-\alpha)M$，$M$ 为初始化高斯数。这样既能保证整体覆盖，又能让更多高斯优先分配给解剖复杂区域。采样位置确定后，我们将 FDK 值作为初始密度，并根据局部采样密度设定尺度参数，最终得到 $50$K 个初始高斯。在实现中，$\alpha$ 与 $\gamma$ 还会随可见视角数进行自适应调整，以避免极稀疏设置下过度依赖单一先验区域。
 
 \begin{figure}[t]
 \centering
@@ -148,9 +173,25 @@ p(\mathbf{x}) \propto \max(V_{\text{FDK}}(\mathbf{x}), \epsilon)^\gamma,
 
 具体来说，对每个高斯 $G_i$，我们计算其与 $K$ 个最近邻的平均欧氏距离作为邻近度评分：
 \begin{equation}
-s(\mathbf{p}_i)=\frac{1}{K}\sum_{j=1}^{K}\|\mathbf{p}_i-\mathbf{p}_j\|_2.
+s_i=\frac{1}{K}\sum_{j\in\mathcal{N}_K(i)}\|\mathbf{p}_i-\mathbf{p}_j\|_2.
 \end{equation}
-当 $s(\mathbf{p}_i)$ 低于阈值 $\tau$ 时，说明该高斯处于过度聚集区域。为了避免误删仍在有效学习的高斯，我们再引入梯度活跃性过滤：只有当其累积位置梯度低于阈值 $\delta$ 时，才将其视为真正的冗余候选。最终，每轮最多剪除总高斯数的 2\%，并在第 2K 到 20K 次迭代间每 500 次触发一次。
+当 $s_i$ 低于阈值 $\tau$ 时，说明该高斯处于过度聚集区域。为了避免误删仍在有效学习的高斯，我们再引入梯度活跃性过滤：只有当其累积位置梯度低于阈值 $\delta$ 时，才将其视为真正的冗余候选，即
+\begin{equation}
+m_i=
+\begin{cases}
+1, & s_i\ge\tau \ \lor\ \|\nabla \mathbf{p}_i\|_1\ge\delta,\\
+0, & \text{otherwise}.
+\end{cases}
+\end{equation}
+最终，每轮最多剪除总高斯数的 $\beta_{\text{prune}}$，并在第 2K 到 20K 次迭代间周期性触发。与此同时，为保持局部覆盖连续性，我们会对密化后的新高斯执行尺度收缩：
+\begin{equation}
+\Sigma_i^{\text{new}}=\eta\Sigma_i,\quad 0<\eta<1,
+\end{equation}
+其中新高斯中心通常取局部最近邻的中点
+\begin{equation}
+\tilde{\mathbf{p}}_i=\frac{1}{2}\left(\mathbf{p}_i+\mathbf{p}_{\operatorname{nn}(i)}\right),\quad \operatorname{nn}(i)=\arg\min_{j\in\mathcal{N}_K(i)}\|\mathbf{p}_i-\mathbf{p}_j\|_2.
+\end{equation}
+这一步的关键不在“减少高斯数量”本身，而在建立一种负反馈机制：当标准 3DGS 的密化策略在边界附近过度扩张时，\gap\ 能及时把冗余点回收，使表示容量回到真正需要的位置。
 
 \begin{figure}[t]
 \centering
@@ -159,17 +200,30 @@ s(\mathbf{p}_i)=\frac{1}{K}\sum_{j=1}^{K}\|\mathbf{p}_i-\mathbf{p}_j\|_2.
 \label{fig:gap}
 \end{figure}
 
-这一步的关键不在“减少高斯数量”本身，而在建立一种负反馈机制：当标准 3DGS 的密化策略在边界附近过度扩张时，\gap\ 能及时把冗余点回收，使表示容量回到真正需要的位置。我们的消融实验也证实，\gap\ 是三者中收益最稳定、幅度最大的模块。
-
 \subsection{阶段三：Adaptive Density Modulation（\adm）}
 
 \adm\ 回答的第三个问题是：留下来的高斯，应如何根据所在区域调整密度。即便有了更合理的初始化与冗余控制，不同解剖区域的密度更新规律仍然并不相同。骨组织应具有更高衰减系数，肺部空气区域应保持更低密度，而软组织往往需要平滑过渡。如果所有高斯都依赖相同的逐点梯度更新，模型会难以学到这种空间异质性。为此，我们引入 \adm，用 K-Planes 对高斯中心位置进行编码，并通过轻量解码器预测位置相关的密度偏移与置信度。
 
-给定位置 $\mathbf{x}$，我们从三组正交平面特征中采样并拼接成空间编码 $F(\mathbf{x})$。这种 K-Planes 编码最早被用于显式时空辐射场建模，能够以较低成本提供连续空间上下文~\cite{fridovich2022kplanes}。在此基础上，我们用 MLP 输出密度偏移 $\Delta \rho(\mathbf{x})$ 和置信度 $c(\mathbf{x})$，最终写成：
+给定位置 $\mathbf{x}$，我们从三组正交平面特征中采样并拼接成空间编码 $F(\mathbf{x})$：
 \begin{equation}
-\rho_{\text{final}}(\mathbf{x})=\rho_{\text{base}}(\mathbf{x})+c(\mathbf{x})\cdot\Delta\rho(\mathbf{x}).
+f_{uv}(\mathbf{x})=\mathcal{B}\!\left(P_{uv},\Pi_{uv}(\mathbf{x})\right),\quad uv\in\{xy,xz,yz\},
 \end{equation}
-为了避免引入全局偏置，我们对偏移量进行零均值归一化，使 \adm\ 更专注于学习局部相对修正，而非整体抬升或压低全部密度。
+\begin{equation}
+F(\mathbf{x})=\big[f_{xy}(\mathbf{x}),f_{xz}(\mathbf{x}),f_{yz}(\mathbf{x})\big],
+\end{equation}
+其中 $\mathcal{B}(\cdot)$ 表示双线性采样，$P_{xy}$、$P_{xz}$ 与 $P_{yz}$ 分别对应三张正交特征平面。这种 K-Planes 编码最早被用于显式时空辐射场建模，能够以较低成本提供连续空间上下文~\cite{fridovich2022kplanes}。在此基础上，我们用双头 MLP 输出密度偏移 $o(\mathbf{x})$ 和置信度 $c(\mathbf{x})$：
+\begin{equation}
+\big(o(\mathbf{x}),c(\mathbf{x})\big)=h(F(\mathbf{x})).
+\end{equation}
+随后将偏移约束在有限范围内，并结合视角自适应缩放与零均值约束：
+\begin{equation}
+\tilde{o}(\mathbf{x})=\beta(t)\,s_{\text{view}}\,r_{\max}\,c(\mathbf{x})\cdot\big(o(\mathbf{x})-\bar{o}\big),
+\end{equation}
+其中 $\bar{o}$ 为当前 batch 的均值偏移，$r_{\max}$ 为最大调制范围，$s_{\text{view}}$ 表示由视角数决定的缩放系数，$\beta(t)$ 则控制 warmup、hold 与 decay 三个阶段的调制强度。最终密度写成
+\begin{equation}
+\rho_{\text{final}}(\mathbf{x})=\rho_{\text{base}}(\mathbf{x})\cdot\big(1+\tilde{o}(\mathbf{x})\big).
+\end{equation}
+这样，\adm\ 学到的不是全局性的密度抬升，而是围绕空间上下文的相对修正，从而更符合 CT 体数据中“区域异质、局部连续”的分布特征。
 
 \begin{figure}[t]
 \centering
@@ -180,7 +234,16 @@ s(\mathbf{p}_i)=\frac{1}{K}\sum_{j=1}^{K}\|\mathbf{p}_i-\mathbf{p}_j\|_2.
 
 \subsection{整体训练流程}
 
-\spags\ 的三阶段并非彼此独立，而是形成一个逐步收紧空间结构的优化链路：\sps\ 先把初始化从“无差别铺开”推进到“贴近解剖结构”，\gap\ 再把被错误放大的局部冗余回收到更需要的位置，\adm\ 最后对保留下来的高斯做位置相关的密度修正。在训练上，我们仍以 \rtwo\ 的辐射渲染与重建损失为基础~\cite{hu2024r2}，并在其上叠加空间感知模块。整体上，这一设计不改变推理阶段的基本渲染流程，因此能把额外开销主要限制在训练期间。
+\spags\ 的三阶段并非彼此独立，而是形成一个逐步收紧空间结构的优化链路：\sps\ 先把初始化从“无差别铺开”推进到“贴近解剖结构”，\gap\ 再把被错误放大的局部冗余回收到更需要的位置，\adm\ 最后对保留下来的高斯做位置相关的密度修正。若记第 $t$ 次迭代的调制强度为 $\beta(t)$，则其可写成
+\begin{equation}
+\beta(t)=
+\begin{cases}
+\frac{t}{t_w}, & 0\le t<t_w,\\
+1, & t_w\le t<t_h,\\
+\exp\!\big(-\frac{t-t_h}{\tau}\big), & t\ge t_h.
+\end{cases}
+\end{equation}
+在训练上，我们仍以 \rtwo\ 的辐射渲染与重建损失为基础~\cite{hu2024r2}，并在其上叠加空间感知模块。整体上，这一设计不改变推理阶段的基本渲染流程，因此能把额外开销主要限制在训练期间。
 
 \section{实验}
 \label{sec:experiments}
@@ -368,4 +431,5 @@ Full & \checkmark & \checkmark & \checkmark & \best{28.22} & \best{+0.42} \\
 当前工作仍有若干值得继续推进的方向。首先，\adm\ 的特征分辨率与调制范围目前对不同器官共享，未来可以探索跨器官自适应配置；其次，本文主要评估静态稀疏视角 CT，如何扩展到 cone-beam 或 4DCT 场景仍值得深入研究；最后，若能将病例级优化与更强的学习型体先验结合，\spags\ 还有望在极端稀疏条件下进一步提升稳定性。
 
 \printbibliography
+\ifXeTeX\else\end{CJK*}\fi
 \end{document}
