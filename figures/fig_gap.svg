@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1780" height="700" viewBox="0 0 1780 700">
+  <defs>
+    <marker id="arrow" markerWidth="14" markerHeight="14" refX="12" refY="7" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L14,7 L0,14 z" fill="#111111"/>
+    </marker>
+    <linearGradient id="grayVolume" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f4f4f4"/>
+      <stop offset="60%" stop-color="#d8d8d8"/>
+      <stop offset="100%" stop-color="#bebebe"/>
+    </linearGradient>
+    <radialGradient id="spotBlue" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#9bb7ea" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#9bb7ea" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="spotPurple" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#9d8fe3" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#9d8fe3" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="spotOrange" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#efb07e" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#efb07e" stop-opacity="0"/>
+    </radialGradient>
+    <style>
+      .label { font-family: PingFang SC, Microsoft YaHei, Noto Sans CJK SC, sans-serif; fill: #111111; }
+      .muted { fill: #5b6472; }
+      .small { font-size: 20px; }
+      .mid { font-size: 24px; }
+      .title { font-size: 28px; font-weight: 600; }
+      .section { font-size: 34px; font-weight: 600; }
+      .heavy { font-weight: 700; }
+      .thin { stroke-width: 2; }
+      .dash { stroke-dasharray: 8 8; }
+    </style>
+  </defs>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+<rect x="52" y="170" width="260" height="280" rx="24" fill="#ffffff" stroke="#b8bec8" stroke-width="2"/>
+<text x="182" y="134" text-anchor="middle" font-size="30" font-weight="600" fill="#111111" class="label">边界区域</text>
+<polygon points="98,226 248,226 248,344 98,344" fill="none" stroke="#989ea8" stroke-width="2" opacity="1.0"/><polygon points="120,208 270,208 270,326 120,326" fill="none" stroke="#989ea8" stroke-width="2" opacity="1.0"/><line x1="98" y1="226" x2="120" y2="208" stroke="#989ea8" stroke-width="2" stroke-linecap="round"/><line x1="248" y1="226" x2="270" y2="208" stroke="#989ea8" stroke-width="2" stroke-linecap="round"/><line x1="248" y1="344" x2="270" y2="326" stroke="#989ea8" stroke-width="2" stroke-linecap="round"/><line x1="98" y1="344" x2="120" y2="326" stroke="#989ea8" stroke-width="2" stroke-linecap="round"/><ellipse cx="188.0" cy="277.92" rx="39.0" ry="35.4" fill="url(#spotPurple)"/><circle cx="185.0" cy="277.92" r="21.24" fill="none" stroke="#d7d7d7" stroke-width="2" opacity="0.75"/>
+<circle cx="124.03999999999999" cy="220.56" r="5.2" fill="#7685b6" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="138.28" cy="239.36" r="5.2" fill="#7685b6" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="156.07999999999998" cy="254.4" r="5.2" fill="#7685b6" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="177.44" cy="265.68" r="5.2" fill="#7685b6" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="195.24" cy="280.72" r="5.2" fill="#7685b6" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="213.04000000000002" cy="303.28000000000003" r="5.2" fill="#7685b6" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="227.28" cy="325.84000000000003" r="5.2" fill="#7685b6" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="241.51999999999998" cy="352.15999999999997" r="5.2" fill="#7685b6" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="198.8" cy="235.6" r="5.2" fill="#7685b6" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="223.72" cy="258.16" r="5.2" fill="#7685b6" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="237.95999999999998" cy="292.0" r="5.2" fill="#7685b6" stroke="none" stroke-width="0" opacity="0.82"/>
+<line x1="320" y1="308" x2="410" y2="308" stroke="#111111" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+<text x="558" y="134" text-anchor="middle" font-size="30" font-weight="600" fill="#111111" class="label">邻域评估</text>
+<rect x="432" y="180" width="352" height="256" rx="24" fill="#ffffff" stroke="#b8bec8" stroke-width="2"/>
+<circle cx="608" cy="308" r="98" fill="none" stroke="#b9c0c8" stroke-width="2" opacity="1.0"/>
+<line x1="608" y1="308" x2="608.0" y2="245.28" stroke="#b7bec7" stroke-width="1.7" stroke-linecap="round"/>
+<circle cx="608.0" cy="245.28" r="8" fill="#6e7fbc" stroke="none" stroke-width="0" opacity="1.0"/>
+<line x1="608" y1="308" x2="557.04" y2="284.48" stroke="#b7bec7" stroke-width="1.7" stroke-linecap="round"/>
+<circle cx="557.04" cy="284.48" r="8" fill="#6e7fbc" stroke="none" stroke-width="0" opacity="1.0"/>
+<line x1="608" y1="308" x2="658.96" y2="280.56" stroke="#b7bec7" stroke-width="1.7" stroke-linecap="round"/>
+<circle cx="658.96" cy="280.56" r="8" fill="#6e7fbc" stroke="none" stroke-width="0" opacity="1.0"/>
+<line x1="608" y1="308" x2="545.28" y2="339.36" stroke="#b7bec7" stroke-width="1.7" stroke-linecap="round"/>
+<circle cx="545.28" cy="339.36" r="8" fill="#6e7fbc" stroke="none" stroke-width="0" opacity="1.0"/>
+<line x1="608" y1="308" x2="608.0" y2="362.88" stroke="#b7bec7" stroke-width="1.7" stroke-linecap="round"/>
+<circle cx="608.0" cy="362.88" r="8" fill="#6e7fbc" stroke="none" stroke-width="0" opacity="1.0"/>
+<line x1="608" y1="308" x2="670.72" y2="343.28" stroke="#b7bec7" stroke-width="1.7" stroke-linecap="round"/>
+<circle cx="670.72" cy="343.28" r="8" fill="#6e7fbc" stroke="none" stroke-width="0" opacity="1.0"/>
+<circle cx="608" cy="308" r="10" fill="#d24f47" stroke="none" stroke-width="0" opacity="1.0"/>
+<text x="608" y="468" text-anchor="middle" font-size="22" font-weight="500" fill="#5f6875" class="label">计算局部邻近度与梯度活跃性</text>
+<line x1="790" y1="308" x2="884" y2="308" stroke="#111111" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+<text x="1038" y="134" text-anchor="middle" font-size="30" font-weight="600" fill="#111111" class="label">几何冗余</text>
+<rect x="906" y="180" width="260" height="256" rx="24" fill="#ffffff" stroke="#b8bec8" stroke-width="2"/>
+<ellipse cx="962" cy="246" rx="16" ry="10" fill="none" stroke="#db635b" stroke-width="2.2" opacity="1.0" stroke-dasharray="7 6"/>
+<ellipse cx="1022" cy="228" rx="16" ry="10" fill="#f2d9d5" stroke="#db635b" stroke-width="2.2" opacity="1.0"/>
+<ellipse cx="1084" cy="248" rx="16" ry="10" fill="#f2d9d5" stroke="#db635b" stroke-width="2.2" opacity="1.0"/>
+<ellipse cx="952" cy="330" rx="16" ry="10" fill="none" stroke="#db635b" stroke-width="2.2" opacity="1.0" stroke-dasharray="7 6"/>
+<ellipse cx="1020" cy="320" rx="16" ry="10" fill="#f2d9d5" stroke="#db635b" stroke-width="2.2" opacity="1.0"/>
+<ellipse cx="1102" cy="338" rx="16" ry="10" fill="none" stroke="#db635b" stroke-width="2.2" opacity="1.0" stroke-dasharray="7 6"/>
+<text x="1036" y="468" text-anchor="middle" font-size="22" font-weight="500" fill="#5f6875" class="label">保留有效高斯，标记待剪冗余</text>
+<line x1="1172" y1="308" x2="1260" y2="308" stroke="#111111" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+<text x="1466" y="134" text-anchor="middle" font-size="30" font-weight="600" fill="#111111" class="label">剪枝后结构</text>
+<rect x="1284" y="170" width="280" height="280" rx="24" fill="#ffffff" stroke="#b8bec8" stroke-width="2"/>
+<polygon points="1342,226 1496,226 1496,344 1342,344" fill="none" stroke="#989ea8" stroke-width="2" opacity="1.0"/><polygon points="1364,208 1518,208 1518,326 1364,326" fill="none" stroke="#989ea8" stroke-width="2" opacity="1.0"/><line x1="1342" y1="226" x2="1364" y2="208" stroke="#989ea8" stroke-width="2" stroke-linecap="round"/><line x1="1496" y1="226" x2="1518" y2="208" stroke="#989ea8" stroke-width="2" stroke-linecap="round"/><line x1="1496" y1="344" x2="1518" y2="326" stroke="#989ea8" stroke-width="2" stroke-linecap="round"/><line x1="1342" y1="344" x2="1364" y2="326" stroke="#989ea8" stroke-width="2" stroke-linecap="round"/><ellipse cx="1434.4" cy="277.92" rx="40.04" ry="35.4" fill="url(#spotBlue)"/><circle cx="1431.32" cy="277.92" r="21.24" fill="none" stroke="#d7d7d7" stroke-width="2" opacity="0.75"/>
+<circle cx="1368.8" cy="232.04" r="6.2" fill="#8b84db" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="1415.36" cy="246.92000000000002" r="6.2" fill="#8b84db" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="1461.92" cy="243.2" r="6.2" fill="#8b84db" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="1380.44" cy="295.28" r="6.2" fill="#8b84db" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="1442.52" cy="302.72" r="6.2" fill="#8b84db" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="1481.32" cy="328.76" r="6.2" fill="#8b84db" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="1403.72" cy="339.91999999999996" r="6.2" fill="#8b84db" stroke="none" stroke-width="0" opacity="0.82"/>
+<text x="1424" y="468" text-anchor="middle" font-size="22" font-weight="500" fill="#5f6875" class="label">边界附近分布更均匀</text>
+</svg>

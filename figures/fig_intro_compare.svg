@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="680" viewBox="0 0 1800 680">
+  <defs>
+    <marker id="arrow" markerWidth="14" markerHeight="14" refX="12" refY="7" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L14,7 L0,14 z" fill="#111111"/>
+    </marker>
+    <linearGradient id="grayVolume" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f4f4f4"/>
+      <stop offset="60%" stop-color="#d8d8d8"/>
+      <stop offset="100%" stop-color="#bebebe"/>
+    </linearGradient>
+    <radialGradient id="spotBlue" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#9bb7ea" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#9bb7ea" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="spotPurple" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#9d8fe3" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#9d8fe3" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="spotOrange" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#efb07e" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#efb07e" stop-opacity="0"/>
+    </radialGradient>
+    <style>
+      .label { font-family: PingFang SC, Microsoft YaHei, Noto Sans CJK SC, sans-serif; fill: #111111; }
+      .muted { fill: #5b6472; }
+      .small { font-size: 20px; }
+      .mid { font-size: 24px; }
+      .title { font-size: 28px; font-weight: 600; }
+      .section { font-size: 34px; font-weight: 600; }
+      .heavy { font-weight: 700; }
+      .thin { stroke-width: 2; }
+      .dash { stroke-dasharray: 8 8; }
+    </style>
+  </defs>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+<rect x="260" y="52" width="320" height="62" rx="14" fill="#ffffff" stroke="#9ca7b5" stroke-width="2"/><text x="420.0" y="93.0" text-anchor="middle" font-size="26" font-weight="600" fill="#1f2937" class="label">主流 sparse-view 3DGS 路线</text>
+<rect x="920" y="52" width="250" height="62" rx="14" fill="#ffffff" stroke="#9ca7b5" stroke-width="2"/><text x="1045.0" y="93.0" text-anchor="middle" font-size="26" font-weight="600" fill="#1f2937" class="label">CT / X-ray 路线</text>
+<rect x="1428" y="52" width="290" height="62" rx="14" fill="#ffffff" stroke="#df655f" stroke-width="2"/><text x="1573.0" y="93.0" text-anchor="middle" font-size="26" font-weight="600" fill="#d2332d" class="label">SPAGS 路线（本文方法）</text>
+<line x1="760" y1="118" x2="760" y2="610" stroke="#c5c9cf" stroke-width="2" stroke-linecap="round" stroke-dasharray="8 8"/>
+<line x1="1286" y1="118" x2="1286" y2="610" stroke="#c5c9cf" stroke-width="2" stroke-linecap="round" stroke-dasharray="8 8"/>
+<text x="94" y="228" text-anchor="middle" font-size="28" font-weight="500" fill="#111111" class="label">补点扩张</text>
+<text x="94" y="374" text-anchor="middle" font-size="28" font-weight="500" fill="#111111" class="label">双场协同</text>
+<text x="94" y="520" text-anchor="middle" font-size="28" font-weight="500" fill="#111111" class="label">深度约束</text>
+<text x="874" y="260" text-anchor="middle" font-size="28" font-weight="500" fill="#111111" class="label">辐射建模</text>
+<text x="874" y="476" text-anchor="middle" font-size="28" font-weight="500" fill="#111111" class="label">偏差修正</text>
+<rect x="170" y="162" width="112" height="92" rx="16" fill="#ffffff" stroke="#b8bec8" stroke-width="2"/>
+<text x="226" y="152" text-anchor="middle" font-size="18" font-weight="500" fill="#4e5663" class="label">点集</text>
+<circle cx="200.16" cy="196.8" r="4" fill="#7c8797" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="219.92" cy="195.12" r="4" fill="#7c8797" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="241.2" cy="197.92000000000002" r="4" fill="#7c8797" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="209.28" cy="213.6" r="4" fill="#7c8797" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="229.8" cy="211.36" r="4" fill="#7c8797" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="250.32" cy="216.96" r="4" fill="#7c8797" stroke="none" stroke-width="0" opacity="0.82"/>
+<line x1="288" y1="208" x2="340" y2="208" stroke="#111111" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="336" y="162" width="112" height="92" rx="16" fill="#ffffff" stroke="#b8bec8" stroke-width="2"/>
+<text x="392" y="152" text-anchor="middle" font-size="18" font-weight="500" fill="#4e5663" class="label">扩张</text>
+<circle cx="366.16" cy="196.8" r="4" fill="#7c8797" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="385.92" cy="195.12" r="4" fill="#7c8797" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="407.2" cy="197.92000000000002" r="4" fill="#7c8797" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="375.28" cy="213.6" r="4" fill="#7c8797" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="395.8" cy="211.36" r="4" fill="#7c8797" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="416.32" cy="216.96" r="4" fill="#7c8797" stroke="none" stroke-width="0" opacity="0.82"/>
+<line x1="454" y1="208" x2="506" y2="208" stroke="#111111" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="502" y="162" width="112" height="92" rx="16" fill="#ffffff" stroke="#b8bec8" stroke-width="2"/>
+<text x="558" y="152" text-anchor="middle" font-size="18" font-weight="500" fill="#4e5663" class="label">体空间</text>
+<polygon points="518,180 576,180 576,226 518,226" fill="none" stroke="#989ea8" stroke-width="2" opacity="1.0"/><polygon points="536,166 594,166 594,212 536,212" fill="none" stroke="#989ea8" stroke-width="2" opacity="1.0"/><line x1="518" y1="180" x2="536" y2="166" stroke="#989ea8" stroke-width="2" stroke-linecap="round"/><line x1="576" y1="180" x2="594" y2="166" stroke="#989ea8" stroke-width="2" stroke-linecap="round"/><line x1="576" y1="226" x2="594" y2="212" stroke="#989ea8" stroke-width="2" stroke-linecap="round"/><line x1="518" y1="226" x2="536" y2="212" stroke="#989ea8" stroke-width="2" stroke-linecap="round"/>
+<line x1="620" y1="208" x2="672" y2="208" stroke="#111111" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="668" y="162" width="112" height="92" rx="16" fill="#ffffff" stroke="#b8bec8" stroke-width="2"/>
+<text x="724" y="152" text-anchor="middle" font-size="18" font-weight="500" fill="#4e5663" class="label">稠密覆盖</text>
+<circle cx="698.16" cy="196.8" r="4" fill="#7c8797" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="717.92" cy="195.12" r="4" fill="#7c8797" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="739.2" cy="197.92000000000002" r="4" fill="#7c8797" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="707.28" cy="213.6" r="4" fill="#7c8797" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="727.8" cy="211.36" r="4" fill="#7c8797" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="748.3199999999999" cy="216.96" r="4" fill="#7c8797" stroke="none" stroke-width="0" opacity="0.82"/>
+<rect x="170" y="308" width="112" height="92" rx="16" fill="#ffffff" stroke="#b8bec8" stroke-width="2"/>
+<text x="226" y="298" text-anchor="middle" font-size="18" font-weight="500" fill="#4e5663" class="label">双平面</text>
+<polygon points="188,376 230,326 264,340 224,390" fill="#dfeafb" stroke="#8fb3df" stroke-width="2" opacity="0.72"/><polygon points="206,392 248,316 278,330 240,402" fill="#dcefe8" stroke="#84bfa7" stroke-width="2" opacity="0.72"/>
+<line x1="288" y1="354" x2="340" y2="354" stroke="#111111" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="336" y="308" width="112" height="92" rx="16" fill="#ffffff" stroke="#b8bec8" stroke-width="2"/>
+<text x="392" y="298" text-anchor="middle" font-size="18" font-weight="500" fill="#4e5663" class="label">双场</text>
+<circle cx="366.16" cy="342.8" r="4" fill="#7c8797" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="385.92" cy="341.12" r="4" fill="#7c8797" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="407.2" cy="343.92" r="4" fill="#7c8797" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="375.28" cy="359.6" r="4" fill="#7c8797" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="395.8" cy="357.36" r="4" fill="#7c8797" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="416.32" cy="362.96" r="4" fill="#7c8797" stroke="none" stroke-width="0" opacity="0.82"/>
+<line x1="454" y1="354" x2="506" y2="354" stroke="#111111" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="502" y="308" width="112" height="92" rx="16" fill="#ffffff" stroke="#b8bec8" stroke-width="2"/>
+<text x="558" y="298" text-anchor="middle" font-size="18" font-weight="500" fill="#4e5663" class="label">协同图</text>
+<line x1="536" y1="340" x2="558.0" y2="332" stroke="#b0b6bf" stroke-width="1.6" stroke-linecap="round"/><line x1="536" y1="340" x2="558.0" y2="354.0" stroke="#b0b6bf" stroke-width="1.6" stroke-linecap="round"/><line x1="536" y1="340" x2="558.0" y2="376" stroke="#b0b6bf" stroke-width="1.6" stroke-linecap="round"/><line x1="536" y1="368" x2="558.0" y2="332" stroke="#b0b6bf" stroke-width="1.6" stroke-linecap="round"/><line x1="536" y1="368" x2="558.0" y2="354.0" stroke="#b0b6bf" stroke-width="1.6" stroke-linecap="round"/><line x1="536" y1="368" x2="558.0" y2="376" stroke="#b0b6bf" stroke-width="1.6" stroke-linecap="round"/><line x1="558.0" y1="332" x2="580" y2="348" stroke="#b0b6bf" stroke-width="1.6" stroke-linecap="round"/><line x1="558.0" y1="332" x2="580" y2="360" stroke="#b0b6bf" stroke-width="1.6" stroke-linecap="round"/><line x1="558.0" y1="354.0" x2="580" y2="348" stroke="#b0b6bf" stroke-width="1.6" stroke-linecap="round"/><line x1="558.0" y1="354.0" x2="580" y2="360" stroke="#b0b6bf" stroke-width="1.6" stroke-linecap="round"/><line x1="558.0" y1="376" x2="580" y2="348" stroke="#b0b6bf" stroke-width="1.6" stroke-linecap="round"/><line x1="558.0" y1="376" x2="580" y2="360" stroke="#b0b6bf" stroke-width="1.6" stroke-linecap="round"/><circle cx="536" cy="340" r="6" fill="#ffffff" stroke="#46505d" stroke-width="2" opacity="1.0"/><circle cx="536" cy="368" r="6" fill="#ffffff" stroke="#46505d" stroke-width="2" opacity="1.0"/><circle cx="558.0" cy="332" r="6" fill="#ffffff" stroke="#46505d" stroke-width="2" opacity="1.0"/><circle cx="558.0" cy="354.0" r="6" fill="#ffffff" stroke="#46505d" stroke-width="2" opacity="1.0"/><circle cx="558.0" cy="376" r="6" fill="#ffffff" stroke="#46505d" stroke-width="2" opacity="1.0"/><circle cx="580" cy="348" r="6" fill="#ffffff" stroke="#46505d" stroke-width="2" opacity="1.0"/><circle cx="580" cy="360" r="6" fill="#ffffff" stroke="#46505d" stroke-width="2" opacity="1.0"/>
+<line x1="620" y1="354" x2="672" y2="354" stroke="#111111" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="668" y="308" width="112" height="92" rx="16" fill="#ffffff" stroke="#b8bec8" stroke-width="2"/>
+<text x="724" y="298" text-anchor="middle" font-size="18" font-weight="500" fill="#4e5663" class="label">融合场</text>
+<polygon points="686,376 728,326 762,340 722,390" fill="#dfeafb" stroke="#8fb3df" stroke-width="2" opacity="0.72"/><polygon points="704,392 746,316 776,330 738,402" fill="#dcefe8" stroke="#84bfa7" stroke-width="2" opacity="0.72"/><ellipse cx="735.2" cy="363.2" rx="34" ry="18" fill="url(#spotBlue)"/>
+<rect x="170" y="454" width="112" height="92" rx="16" fill="#ffffff" stroke="#b8bec8" stroke-width="2"/>
+<text x="226" y="444" text-anchor="middle" font-size="18" font-weight="500" fill="#4e5663" class="label">深度图</text>
+<polygon points="188.0,528 188.0,476 204.4,476 204.4,528" fill="#d7d9dc" stroke="#d7d9dc" stroke-width="1" opacity="1.0"/><polygon points="202.4,528 202.4,484 218.8,484 218.8,528" fill="#c2c7cd" stroke="#c2c7cd" stroke-width="1" opacity="1.0"/><polygon points="216.8,528 216.8,492 233.20000000000002,492 233.20000000000002,528" fill="#adb3bb" stroke="#adb3bb" stroke-width="1" opacity="1.0"/><polygon points="231.2,528 231.2,500 247.6,500 247.6,528" fill="#989fa8" stroke="#989fa8" stroke-width="1" opacity="1.0"/><polygon points="245.6,528 245.6,508 262.0,508 262.0,528" fill="#7d848e" stroke="#7d848e" stroke-width="1" opacity="1.0"/>
+<line x1="288" y1="500" x2="340" y2="500" stroke="#111111" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="336" y="454" width="112" height="92" rx="16" fill="#ffffff" stroke="#b8bec8" stroke-width="2"/>
+<text x="392" y="444" text-anchor="middle" font-size="18" font-weight="500" fill="#4e5663" class="label">几何约束</text>
+<line x1="370" y1="486" x2="392.0" y2="478" stroke="#b0b6bf" stroke-width="1.6" stroke-linecap="round"/><line x1="370" y1="486" x2="392.0" y2="500.0" stroke="#b0b6bf" stroke-width="1.6" stroke-linecap="round"/><line x1="370" y1="486" x2="392.0" y2="522" stroke="#b0b6bf" stroke-width="1.6" stroke-linecap="round"/><line x1="370" y1="514" x2="392.0" y2="478" stroke="#b0b6bf" stroke-width="1.6" stroke-linecap="round"/><line x1="370" y1="514" x2="392.0" y2="500.0" stroke="#b0b6bf" stroke-width="1.6" stroke-linecap="round"/><line x1="370" y1="514" x2="392.0" y2="522" stroke="#b0b6bf" stroke-width="1.6" stroke-linecap="round"/><line x1="392.0" y1="478" x2="414" y2="494" stroke="#b0b6bf" stroke-width="1.6" stroke-linecap="round"/><line x1="392.0" y1="478" x2="414" y2="506" stroke="#b0b6bf" stroke-width="1.6" stroke-linecap="round"/><line x1="392.0" y1="500.0" x2="414" y2="494" stroke="#b0b6bf" stroke-width="1.6" stroke-linecap="round"/><line x1="392.0" y1="500.0" x2="414" y2="506" stroke="#b0b6bf" stroke-width="1.6" stroke-linecap="round"/><line x1="392.0" y1="522" x2="414" y2="494" stroke="#b0b6bf" stroke-width="1.6" stroke-linecap="round"/><line x1="392.0" y1="522" x2="414" y2="506" stroke="#b0b6bf" stroke-width="1.6" stroke-linecap="round"/><circle cx="370" cy="486" r="6" fill="#ffffff" stroke="#46505d" stroke-width="2" opacity="1.0"/><circle cx="370" cy="514" r="6" fill="#ffffff" stroke="#46505d" stroke-width="2" opacity="1.0"/><circle cx="392.0" cy="478" r="6" fill="#ffffff" stroke="#46505d" stroke-width="2" opacity="1.0"/><circle cx="392.0" cy="500.0" r="6" fill="#ffffff" stroke="#46505d" stroke-width="2" opacity="1.0"/><circle cx="392.0" cy="522" r="6" fill="#ffffff" stroke="#46505d" stroke-width="2" opacity="1.0"/><circle cx="414" cy="494" r="6" fill="#ffffff" stroke="#46505d" stroke-width="2" opacity="1.0"/><circle cx="414" cy="506" r="6" fill="#ffffff" stroke="#46505d" stroke-width="2" opacity="1.0"/>
+<line x1="454" y1="500" x2="506" y2="500" stroke="#111111" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="502" y="454" width="112" height="92" rx="16" fill="#ffffff" stroke="#b8bec8" stroke-width="2"/>
+<text x="558" y="444" text-anchor="middle" font-size="18" font-weight="500" fill="#4e5663" class="label">高斯更新</text>
+<circle cx="532.16" cy="488.8" r="4" fill="#7c8797" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="551.92" cy="487.12" r="4" fill="#7c8797" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="573.2" cy="489.92" r="4" fill="#7c8797" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="541.28" cy="505.6" r="4" fill="#7c8797" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="561.8" cy="503.36" r="4" fill="#7c8797" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="582.3199999999999" cy="508.96" r="4" fill="#7c8797" stroke="none" stroke-width="0" opacity="0.82"/>
+<line x1="620" y1="500" x2="672" y2="500" stroke="#111111" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="668" y="454" width="112" height="92" rx="16" fill="#ffffff" stroke="#b8bec8" stroke-width="2"/>
+<text x="724" y="444" text-anchor="middle" font-size="18" font-weight="500" fill="#4e5663" class="label">新视角</text>
+<polygon points="686,522 728,472 762,486 722,536" fill="#dfeafb" stroke="#8fb3df" stroke-width="2" opacity="0.72"/><polygon points="704,538 746,462 776,476 738,548" fill="#dcefe8" stroke="#84bfa7" stroke-width="2" opacity="0.72"/><ellipse cx="724.0" cy="507.36" rx="42" ry="18" fill="url(#spotBlue)"/>
+<rect x="904" y="176" width="118" height="104" rx="16" fill="#ffffff" stroke="#b8bec8" stroke-width="2"/>
+<text x="963" y="166" text-anchor="middle" font-size="18" font-weight="500" fill="#4e5663" class="label">辐射核</text>
+<rect x="925.24" y="231.2" width="16" height="30.8" rx="3" fill="#eceff3" stroke="#9aa4b2" stroke-width="1.5"/><rect x="944.12" y="218.6" width="16" height="43.4" rx="3" fill="#eceff3" stroke="#9aa4b2" stroke-width="1.5"/><rect x="965.36" y="236.8" width="16" height="25.2" rx="3" fill="#eceff3" stroke="#9aa4b2" stroke-width="1.5"/><rect x="986.6" y="222.8" width="16" height="39.2" rx="3" fill="#eceff3" stroke="#9aa4b2" stroke-width="1.5"/>
+<line x1="1030" y1="228" x2="1084" y2="228" stroke="#111111" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="1076" y="176" width="118" height="104" rx="16" fill="#ffffff" stroke="#b8bec8" stroke-width="2"/>
+<text x="1135" y="166" text-anchor="middle" font-size="18" font-weight="500" fill="#4e5663" class="label">投影曲线</text>
+<line x1="1098" y1="260" x2="1098" y2="196" stroke="#b9c0c8" stroke-width="1.5" stroke-linecap="round"/><line x1="1098" y1="260" x2="1172" y2="260" stroke="#b9c0c8" stroke-width="1.5" stroke-linecap="round"/><path d="M 1106 252 C 1120.84 198, 1142.08 270, 1166 210" fill="none" stroke="#5b8fda" stroke-width="3"/>
+<line x1="1202" y1="228" x2="1256" y2="228" stroke="#111111" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="1248" y="176" width="118" height="104" rx="16" fill="#ffffff" stroke="#b8bec8" stroke-width="2"/>
+<text x="1307" y="166" text-anchor="middle" font-size="18" font-weight="500" fill="#4e5663" class="label">体重建</text>
+<polygon points="1270,194 1342,194 1342,256 1270,256" fill="none" stroke="#989ea8" stroke-width="2" opacity="1.0"/><polygon points="1286,182 1358,182 1358,244 1286,244" fill="none" stroke="#989ea8" stroke-width="2" opacity="1.0"/><line x1="1270" y1="194" x2="1286" y2="182" stroke="#989ea8" stroke-width="2" stroke-linecap="round"/><line x1="1342" y1="194" x2="1358" y2="182" stroke="#989ea8" stroke-width="2" stroke-linecap="round"/><line x1="1342" y1="256" x2="1358" y2="244" stroke="#989ea8" stroke-width="2" stroke-linecap="round"/><line x1="1270" y1="256" x2="1286" y2="244" stroke="#989ea8" stroke-width="2" stroke-linecap="round"/>
+<rect x="904" y="392" width="118" height="104" rx="16" fill="#ffffff" stroke="#b8bec8" stroke-width="2"/>
+<text x="963" y="382" text-anchor="middle" font-size="18" font-weight="500" fill="#4e5663" class="label">CT 截面</text>
+<circle cx="963.0" cy="444.0" r="26" fill="#52565c" stroke="none" stroke-width="0" opacity="0.92"/><circle cx="963.0" cy="444.0" r="20.28" fill="#d7dade" stroke="none" stroke-width="0" opacity="0.95"/><circle cx="963.0" cy="444.0" r="14.040000000000001" fill="#80858d" stroke="none" stroke-width="0" opacity="0.85"/><circle cx="963.0" cy="444.0" r="5.72" fill="#d9dcdf" stroke="none" stroke-width="0" opacity="0.95"/>
+<line x1="1030" y1="444" x2="1084" y2="444" stroke="#111111" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="1076" y="392" width="118" height="104" rx="16" fill="#ffffff" stroke="#b8bec8" stroke-width="2"/>
+<text x="1135" y="382" text-anchor="middle" font-size="18" font-weight="500" fill="#4e5663" class="label">偏差曲线</text>
+<line x1="1098" y1="476" x2="1098" y2="412" stroke="#b9c0c8" stroke-width="1.5" stroke-linecap="round"/><line x1="1098" y1="476" x2="1172" y2="476" stroke="#b9c0c8" stroke-width="1.5" stroke-linecap="round"/><path d="M 1106 468 C 1120.84 414, 1142.08 486, 1166 426" fill="none" stroke="#5b8fda" stroke-width="3"/>
+<line x1="1202" y1="444" x2="1256" y2="444" stroke="#111111" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow)"/>
+<rect x="1248" y="392" width="118" height="104" rx="16" fill="#ffffff" stroke="#b8bec8" stroke-width="2"/>
+<text x="1307" y="382" text-anchor="middle" font-size="18" font-weight="500" fill="#4e5663" class="label">体素校正</text>
+<polygon points="1270,410 1342,410 1342,472 1270,472" fill="none" stroke="#989ea8" stroke-width="2" opacity="1.0"/><polygon points="1286,398 1358,398 1358,460 1286,460" fill="none" stroke="#989ea8" stroke-width="2" opacity="1.0"/><line x1="1270" y1="410" x2="1286" y2="398" stroke="#989ea8" stroke-width="2" stroke-linecap="round"/><line x1="1342" y1="410" x2="1358" y2="398" stroke="#989ea8" stroke-width="2" stroke-linecap="round"/><line x1="1342" y1="472" x2="1358" y2="460" stroke="#989ea8" stroke-width="2" stroke-linecap="round"/><line x1="1270" y1="472" x2="1286" y2="460" stroke="#989ea8" stroke-width="2" stroke-linecap="round"/>
+<rect x="1376" y="260" width="126" height="182" rx="18" fill="#ffffff" stroke="#df655f" stroke-width="2.2"/>
+<rect x="1548" y="260" width="126" height="182" rx="18" fill="#ffffff" stroke="#df655f" stroke-width="2.2"/>
+<rect x="1720" y="260" width="126" height="182" rx="18" fill="#ffffff" stroke="#df655f" stroke-width="2.2"/>
+<text x="1439" y="212" text-anchor="middle" font-size="22" font-weight="500" fill="#111111" class="label">空间先验</text>
+<text x="1611" y="212" text-anchor="middle" font-size="22" font-weight="500" fill="#111111" class="label">几何剪枝</text>
+<text x="1783" y="212" text-anchor="middle" font-size="22" font-weight="500" fill="#111111" class="label">密度调制</text>
+<circle cx="1439" cy="347" r="36" fill="#52565c" stroke="none" stroke-width="0" opacity="0.92"/><circle cx="1439" cy="347" r="28.080000000000002" fill="#d7dade" stroke="none" stroke-width="0" opacity="0.95"/><circle cx="1439" cy="347" r="19.44" fill="#80858d" stroke="none" stroke-width="0" opacity="0.85"/><circle cx="1439" cy="347" r="7.92" fill="#d9dcdf" stroke="none" stroke-width="0" opacity="0.95"/>
+<line x1="1475" y1="351" x2="1540" y2="351" stroke="#111111" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow)"/>
+<line x1="1644" y1="351" x2="1710" y2="351" stroke="#111111" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow)"/>
+<ellipse cx="1439" cy="398" rx="50" ry="24" fill="url(#spotOrange)"/>
+<circle cx="1412.44" cy="424.2" r="5" fill="#d84b42" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="1434.28" cy="422.58" r="5" fill="#d84b42" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="1457.8" cy="425.28" r="5" fill="#d84b42" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="1422.52" cy="440.4" r="5" fill="#d84b42" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="1445.2" cy="438.24" r="5" fill="#d84b42" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="1467.88" cy="443.64" r="5" fill="#d84b42" stroke="none" stroke-width="0" opacity="0.82"/>
+<ellipse cx="1586" cy="322" rx="11" ry="7" fill="#f4d2cf" stroke="#da625b" stroke-width="2" opacity="1.0"/>
+<ellipse cx="1614" cy="335" rx="11" ry="7" fill="#f4d2cf" stroke="#da625b" stroke-width="2" opacity="1.0"/>
+<ellipse cx="1651" cy="317" rx="11" ry="7" fill="#f4d2cf" stroke="#da625b" stroke-width="2" opacity="1.0"/>
+<ellipse cx="1568" cy="375" rx="11" ry="7" fill="none" stroke="#da625b" stroke-width="2" opacity="1.0" stroke-dasharray="7 6"/>
+<ellipse cx="1616" cy="382" rx="11" ry="7" fill="none" stroke="#da625b" stroke-width="2" opacity="1.0" stroke-dasharray="7 6"/>
+<ellipse cx="1655" cy="371" rx="11" ry="7" fill="none" stroke="#da625b" stroke-width="2" opacity="1.0" stroke-dasharray="7 6"/>
+<circle cx="1748.04" cy="332.72" r="8.0" fill="#d84b42" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="1777.28" cy="338.96" r="9.7" fill="#d84b42" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="1799.64" cy="332.72" r="11.4" fill="#d84b42" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="1753.2" cy="376.4" r="8.0" fill="#d84b42" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="1783.3" cy="363.92" r="9.7" fill="#d84b42" stroke="none" stroke-width="0" opacity="0.82"/><circle cx="1805.66" cy="382.64" r="11.4" fill="#d84b42" stroke="none" stroke-width="0" opacity="0.82"/>
+</svg>
