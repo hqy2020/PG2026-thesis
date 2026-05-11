@@ -321,9 +321,9 @@ X-Gaussian & \best{22.34} & 25.48 & 26.92 & \best{23.21} & 25.12 & 25.55 & \thir
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=0.49\textwidth]{figures/fig_qual_zoom.png}\hfill
-\includegraphics[width=0.49\textwidth]{figures/fig_consistency.png}
-\caption{局部细节与跨视角一致性分析。左：两组放大 ROI，对比肋骨/颅骨边界附近的局部结构与软组织过渡。右：同一病例在三个目标角度下的结果，\spags\ 相比 \rtwo\ 保持了更稳定的跨视角形态，并减少了角度特异性伪影。}
+\includegraphics[width=\textwidth]{figures/fig_qual_zoom.png}\\[0.6em]
+\includegraphics[width=0.72\textwidth]{figures/fig_consistency.png}
+\caption{局部细节与跨视角一致性分析。上：两组放大 ROI，对比肋骨/颅骨边界附近的局部结构与软组织过渡。下：同一病例在三个目标角度下的结果，\spags\ 相比 \rtwo\ 保持了更稳定的跨视角形态，并减少了角度特异性伪影。}
 \label{fig:detail-consistency}
 \end{figure*}
 
@@ -354,25 +354,21 @@ Full & \checkmark & \checkmark & \checkmark & \best{28.22} & \best{+0.42} \\
 \renewcommand{\arraystretch}{1.0}
 \end{table}
 
-图~\ref{fig:ablation-visual} 进一步给出了模块递进带来的可视化差异。仅使用 \gap\ 时，边界附近最显著的高亮伪影就已被明显抑制；在此基础上，完整模型还能继续稳定局部灰度过渡。图~\ref{fig:spatial-structure} 则从高斯空间分布角度解释了这一收益来源：\sps\ 先将初始化从完全均匀推进到更贴合粗重建的区域，\gap\ 再剔除外围冗余点，最终 \spags\ 在更紧致的空间支撑上完成渲染。
+图~\ref{fig:mechanism-visuals} 进一步给出了模块递进带来的可视化差异与空间结构解释。上半部分展示了 Baseline、+GAP 与 Full 的渐进式消融结果：仅使用 \gap\ 时，边界附近最显著的高亮伪影就已被明显抑制；在此基础上，完整模型还能继续稳定局部灰度过渡。下半部分则从高斯空间分布角度解释了这一收益来源：\sps\ 先将初始化从完全均匀推进到更贴合粗重建的区域，\gap\ 再剔除外围冗余点，最终 \spags\ 在更紧致的空间支撑上完成渲染。
 
-\begin{figure}[t]
+\begin{figure*}[t]
 \centering
-\includegraphics[width=\columnwidth]{figures/fig_ablation_visual.png}
-\caption{3-view 设定下的渐进式消融可视化。展示 Baseline、+GAP 与 Full 在两组 Chest 案例上的预测结果及残差图。仅加入 \gap\ 时已能去除主要伪影，完整模型则进一步稳定局部灰度过渡。}
+\includegraphics[width=\textwidth]{figures/fig_ablation_visual.png}\\[0.6em]
+\includegraphics[width=0.82\textwidth]{figures/fig_spatial_distribution.png}
+\caption{结构冗余机制的可视化分析。上：3-view 设定下的渐进式消融可视化，展示 Baseline、+GAP 与 Full 在两组 Chest 案例上的预测结果及残差图。仅加入 \gap\ 时已能去除主要伪影，完整模型则进一步稳定局部灰度过渡。下：高斯空间分布的逐步收紧过程。从均匀初始化到 \sps\ 引导初始化，再到 \gap\ 剪枝与最终 \spags{}，高斯支撑逐步贴合有效结构区域。}
+\label{fig:mechanism-visuals}
 \label{fig:ablation-visual}
-\end{figure}
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=\columnwidth]{figures/fig_spatial_distribution.png}
-\caption{高斯空间分布的逐步收紧过程。从均匀初始化到 \sps\ 引导初始化，再到 \gap\ 剪枝与最终 \spags{}，高斯支撑逐步贴合有效结构区域。}
 \label{fig:spatial-structure}
-\end{figure}
+\end{figure*}
 
 \subsection{结构冗余机制分析}
 
-前面的消融表明 \gap\ 是主要增益来源，但表格本身还不能说明它到底改变了什么空间结构。图~\ref{fig:ablation-visual} 与图~\ref{fig:spatial-structure} 提供了一个更直接的机制视角：\sps\ 先把高斯支撑从完全均匀拉到更贴近解剖区域的范围内，\gap\ 再优先回收边界处过度聚集的冗余高斯，而 \adm\ 则在这一更紧致的支撑上做局部密度修正。换句话说，\spags\ 的收益不是单纯来自“更多点”，而是来自把表示容量从边界高密度簇中释放出来，并重新分配到更有结构意义的位置上。
+前面的消融表明 \gap\ 是主要增益来源，但表格本身还不能说明它到底改变了什么空间结构。图~\ref{fig:mechanism-visuals} 提供了一个更直接的机制视角：\sps\ 先把高斯支撑从完全均匀拉到更贴近解剖区域的范围内，\gap\ 再优先回收边界处过度聚集的冗余高斯，而 \adm\ 则在这一更紧致的支撑上做局部密度修正。换句话说，\spags\ 的收益不是单纯来自“更多点”，而是来自把表示容量从边界高密度簇中释放出来，并重新分配到更有结构意义的位置上。
 
 这一点也解释了为什么 +GAP 和 Full 在 PSNR 上几乎并列：\gap\ 已经完成了最主要的空间重分配，而 \adm\ 的作用更多体现在局部灰度过渡与训练稳定性上，而不是继续抬高平均分数。因此，当前版本中我们把 \adm\ 定位为辅助稳定模块，而不是主要性能驱动。这个机制分析目前仍主要依赖可视化证据，后续若进一步补充边界区域的密度统计和 pruning 分布统计，可以把这一判断做得更硬。
 
@@ -413,11 +409,11 @@ Full & \checkmark & \checkmark & \checkmark & \best{28.22} & \best{+0.42} \\
 
 \begin{figure*}[t]
 \centering
-\begin{minipage}[t]{0.54\textwidth}
+\begin{minipage}[t]{0.43\textwidth}
 \centering
 \includegraphics[width=\linewidth]{figures/fig_efficiency_tradeoff.pdf}
 \end{minipage}\hfill
-\begin{minipage}[t]{0.42\textwidth}
+\begin{minipage}[t]{0.55\textwidth}
 \centering
 \includegraphics[width=\linewidth]{figures/fig_convergence.pdf}
 \end{minipage}
@@ -433,12 +429,14 @@ Full & \checkmark & \checkmark & \checkmark & \best{28.22} & \best{+0.42} \\
 
 图~\ref{fig:failure-cases} 进一步给出了两个最具代表性的 failure cases：2-view Foot 与 2-view Pancreas。在这两种极端欠定场景下，\spags\ 仍能在部分区域压低局部外溢与条纹残差，但无法稳定恢复所有缺失结构，尤其是当投影信息本身不足以唯一约束体密度分布时，初始化与局部修正都难以完全弥补观测缺口。这一现象与主结果中的数值分布是一致的，也进一步说明本文方法最有效的工作区间仍是 3-view 这类中等稀疏设置，而不是 2-view 极端欠定设置。
 
-\begin{figure}[t]
+\begin{figure*}[t]
 \centering
-\includegraphics[width=\columnwidth]{figures/fig_failure_cases.png}
+\includegraphics[width=0.84\textwidth]{figures/fig_failure_cases.png}
 \caption{2-view 极端稀疏设置下的 failure cases。展示 Foot 与 Pancreas 两个最具挑战性的场景，并对比 \rtwo{}、\spags{} 及其残差。可以看到，\spags\ 虽能在局部压低外溢与噪声，但在观测严重不足时仍无法完全恢复缺失结构。}
 \label{fig:failure-cases}
-\end{figure}
+\end{figure*}
+
+\FloatBarrier
 
 \section{结论}
 \label{sec:conclusion}

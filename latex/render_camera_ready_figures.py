@@ -128,7 +128,9 @@ def render_qual_main(manifest_path: str):
     methods = manifest["methods"]
     scenes = manifest["scenes"]
     cols = 2 + len(methods)
-    fig = plt.figure(figsize=(7.1, 4.2), constrained_layout=False)
+    # The main qualitative comparison carries many columns, so use a wider
+    # canvas to preserve per-panel readability after LaTeX downscaling.
+    fig = plt.figure(figsize=(8.8, 5.0), constrained_layout=False)
     gs = GridSpec(len(scenes), cols, figure=fig, wspace=0.02, hspace=0.05)
 
     header = ["Input", "GT"] + methods
@@ -160,7 +162,8 @@ def render_qual_zoom(manifest_path: str):
     manifest = load_manifest(manifest_path)
     methods = manifest["methods"]
     cases = manifest["cases"]
-    fig = plt.figure(figsize=(7.1, 3.0), constrained_layout=False)
+    # ROI/detail figures need larger panels than the compact camera-ready draft.
+    fig = plt.figure(figsize=(8.8, 4.8), constrained_layout=False)
     gs = GridSpec(len(cases) * 2, len(methods), figure=fig, wspace=0.02, hspace=0.06)
 
     roi_colors = [PALETTE["roi_a"], PALETTE["roi_b"]]
@@ -192,7 +195,7 @@ def render_qual_zoom(manifest_path: str):
 def render_spatial_distribution(manifest_path: str):
     manifest = load_manifest(manifest_path)
     stages = manifest["stages"]
-    fig = plt.figure(figsize=(7.1, 3.6), constrained_layout=False)
+    fig = plt.figure(figsize=(8.8, 4.6), constrained_layout=False)
     gs = GridSpec(2, len(stages), figure=fig, wspace=0.03, hspace=0.05)
 
     for idx, stage in enumerate(stages):
@@ -221,7 +224,7 @@ def render_ablation_visual(manifest_path: str):
     manifest = load_manifest(manifest_path)
     variants = manifest["variants"]
     cases = manifest["cases"]
-    fig = plt.figure(figsize=(7.1, 3.8), constrained_layout=False)
+    fig = plt.figure(figsize=(8.8, 5.2), constrained_layout=False)
     outer = GridSpec(len(cases), len(variants), figure=fig, wspace=0.03, hspace=0.08)
 
     for case_idx, case in enumerate(cases):
