@@ -41,6 +41,11 @@ def style_axis(ax):
     ax.grid(axis="y", linestyle=(0, (3, 3)), color=PALETTE["grid"], linewidth=0.8, alpha=0.7)
 
 
+def save_dual(fig, stem):
+    fig.savefig(os.path.join(FIG_DIR, f"{stem}.pdf"), bbox_inches="tight")
+    fig.savefig(os.path.join(FIG_DIR, f"{stem}.png"), dpi=260, bbox_inches="tight")
+
+
 def render_ablation():
     labels = ["R2-Gaussian", "+SPS", "+ADM", "SPS+ADM", "+GAP", "SPS+GAP", "ADM+GAP", "SPAGS"]
     values = {
@@ -94,6 +99,48 @@ def render_ablation():
     plt.close(fig)
 
 
+def render_ablation_3view():
+    labels = ["Baseline", "+SPS", "+ADM", "+SPS+ADM", "+GAP", "+SPS+GAP", "Full"]
+    values = [27.80, 28.01, 27.91, 28.09, 28.22, 28.22, 28.22]
+    colors = [
+        PALETTE["baseline"],
+        PALETTE["sps"],
+        PALETTE["adm"],
+        PALETTE["sps_adm"],
+        PALETTE["gap"],
+        PALETTE["sps_gap"],
+        PALETTE["full"],
+    ]
+
+    fig, ax = plt.subplots(figsize=(7.2, 3.2), constrained_layout=True)
+    x = np.arange(len(labels))
+    bars = ax.bar(x, values, width=0.62, color=colors, edgecolor="white", linewidth=0.8)
+
+    best = max(values)
+    for bar, value in zip(bars, values):
+        if abs(value - best) < 1e-6:
+            bar.set_edgecolor(PALETTE["gold"])
+            bar.set_linewidth(2.4)
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            value + 0.013,
+            f"{value:.2f}",
+            ha="center",
+            va="bottom",
+            fontsize=10,
+            color="#1F2937",
+            fontweight="semibold",
+        )
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels, rotation=25, ha="right", fontsize=10)
+    ax.set_ylabel("Avg. PSNR (dB)", fontsize=12)
+    ax.set_ylim(27.76, 28.28)
+    style_axis(ax)
+    save_dual(fig, "fig_ablation_3view")
+    plt.close(fig)
+
+
 def render_gap_sweep():
     threshold_x = [0.010, 0.015, 0.020]
     threshold_y = [28.11, 28.21, 28.15]
@@ -135,8 +182,80 @@ def render_gap_sweep():
     plt.close(fig)
 
 
+def render_hparam_compact():
+    sweeps = [
+        {
+            "title": "SPS $\\alpha$",
+            "x": [0.2, 0.3, 0.4],
+            "y": [28.01, 27.95, 27.90],
+            "color": PALETTE["line_blue"],
+            "marker": "o",
+            "xlabel": "$\\alpha$",
+            "xticks": [0.2, 0.3, 0.4],
+        },
+        {
+            "title": "GAP $\\tau$",
+            "x": [0.010, 0.015, 0.020],
+            "y": [28.11, 28.21, 28.15],
+            "color": PALETTE["line_red"],
+            "marker": "s",
+            "xlabel": "$\\tau$",
+            "xticks": [0.010, 0.015, 0.020],
+        },
+        {
+            "title": "GAP $\\beta_{\\mathrm{prune}}$",
+            "x": [2, 3, 5],
+            "y": [28.22, 28.21, 28.18],
+            "color": PALETTE["adm_gap"],
+            "marker": "D",
+            "xlabel": "$\\beta_{\\mathrm{prune}}$ (%)",
+            "xticks": [2, 3, 5],
+        },
+        {
+            "title": "ADM warm-up",
+            "x": [12, 15, 18],
+            "y": [28.16, 28.22, 28.14],
+            "color": PALETTE["sps"],
+            "marker": "^",
+            "xlabel": "Iteration (K)",
+            "xticks": [12, 15, 18],
+        },
+    ]
+
+    fig, axes = plt.subplots(2, 2, figsize=(7.2, 5.2), constrained_layout=True)
+    axes = axes.flatten()
+    for idx, (ax, sweep) in enumerate(zip(axes, sweeps)):
+        xs = sweep["x"]
+        ys = sweep["y"]
+        ax.plot(xs, ys, color=sweep["color"], linewidth=2.3, marker=sweep["marker"], markersize=7.5)
+
+        best_idx = int(np.argmax(ys))
+        ax.scatter(
+            [xs[best_idx]],
+            [ys[best_idx]],
+            s=120,
+            facecolor="white",
+            edgecolor=sweep["color"],
+            linewidth=2.0,
+            zorder=4,
+        )
+
+        ax.set_title(sweep["title"], fontsize=12, fontweight="semibold", pad=6)
+        ax.set_xlabel(sweep["xlabel"], fontsize=11)
+        if idx % 2 == 0:
+            ax.set_ylabel("Avg. PSNR (dB)", fontsize=11)
+        ax.set_xticks(sweep["xticks"])
+        ax.set_ylim(27.88, 28.24)
+        style_axis(ax)
+
+    save_dual(fig, "fig_hparam_compact")
+    plt.close(fig)
+
+
 if __name__ == "__main__":
     os.makedirs(FIG_DIR, exist_ok=True)
     render_ablation()
+    render_ablation_3view()
     render_gap_sweep()
+    render_hparam_compact()
     print("Rendered experiment figures.")

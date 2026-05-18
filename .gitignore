@@ -19,6 +19,8 @@
 
 # Build directory
 build/
+latex/__pycache__/
+*-SAVE-ERROR
 
 # macOS
 .DS_Store

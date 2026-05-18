@@ -34,7 +34,7 @@
 
 \hypersetup{hidelinks}
 
-\newcommand{\spags}{SPAGS}
+\newcommand{\spags}{CareX-GS}
 \newcommand{\sps}{SPS}
 \newcommand{\gap}{GAP}
 \newcommand{\adm}{ADM}
@@ -43,97 +43,188 @@
 \newcommand{\second}[1]{\underline{#1}}
 \newcommand{\third}[1]{#1}
 
-\title{SPAGS: Spatially-Aware Gaussian Splatting via Redundancy Control for Sparse-View CT Novel View Synthesis}
+\title[CareX-GS for Extremely Sparse-View CT NVS]{CareX-GS: Capacity Reallocation in X-ray Gaussian Splatting for Extremely Sparse-View CT Novel View Synthesis}
 
 \begin{document}
 \ifXeTeX\else\begin{CJK*}{UTF8}{gbsn}\fi
 \maketitle
 
 \begin{abstract}
-稀疏视角 CT 新视图合成旨在从少量 X 射线投影生成未观测角度的投影图像，对低剂量扫描和快速成像具有重要意义。近期基于 3D Gaussian Splatting 的方法显著提升了 X-ray/CT 场景中的表示效率，但在极少视角条件下，它们大多仍将性能退化归因于覆盖不足、优化不稳或几何误差，并相应地继续 densify 或引入额外正则。我们认为，这一解释并不完全适用于 CT：由于体密度空间是连续占据的，高梯度解剖边界会反复吸引高斯复制，使表示容量被局部过度消耗，而组织内部与低对比区域反而得不到充分建模。基于这一观察，我们提出 \spags，一个围绕表示容量重分配的空间感知高斯泼溅框架，其中 \sps\ 利用 FDK 粗重建将高斯初始化到更相关的解剖区域，\gap\ 在世界坐标中识别并回收局部冗余高斯，\adm\ 则对保留下来的高斯施加位置相关的密度修正。在 5 个器官、2/3/4 视角的实验中，\spags\ 在所有对比方法中取得最优平均 PSNR，并分别在 2/3/4-view 设定下达到 21.44/28.22/29.20 dB；在最关键的 3-view 设定下，相比当前最强基线 \rtwo\ 提升 0.39 dB，补充 SSIM 指标也保持一致领先趋势。消融实验进一步验证了方法有效性：仅加入 \gap\ 就能带来 +0.42 dB 的增益并达到完整模型水平，而 \sps\ 与 \adm\ 主要改善初始化质量和局部修正稳定性。结果表明，对于 sparse-view CT，更有效的方向不是单纯增加高斯数量，而是显式控制结构冗余并重新分配表示容量。
+极稀疏视角 CT 新视图合成旨在从极少量 X 射线投影生成未观测角度的投影图像，对超低剂量扫描、快速采集和受限扫描轨迹下的医学成像具有重要意义。现有基于 3D Gaussian Splatting 的 X-ray/CT 方法在稀疏视角下通常继续沿用传统 3DGS 的密化思路，并辅以优化稳定或几何先验来缓解性能退化。然而，我们发现这一密化策略并不适配 X-ray/CT 场景：骨骼与软组织交界等高对比解剖边界会在投影中产生剧烈灰度突变，沿用梯度驱动密化时，模型会在这些局部边界反复堆积细小高斯；与此同时，X 射线的穿透式成像又要求边界后方的低对比内部结构同样得到充分表达，最终导致表示容量被错误集中到边界附近。基于这一观察，本文提出 \spags，一个面向极稀疏视角 CT 新视图合成的 X-ray Gaussian Splatting 容量重分配框架，通过空间先验播种（Spatial Prior Seeding, SPS）、几何感知剪枝（Geometry-aware Pruning, GAP）和自适应密度调制（Adaptive Density Modulation, ADM）三个模块，分别在初始化、冗余回收和局部密度建模阶段重分配高斯表示容量。实验表明，该容量重分配策略在 5 个器官和全部稀疏协议上都能稳定提升新视图渲染质量，所有协议下的平均 PSNR 均优于对比方法，并在代表性设置下相对 \rtwo\ 获得最高 0.39 dB 的增益。
 \end{abstract}
 
 \section{引言}
 \label{sec:intro}
 
-稀疏视角条件下的 CT 新视图合成（novel view synthesis, NVS）旨在从少量 X 射线投影合成未观测角度的投影图像；由于 X 射线观测由体密度积分决定，这一任务与体重建天然耦合，但本文的主要评价目标仍是新视角投影质量。该任务具有明确的应用价值：减少采样视角可以降低辐射剂量、缩短扫描时间并减轻设备负担；但视角稀缺也会显著削弱几何约束，使病例级优化更容易陷入欠定状态。与自然图像中的新视图合成不同，X 射线成像遵循穿透式辐射传输，像素观测是整条射线路径上衰减累积的结果，因此这一任务对初始化位置、空间分布和密度建模都更加敏感~\cite{feldkamp1984practical,andersen1984simultaneous,wang2008image}.
+极稀疏视角条件下的 CT 新视图合成（novel view synthesis, NVS）旨在从极少量 X 射线投影合成未观测角度的投影图像；由于 X 射线观测由体密度积分决定，这一任务与体重建天然耦合，同时也有望在采样受限时为医生补充未采集方向的观察视角，辅助解剖结构定位、病灶范围判断与快速成像预览。该任务具有明确的应用价值：减少采样视角可以降低辐射剂量、缩短扫描时间并减轻设备负担；而在剂量预算严格、快速扫描、扫描轨迹受限或患者难以长时间配合等场景下，输入投影往往会被压缩到极低水平，使病例级优化更容易陷入欠定状态~\cite{feldkamp1984practical,andersen1984simultaneous,wang2008image}。与自然图像中的新视图合成不同，X 射线成像遵循穿透式辐射传输，像素观测是整条射线路径上衰减累积的结果，因此这一任务对初始化位置、空间分布和密度建模都更加敏感。
 
-围绕 sparse-view setting，现有 3DGS 方法大多从三个方向解释性能下降：覆盖不足、优化不稳或几何退化。FSGS 倾向于通过补点扩张高斯覆盖范围~\cite{zhu2024fsgs}；CoR-GS 通过双场 disagreement 抑制不一致几何~\cite{zhang2024cor}；DNGaussian 借助深度先验直接修复稀疏视角下的几何错误~\cite{li2024dn}。在 X-ray/CT 场景中，X-Gaussian 与 \rtwo\ 又分别补足了辐射高斯表示和积分偏差修正~\cite{cai2024xgaussian,hu2024r2}。这些工作共同推动了 CT-3DGS 从“能否渲染”走向“能否重建”，但它们在优化层面仍保留了一个近似共享的默认假设：当结果变差时，主要问题通常是高斯不够、约束不够，或者几何还不够准。
+现有 sparse-view 3DGS 方法大多默认性能退化主要来自覆盖不足、优化不稳或几何误差，因此通常通过继续密化并叠加额外模块来缓解性能下降。若抽象到 pipeline 层，这类方法虽然表面模块不同，但大体共享同一条优化骨干：以误差/梯度驱动的高斯密化为中心，再分别附加 coverage 补偿、协同正则或几何/物理先验。FSGS 通过 proximity-guided unpooling、伪视角和深度先验扩张覆盖范围~\cite{zhu2024fsgs}，CoR-GS 通过双场 disagreement 与 co-pruning 稳定优化过程~\cite{zhang2024cor}，DNGaussian 借助深度归一化缓解几何退化~\cite{li2024dn}；在 X-ray/CT 场景中，X-Gaussian 与 \rtwo\ 又进一步补足了辐射高斯表示与积分偏差修正~\cite{cai2024xgaussian,hu2024r2}。但这些方法本质上仍是在回答“如何让原有密化链路更稳、更准或更有先验”，而没有改变这条链路本身：一旦高误差或高梯度区域持续被视为最值得复制的位置，高斯仍会不断向局部边界聚集。
 
-我们的观察是，这个假设并不完全适用于稀疏视角 CT。CT 体数据并不是由少量可见表面和大面积空背景组成，而是一个被不同组织密度连续占据的体空间。骨组织与软组织边界往往拥有最强的梯度信号，于是传统“梯度越大越 densify”的策略会持续在边界附近复制高斯，使表示容量不断被局部高梯度区域吞噬；与此同时，组织内部和低对比区域却得不到足够稳定的建模。也就是说，在 sparse-view CT 中，限制优化的往往不是“高斯还不够多”，而是“高斯被持续堆在了不该堆的地方”。相比继续补点，我们更需要显式控制结构冗余，并把表示容量重新分配到真正有助于成像一致性的空间位置。
+然而，这一密化策略并不完全适用于 X-ray/CT。CT 体空间并非由少量可见表面主导，而是由不同组织密度连续占据；骨骼与软组织交界等区域在投影中往往表现为更剧烈的灰度突变，因此会被基于误差或梯度的密化持续识别为“最值得补点”的位置。结果是，模型不断在这些边界周围插入更细小、更狭窄的高斯去追逐高频变化；但与可见光遮挡场景不同，X 射线的穿透性又意味着边界后方的低对比内部组织同样参与成像，不能被边缘表达所替代。换句话说，极稀疏视角 CT 中的核心问题往往不是“高斯还不够多”，而是“高斯被传统密化放到了不合适的位置”，并进一步形成结构冗余与容量错配。
 
-基于这一判断，我们提出 \spags，一个面向稀疏视角 CT 新视图合成的结构冗余控制框架。它不重新定义 X 射线成像物理，也不引入额外的双场分支，而是在同一条 3DGS 优化链路上重新安排表示容量的分配方式。具体而言，\sps（Spatial Prior Seeding）利用 FDK 粗重建提供的空间先验，把初始高斯放到更相关的解剖区域；\gap（Geometry-aware Pruning）在世界坐标中联合邻近度与梯度活跃性回收局部冗余高斯，是全文最主要的性能驱动；\adm（Adaptive Density Modulation）则作为轻量辅助模块，对保留下来的高斯做位置相关的密度修正，以平滑局部灰度过渡。
-
-因此，\spags\ 与现有五个核心对比方法的差异，不在于再次强化补点、深度约束或物理建模，而在于提出了一个更贴合 CT 体空间分布规律的优化观点：当观察视角极少时，3DGS 的关键不是继续增加表示容量，而是避免容量被高梯度边界错误吸走，并在初始化、回收和调制三个阶段把高斯放到更合适的位置。图~\ref{fig:intro-compare} 对这一差异做了一个压缩总览。
+基于这一判断，我们提出 \spags，一个面向极稀疏视角 CT 新视图合成的 X-ray Gaussian Splatting 容量重分配框架。我们的关键贡献首先是 pipeline 层的，而不是单纯再增加几个辅助模块：我们不再把额外能力叠加到同一条密化骨干上，而是把极稀疏 CT 的优化流程改写为一条 coarse-to-fine allocation 链路，即“先按解剖先验进行粗分配，再回收边界冗余，最后细化局部密度”。图~\ref{fig:intro-compare} 将代表性主流方法抽象为三类 pipeline：coverage 补偿型、协同约束型和先验校正型；它们虽然使用不同模块，但最终都围绕同一条 densification backbone 运转。相比之下，\spags\ 直接改写了 allocation 的顺序与粒度。具体到方法实现上，这一新 pipeline 由空间先验播种（Spatial Prior Seeding, \sps）、几何感知剪枝（Geometry-aware Pruning, \gap）和自适应密度调制（Adaptive Density Modulation, \adm）三个模块分别落地：\sps\ 利用 FDK 粗重建提供的解剖密度线索，先把高斯放到更合适的区域；\gap\ 依据空间邻近度与梯度活跃性周期性回收由传统密化错误放大的局部冗余高斯；\adm\ 则通过一个在线联合优化的轻量分支，利用位置相关上下文进一步修正保留高斯的密度分布。
 
 \begin{figure*}[t]
 \centering
 \includegraphics[width=0.97\textwidth]{figures/fig_intro_compare.png}
-\caption{三类代表性 3DGS 路线的核心差异。主流 sparse-view 3DGS 更强调补点扩张、双场协同或深度约束；CT/X-ray 3DGS 主要解决辐射建模与积分偏差；\spags\ 则进一步把结构冗余控制显式引入初始化、回收与密度修正。}
+\caption{pipeline 层的本质区别。前三类代表性方法虽然分别强调 coverage 补偿、协同约束或几何/物理先验，但都仍围绕同一条误差/梯度驱动的 densification backbone 运转，因此容易把容量持续吸附到高对比边界；\spags\ 则把优化流程改写为一条 coarse-to-fine allocation 链路，即“粗分配 $\rightarrow$ 冗余回收 $\rightarrow$ 细调制”，直接在 pipeline 层重排高斯表示容量。}
 \label{fig:intro-compare}
 \end{figure*}
 
 我们的贡献可以概括为三点：
 \begin{itemize}[leftmargin=1.5em]
-  \item 我们重新界定了稀疏视角 CT 中的核心优化瓶颈，指出限制 3DGS 性能的往往不是单纯覆盖不足，而是高斯在高梯度边界被持续放大后形成的结构冗余。
-  \item 我们围绕这一判断提出 \spags：\sps\ 负责把高斯初始化到更相关的解剖区域，\gap\ 负责在世界坐标中回收局部冗余高斯，\adm\ 则作为轻量辅助模块学习位置相关的密度修正。
-  \item 我们在 5 个器官、2/3/4 视角设置下进行了系统评估。结果显示，\spags\ 在核心 3-view 设定下相对 \rtwo\ 提升 0.39 dB 平均 PSNR；消融进一步表明，\gap\ 的冗余控制是主要性能来源，而 \sps\ 与 \adm\ 主要改善初始化质量和局部修正稳定性。
+  \item 指出传统 3DGS 的密化策略并不适配 X-ray/CT：高梯度解剖边界会反复吸引高斯复制，从而造成局部结构冗余与表示容量错配。
+  \item 提出 \spags\ X-ray Gaussian Splatting 容量重分配框架，在 pipeline 层将极稀疏 CT 的优化流程改写为一条 coarse-to-fine allocation 路线，即“先粗分配、再回收、后细化”；在方法层，这一路线分别由 \sps、\gap\ 和 \adm\ 三个模块具体实现。
+  \item 在多器官极稀疏 CT 场景中验证上述容量重分配策略能够稳定提升新视图渲染质量，在全部稀疏协议上均取得最优平均 PSNR，并相对 \rtwo\ 获得最高 0.39 dB 的提升。
 \end{itemize}
-
-在 5 个器官、2/3/4 视角的设置下，\spags\ 在核心 3-view 设定中达到 28.22 dB 平均 PSNR，相比 \rtwo\ 提升 0.39 dB；与此同时，2-view 场景中的增益明显更不稳定，4-view 场景中的方法差距则自然收缩。这个结果分布与我们的判断一致：\spags\ 最有效的区间不是“任何稀疏条件”，而是信息仍然紧张、但表示容量重分配仍能改变优化轨迹的中等稀疏区间。对这一工作而言，最关键的结论并不是“我们又提升了一点分数”，而是 sparse-view CT 更需要结构冗余控制，而不是无差别地继续补点。
 
 \section{相关工作}
 \label{sec:related}
 
-\subsection{稀疏视角 3D Gaussian Splatting}
+\subsection{极稀疏新视图合成}
 
-3D Gaussian Splatting 通过一组三维各向异性高斯显式表示场景，并依赖可微分栅格化实现高效渲染，在效率与质量之间取得了优于传统 NeRF 的平衡~\cite{kerbl20233d}。自 2023 年提出以来，围绕 3DGS 的工作迅速扩展到结构化表示、抗锯齿渲染、显式网格提取、动态时空建模与紧凑表示压缩等方向~\cite{survey3dgs2024,scaffoldgs2024,mipsplatting2024,sugar2024,fourdgs2024,xu2024grid,wu2024deformable,lu2024compact,roessle2024densification}。但当输入视角显著减少时，3DGS 容易暴露几何不稳定、密化失真与过拟合等问题，因此“如何让 3DGS 适配 sparse-view setting”成为近一阶段的重要研究主线~\cite{zhang2024cor,li2024dn,zhu2024fsgs}。
+3D Gaussian Splatting 通过一组三维各向异性高斯显式表示场景，并依赖可微分栅格化实现高效渲染，在效率与质量之间取得了优于传统 NeRF 的平衡~\cite{kerbl20233d}。自 2023 年提出以来，3DGS 迅速扩展到结构化表示、抗锯齿渲染、动态建模与紧凑压缩等方向~\cite{survey3dgs2024,scaffoldgs2024,mipsplatting2024,sugar2024,fourdgs2024,xu2024grid,wu2024deformable,lu2024compact,roessle2024densification}；而在极稀疏 NVS 设定下，相关方法则逐渐沿两条更清晰的主线展开：一条是逐场景优化高斯表示，另一条是用前馈网络直接从少量输入视图预测高斯原语。
 
-现有 sparse-view 3DGS 方法大致可以按其主导假设分成三类。第一类把问题理解为“初始化过稀导致覆盖不足”。FSGS 代表了这一思路：它在原始 3DGS 的 densification 流程上引入 proximity-guided Gaussian unpooling，在已有高斯之间补点以提高表示密度，并借助伪视角与单目深度先验抑制过拟合~\cite{zhu2024fsgs}。第二类把问题理解为“单场优化不稳定”。CoR-GS 并行优化两个随机初始化但共享监督的高斯场，并把点位置与渲染结果的分歧当作无监督信号，再据此设计 co-pruning 与 pseudo-view co-regularization~\cite{zhang2024cor}。第三类则把问题归因于“几何恢复错误”。DNGaussian 引入 Hard/Soft Depth Regularization 和 Global-Local Depth Normalization，用单目深度先验直接修复 sparse-view 条件下的几何退化~\cite{li2024dn}。
+逐场景优化路线更接近原始 3DGS 的测试时优化范式，其内部又可按对失败原因的判断继续细分。FSGS 将性能退化主要归因于 coverage 不足，因此沿密化过程引入 proximity-guided unpooling、伪视角和单目深度先验来补点扩张~\cite{zhu2024fsgs}；CoR-GS 将问题视为单场优化不稳，通过双场 co-regularization 与 co-pruning 抑制几何分歧~\cite{zhang2024cor}；DNGaussian 则把重点放在稀疏视角下的几何恢复误差，并用全局--局部深度归一化显式注入几何先验~\cite{li2024dn}。2025 年的 DropGaussian 和 GS-GS 又分别沿结构正则与生成式伪视角两条方向继续推进：前者通过随机丢弃与结构感知剪枝缓解训练视图过拟合，后者借助扩散模型在伪视角生成中补足未观测区域并强调跨视图一致性~\cite{park2025dropgaussian,kong2025gsgs}。
 
-这些方法都有效提升了自然图像场景下的 sparse-view 3DGS，但它们共享一个重要前提：观察对象主要由可见表面主导，核心困难在于表面覆盖不足、几何漂移或外部监督噪声。与这些基于优化的方法并行，近期也有一批工作从前馈或泛化重建角度探索少视图高斯表示，例如围绕深度协同与多视图先验的路线不断出现~\cite{chen2022pixelnerf,freenerf2023,sparsenerf2023,depthsplat2025}。然而在 CT 场景中，三维空间是被体密度连续占据的，问题不再只是“表面没补够”或“几何不够准”，而是高斯会在高对比边界被反复密化并形成结构冗余。我们的工作正是沿着这一区别，重新界定 sparse-view CT 中真正需要优先控制的量。
+另一条主线是 generalizable/feed-forward Gaussian prediction，它把“少视角下如何补足几何与外观先验”的负担前移到大规模训练阶段。pixelSplat 通过图像对上的概率深度分布采样 Gaussian centers~\cite{charatan2024pixelsplat}，MVSplat 进一步用 plane-sweeping cost volume 聚合多视图对应关系~\cite{chen2024mvsplat}，DepthSplat 与 MonoSplat 则继续把深度估计和 monocular foundation priors 显式并入 Gaussian prediction，以增强几何稳定性与跨域泛化能力~\cite{depthsplat2025,liu2025monosplat}。总体上，无论是逐场景优化还是前馈重建，现有极稀疏 NVS 方法大多仍把性能瓶颈理解为 coverage 不足、几何不稳或先验缺失。相比之下，本文关注的 CT 体空间由连续密度占据，密化过程更容易在高对比解剖边界诱发局部冗余，因此关键不只是“生成更多高斯”，而是“把高斯放到更合适的空间位置，并把被边界吞噬的容量重新分配回来”。
 
-\subsection{X 射线新视图合成与 CT 断层重建}
+\subsection{X 射线新视图合成}
 
-传统 CT 重建方法大体可以分为解析法与迭代法。以 FDK 为代表的解析方法依赖滤波反投影，计算效率高，但在稀疏视角下容易产生条纹伪影；SART 等迭代方法能够更稳健地引入先验约束，但计算成本较高~\cite{feldkamp1984practical,andersen1984simultaneous}。随着神经场方法的发展，越来越多工作开始用坐标网络建模体密度场，并通过自监督投影重建来进行病例级优化~\cite{mildenhall2021nerf,zha2023nerfsurvey,guan2024naf,shen2024saxnerf}。这类方法在表示能力上表现强劲，但体渲染依赖海量点采样，训练与推理开销通常难以满足高效应用场景的需求；Instant-NGP、TensoRF 等高效表示为此提供了重要启发~\cite{muller2022instant,chen2022tensorf}。
+传统 CT 重建方法大体可以分为解析法与迭代法。以 FDK 为代表的解析方法依赖滤波反投影，计算效率高，但在稀疏视角下容易产生条纹伪影；SART 等迭代方法能够更稳健地引入先验约束，但计算成本较高~\cite{feldkamp1984practical,andersen1984simultaneous}。在 2023 年之后，围绕 sparse-view X-ray/CT 的学习型方法逐渐可以按表示形式归纳为两条主线：隐式衰减场，以及显式辐射原语。
 
-X-Gaussian 首次较为系统地把 3DGS 引入 X 射线新视图合成。由于 X 射线投影满足穿透式成像而非表面反射，该方法重新定义了 radiative Gaussian point cloud，并提出可微辐射栅格化与面向圆锥束扫描的 ACUI 初始化策略，从而显著提升了 X 射线 NVS 的训练与推理效率~\cite{cai2024xgaussian}。\rtwo\ 则进一步把问题推进到“直接体重建”的层面。该工作指出标准 3DGS 在从三维高斯投影到二维高斯的过程中存在积分偏差，这一偏差对普通图像渲染影响有限，但会严重破坏体密度恢复的一致性~\cite{hu2024r2}。因此，\rtwo\ 通过新的 radiative kernel、X 射线栅格化与可微体素化，把 3DGS 真正扩展为可用于稀疏视角断层重建的框架。换言之，X-Gaussian 主要回答“如何高效合成 X 射线投影”，而 \rtwo\ 进一步回答“如何更准确地恢复体密度场”。
+隐式场路线延续 neural field / neural attenuation field 的建模思路，但开始更强调 X 射线的结构性与扫描几何。Structure-Aware Sparse-View X-ray 3D Reconstruction（SAX-NeRF）通过 Lineformer 和 masked local-global ray sampling 同时建模 3D 线段依赖与 2D 投影上下文，在新视图合成与 CT 重建上统一优化~\cite{cai2024saxnerf}；Geometry-Aware Attenuation Learning 则把多视图 2D 特征沿扫描几何反投影到 3D 体特征图，再用 3D 解码器恢复 CBCT 体数据，代表了从病例级自监督优化转向 population-level encoder--decoder inference 的另一条路线~\cite{liu2025geometryaware}。这类方法保持了连续体密度场的表达能力，但通常仍依赖密集射线采样或较重的 3D 体解码。
 
-2025 年后，这条线开始明显分化。X-Field 不再沿用标准高斯体元，而是用具有材料衰减系数的三维椭球显式建模 X 射线穿透与累积衰减，并同时在 X-ray NVS 与 CT reconstruction 两个任务上报告了优势~\cite{xfield2025}；DGR 则转向直接体表示，用离散化 Gaussian functions 端到端重建体素网格，并强调体重建质量与运行效率的共同提升~\cite{dgr2025}。与此同时，X$^2$-Gaussian 将 radiative Gaussian 表示推进到连续时间 4D CT，而 GR-Gaussian 从图结构梯度建模角度进一步缓解极稀疏条件下的针状伪影，说明 CT-3DGS 已经开始从“能用”走向“更稳、更细”，并逐渐分化出物理表示改造、直接体重建和结构先验增强等不同路线~\cite{x2gaussian2025,grgaussian2025}。
-
-从与本文设定的关系看，X-Field 是最新工作中与我们最接近的一条线，因为它也同时覆盖 X-ray NVS 与 CT reconstruction；但其公开结果主要基于 10-view 训练、且数据组成与本文的 2/3/4-view 五器官设定并不完全一致，因此目前更适合作为同期强相关工作，而不是无需协议重跑即可直接并表的 baseline~\cite{xfield2025}。DGR、X$^2$-Gaussian 与 GR-Gaussian 则更明确地偏向 direct reconstruction、continuous-time CT 或 reconstruction-oriented CT priors，和本文的 static sparse-view NVS 主协议仍存在评价层面的偏移~\cite{dgr2025,x2gaussian2025,grgaussian2025}。因此，我们将主实验中的直接 CT/X-ray 基线仍聚焦在与本文协议最一致的 X-Gaussian 与 \rtwo\ 上，而把上述 2025 年后的方法作为界定最新研究边界的重要参照。
-
-从我们的角度看，X-Gaussian 与 \rtwo\ 已经为 CT 场景搭好了物理正确性与高效渲染的基础，但在优化层面仍保留了较多来自通用 3DGS 的默认假设。例如，初始化虽然已不再依赖 SfM，但仍缺乏对具体解剖复杂度的自适应分配；密度控制虽然可以借助梯度进行克隆与分裂，但并未显式约束边界区域的冗余堆叠；密度参数本身也仍主要依赖逐点梯度更新，而缺少连续空间上下文。因此，我们将 \spags\ 的定位放在“继承 CT-3DGS 物理基础之后，补足其空间分布建模能力”这一层面。
-
-\subsection{我们与五个核心对比方法的关系}
-
-由于本文的对比方法恰好覆盖了 sparse-view 3DGS 与 X-ray/CT 3DGS 的两个关键谱系，因此它们也构成了定位 \spags\ 的最直接坐标系。FSGS 将 sparse-view 问题理解为“高斯不够、覆盖不足”，其方法论是补点与扩张；CoR-GS 将问题理解为“单场优化不稳定”，其方法论是通过双场 disagreement 进行无监督纠偏；DNGaussian 将问题理解为“几何在稀疏视角下退化”，其方法论是深度先验与归一化约束；X-Gaussian 将问题理解为“自然图像版 3DGS 不适合 X 射线物理”，其方法论是辐射建模与 scanner-aware 初始化；\rtwo\ 则进一步将问题锚定为“3DGS 在体重建场景中存在积分偏差”，并通过 kernel、rasterization 与 voxelization 做出系统修正~\cite{zhu2024fsgs,zhang2024cor,li2024dn,cai2024xgaussian,hu2024r2}.
-
-与这些方法相比，\spags\ 的新意并不在于重新定义 X 射线成像物理，也不在于依赖额外大模型或双场结构，而在于提出一个更贴合 CT 体空间分布规律的优化观点：在极稀疏视角下，问题的主导项往往是结构冗余而非单纯稀疏，因而初始化、剪枝与密度调制都应该围绕“空间感知”展开。基于这一判断，我们提出的 \sps/\gap/\adm\ 分别对应空间感知初始化、空间感知冗余控制与空间感知密度修正，从而与上述五类代表工作形成互补而清晰的差异化路线；而对 X-Field、DGR、X$^2$-Gaussian 与 GR-Gaussian 等更新工作，本文则把它们放在“最新边界”而非“同协议直接并表”的层级上进行讨论。
+显式路线则试图为 X 射线的穿透与衰减过程重新设计原语表示。X-Gaussian 首次较系统地把 radiative Gaussian 和可微 X-ray rasterization 引入 projection-domain NVS，核心目标是高效合成未观测视角投影~\cite{cai2024xgaussian}；\rtwo\ 进一步把重点转向 reconstruction consistency，显式修正 3D-to-2D 积分偏差并引入可微体素化，使辐射高斯能够直接服务于 sparse-view tomography~\cite{hu2024r2}。在此基础上，后续工作又沿几条更细的路线展开：X-Field 以材料感知椭球和路径分割强化物理一致性~\cite{xfield2025}，DGR 用离散 Gaussian functions 直接重建体素网格~\cite{dgr2025}，GR-Gaussian 从图结构梯度修正极稀疏条件下的针状伪影，而 X$^2$-Gaussian 则把 radiative Gaussian 扩展到连续时间 4D CT~\cite{grgaussian2025,x2gaussian2025}。整体来看，X-ray/CT 研究正在从“借用可见光场景表示”逐步转向“围绕穿透成像、衰减累积和重建一致性重新设计表示”。本文属于显式辐射原语这一脉络，但关注点不是新增物理分支，而是在极稀疏 CT 中显式控制高斯容量分配与结构冗余。
 
 \section{方法}
 \label{sec:method}
 
-我们将稀疏视角 CT 新视图合成拆分为三个彼此衔接的子问题：如何让初始高斯尽量落在有意义的解剖区域，如何在训练过程中抑制边界区域的冗余堆叠，以及如何让密度更新显式响应空间上下文。围绕这三个问题，我们提出 \spags\ 的三阶段框架，如图~\ref{fig:pipeline} 所示。其核心思路并不是再引入一套额外渲染分支，而是在同一条 3DGS 优化链路上依次回答三个问题：\sps\ 负责“从哪里开始”，\gap\ 负责“哪些该删”，\adm\ 负责“留下来的该如何调密度”。
+图~\ref{fig:intro-compare} 回答的是 pipeline 层的问题：为什么本文能够在极稀疏 CT 上优于现有方法。其核心不在于继续给 densification backbone 叠加一个辅助分支，而在于把优化顺序从“持续密化后再补救”改写为一条 coarse-to-fine allocation 链路，即“先粗分配、再回收、再细化”。本节则转到方法层，说明这一 pipeline 如何具体实例化为 \sps、\gap\ 与 \adm，并嵌入 \rtwo\ 的辐射高斯主干。
+
+\subsection{问题定义}
+
+设极稀疏视角观测集合为 $\mathcal{P}=\{(I_v,\pi_v)\}_{v=1}^{V}$，其中 $I_v$ 表示第 $v$ 个 X 射线投影，$\pi_v$ 表示对应成像几何。给定由这些观测得到的 FDK 粗重建体 $V_{\text{FDK}}$，本文目标是在病例级优化设定下学习一个显式辐射高斯表示，用于从少量观测投影合成未观测角度下的目标投影图像。虽然这一任务与体密度恢复天然耦合，但本文的主要优化目标仍是投影域的新视图合成质量。
+
+\subsection{3DGS 与 X-ray 渲染基础}
+
+我们将场景表示为高斯集合 $\mathcal{G}=\{g_i\}_{i=1}^{N}$，其中每个高斯写作
+\begin{equation}
+g_i=(\mathbf{p}_i,\Sigma_i,\rho_i,\mathbf{c}_i),
+\end{equation}
+分别表示中心、协方差、密度与外观/辐射参数。对于任一视角 $\pi_v$，\rtwo\ 风格的辐射渲染可记为
+\begin{equation}
+\hat{I}_v=\mathcal{R}(\mathcal{G};\pi_v).
+\end{equation}
+除本文新增的 \sps、\gap\ 与 \adm\ 外，其余辐射栅格化、密化与可微体素化设置均遵循 \rtwo~\cite{hu2024r2}。在这一基线中，高斯通常根据投影误差梯度执行复制/分裂式密化；这一机制在自然图像场景中能够有效补足表面覆盖，但在 CT 场景中更容易把表示容量持续推向高梯度解剖边界，这也正是本文后续三个模块要处理的核心问题。
+
+\subsection{总体框架}
+
+如图~\ref{fig:pipeline} 所示，\spags\ 将 introduction 中的 pipeline-level 容量重分配具体实例化为三个顺序模块，并插入 \rtwo\ 的显式辐射高斯主干。\sps\ 在初始化阶段利用 FDK 粗重建将高斯播种到更相关的解剖区域；\gap\ 在密化之后周期性回收局部冗余高斯，避免高梯度边界反复占据容量；\adm\ 则在后续优化中根据位置相关上下文细化保留高斯的密度分布。因而，本文并不重新设计 X 射线成像物理，而是在同一条 X-ray 3DGS 优化链路中，依次完成“放对位置、回收冗余、细化密度”的容量重分配。
 
 \begin{figure*}[t]
 \centering
 \includegraphics[width=0.98\textwidth]{figures/fig_pipeline.png}
-\caption{\spags\ 的总体流程。给定稀疏 CT 投影与 FDK 粗重建，\sps\ 负责空间先验播种，\gap\ 负责几何冗余回收，\adm\ 负责位置相关的密度修正，最终生成目标新视角 X 射线投影。}
+\caption{\spags\ 的总体流程。给定极稀疏 CT 投影与 FDK 粗重建，\sps\ 负责空间先验播种，\gap\ 负责几何冗余回收，\adm\ 负责位置相关的密度修正，最终生成目标新视图 X 射线投影。}
 \label{fig:pipeline}
 \end{figure*}
 
-\subsection{符号定义与优化目标}
+\subsection{Spatial Prior Seeding（\sps）}
 
-设稀疏视角观测集合为 $\mathcal{P}=\{(I_v,\pi_v)\}_{v=1}^{V}$，其中 $I_v$ 表示第 $v$ 个投影，$\pi_v$ 表示对应成像几何。给定 FDK 粗重建体 $V_{\text{FDK}}$，\spags\ 将场景表示为高斯集合 $\mathcal{G}=\{g_i\}_{i=1}^{N}$，其中每个高斯写作
+\sps\ 基于 FDK 粗重建得到的解剖密度先验在解剖相关区域初始化高斯原语。初始化会直接影响后续优化轨迹，而标准 3DGS 常用的均匀采样或 SfM 点云初始化均不适合 CT 场景：前者无法区分空气、软组织与骨骼的解剖重要性，后者则由于 X 射线投影中的灰度重叠与低纹理特征难以稳定工作~\cite{cai2024xgaussian}。这里的“先验”并非抽象的空间偏置，而是由 FDK 粗重建提供的粗粒度解剖密度线索，它虽然不足以直接完成高质量重建，却能够先把初始高斯锚定到更可能承载有效结构的位置。因此，我们使用 FDK 重建产生的粗体密度图 $V_{\text{FDK}}$ 作为初始化依据，并在离散体素网格 $\Omega$ 上定义密度加权采样分布：
 \begin{equation}
-g_i=(\mathbf{p}_i,\Sigma_i,\rho_i,\mathbf{c}_i),
+p(\mathbf{x})=\frac{\left(\max(V_{\text{FDK}}(\mathbf{x}),\epsilon)\right)^\gamma}{\sum_{\mathbf{x}'\in\Omega}\left(\max(V_{\text{FDK}}(\mathbf{x}'),\epsilon)\right)^\gamma},
 \end{equation}
-分别表示中心、协方差、密度与外观/辐射参数。对于任一视角 $\pi_v$，\rtwo\ 风格的辐射渲染记为
+其中 $\epsilon$ 用于避免背景区域出现零概率，$\gamma$ 控制采样集中度。
+
+仅靠密度加权会使高斯过度聚集在亮度最高的骨性结构附近，因此我们采用均匀分布与先验分布的混合采样：
 \begin{equation}
-\hat{I}_v=\mathcal{R}(\mathcal{G};\pi_v).
+q(\mathbf{x})=\alpha\frac{1}{|\Omega|}+(1-\alpha)p(\mathbf{x}),\quad \mathbf{x}\in\Omega,
 \end{equation}
-整体训练目标写为
+并从 $q(\mathbf{x})$ 独立采样 $M$ 个初始中心 $\{\mathbf{x}_m\}_{m=1}^{M}$，其中 $M$ 为初始化高斯数。这样既能保证整体覆盖，又能让更多高斯优先分配给解剖复杂区域。采样位置确定后，我们将 FDK 值作为初始密度，并根据局部采样密度设定尺度参数，最终得到 $50$K 个初始高斯。本文中，$\alpha$ 与 $\gamma$ 通过小范围搜索确定后保持固定，以避免为不同实验场景额外引入手工调参。
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_sps.png}
+\caption{\sps\ 模块示意。利用 FDK 粗重建引导密度加权采样，使更多初始高斯落在解剖相关区域，并保留少量均匀补偿采样维持全局覆盖。}
+\label{fig:sps}
+\end{figure}
+
+\subsection{Geometry-aware Pruning（\gap）}
+
+\gap\ 根据空间邻近度与梯度活跃性周期性移除局部冗余高斯。在 CT 场景中，基于梯度的密化往往会在骨组织与软组织边界持续复制高斯，因为这些区域具有更大的投影误差梯度。然而，高梯度并不总是意味着覆盖不足，也可能只是同一条解剖边界被多个相邻高斯反复表达。因此，\gap\ 不沿用 FSGS 面向稀疏区域补点的思路~\cite{zhu2024fsgs}，而是转而在世界坐标系中显式度量局部拥挤程度，并将其作为一次面向过密区域的反向冗余回收。
+
+具体来说，对每个高斯 $G_i$，记 $\mathcal{N}_K(i)$ 为除 $i$ 自身外的 $K$ 个最近邻索引集合，我们计算其与这些邻居的平均欧氏距离作为邻近度评分：
+\begin{equation}
+s_i=\frac{1}{K}\sum_{j\in\mathcal{N}_K(i)}\|\mathbf{p}_i-\mathbf{p}_j\|_2.
+\end{equation}
+当 $s_i$ 低于阈值 $\tau$ 时，说明该高斯处于过度聚集区域。为了避免误删仍在有效学习的高斯，我们再引入梯度活跃性过滤。记 $\bar{g}_i$ 为该高斯在当前密化周期内累积的位置梯度 $L_1$ 统计量，并定义保留掩码 $m_i\in\{0,1\}$ 为
+\begin{equation}
+m_i=
+\begin{cases}
+1, & s_i\ge\tau \ \lor\ \bar{g}_i\ge\delta,\\
+0, & \text{otherwise}.
+\end{cases}
+\end{equation}
+其中 $m_i=0$ 表示该高斯会在当前周期被视为冗余候选。实现上，\gap\ 不是替代 3DGS 原有的密化，而是作为其后的周期性回收步骤运行：先沿用原始复制/分裂式密化生成候选高斯，再用 $m_i$ 过滤冗余点。最终，每轮最多剪除总高斯数的 $\beta_{\text{prune}}$，并在第 2K 到 20K 次迭代间周期性触发。为避免剪枝后局部支撑突然变稀，我们仅对保留下来的新生成高斯执行协方差收缩：
+\begin{equation}
+\Sigma_i^{\text{new}}=\eta\Sigma_i,\quad 0<\eta<1.
+\end{equation}
+\gap\ 通过抑制局部冗余高斯来正则化密化过程，从而避免高梯度边界持续占据表示容量。
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_gap.png}
+\caption{\gap\ 模块示意。先依据世界坐标邻近度识别局部过度聚集区域，再结合梯度活跃性过滤，仅删除学习价值较低的冗余高斯。}
+\label{fig:gap}
+\end{figure}
+
+\subsection{Adaptive Density Modulation（\adm）}
+
+\adm\ 预测位置相关的密度偏移，以细化保留高斯的密度分布。即便经过更合理的初始化与冗余控制，不同解剖区域的密度更新规律仍然存在显著差异：骨组织通常对应更高衰减系数，肺部空气区域应保持更低密度，而软组织则需要平滑过渡。若所有高斯都共享相同的逐点梯度更新规则，模型难以表达这种空间异质性。为此，我们用 K-Planes 对高斯中心位置进行编码，并通过轻量解码器仅预测密度相关的偏移与置信门控，而不改写高斯的中心、协方差或其他属性。\adm\ 的作用是细化局部密度分布，而非单独决定整体性能上限。
+
+需要强调的是，\adm\ 虽然包含 MLP，但它并不是一个离线预训练的 prediction head，也不依赖额外的密度标签监督。K-Planes 特征与双头 MLP 参数都只在当前病例优化过程中更新，并通过主渲染损失端到端反向传播；因此，\adm\ 本质上是一个 on-the-fly 的在线联合优化分支，用来在主干训练过程中自适应地放大或抑制不同区域的密度响应。
+
+给定位置 $\mathbf{x}$，我们先将其投影到三组正交平面的归一化二维坐标 $\Pi_{uv}(\mathbf{x})$，再从对应特征图中双线性采样：
+\begin{equation}
+f_{uv}(\mathbf{x})=\mathcal{B}\!\left(P_{uv},\Pi_{uv}(\mathbf{x})\right),\quad uv\in\{xy,xz,yz\},
+\end{equation}
+\begin{equation}
+F(\mathbf{x})=\operatorname{concat}\!\big(f_{xy}(\mathbf{x}),f_{xz}(\mathbf{x}),f_{yz}(\mathbf{x})\big),
+\end{equation}
+其中 $\mathcal{B}(\cdot)$ 表示双线性采样，$P_{xy}$、$P_{xz}$ 与 $P_{yz}$ 分别对应三张正交特征平面，$\operatorname{concat}(\cdot)$ 表示按通道拼接。这种 K-Planes 编码最早被用于显式时空辐射场建模，能够以较低成本提供连续空间上下文~\cite{fridovich2022kplanes}。在此基础上，我们用双头 MLP 输出密度偏移 $o(\mathbf{x})$ 和置信门控 $c(\mathbf{x})$：
+\begin{equation}
+\big(o(\mathbf{x}),c(\mathbf{x})\big)=h(F(\mathbf{x})).
+\end{equation}
+随后将偏移做 batch 均值中心化，并结合视角相关缩放写为
+\begin{equation}
+\tilde{o}(\mathbf{x})=\beta(t)\,s_{\text{view}}\,r_{\max}\,c(\mathbf{x})\cdot\big(o(\mathbf{x})-\bar{o}\big),
+\end{equation}
+其中 $\bar{o}$ 为当前 batch 的均值偏移，$r_{\max}$ 为最大调制幅度，$s_{\text{view}}$ 表示随输入视角数变化的缩放系数。为避免调制在训练早期干扰基础几何收敛，我们将 $\beta(t)$ 设为预热--保持--衰减调度：
+\begin{equation}
+\beta(t)=
+\begin{cases}
+\frac{t}{t_w}, & 0\le t<t_w,\\
+1, & t_w\le t<t_h,\\
+\exp\!\big(-\frac{t-t_h}{\tau}\big), & t\ge t_h.
+\end{cases}
+\end{equation}
+最终密度写成
+\begin{equation}
+\rho_{\text{final}}(\mathbf{x})=\rho_{\text{base}}(\mathbf{x})\cdot\big(1+\tilde{o}(\mathbf{x})\big).
+\end{equation}
+这样，\adm\ 学到的不是全局性的密度抬升，而是围绕空间上下文的相对修正，从而更符合 CT 体数据中“区域异质、局部连续”的分布特征。
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_adm.png}
+\caption{\adm\ 模块示意。利用 K-Planes 提供连续空间上下文，并预测位置相关的密度偏移与置信门控，实现解剖区域相关的密度调制。}
+\label{fig:adm}
+\end{figure}
+
+\subsection{训练损失函数}
+
+\spags\ 的三个模块与 \rtwo\ 的辐射渲染主干共同构成端到端训练流程。训练时，我们对观测视角上的重投影结果进行监督，整体损失写为
 \begin{equation}
 \mathcal{L}=\mathcal{L}_{1}+\lambda_{\text{dssim}}\mathcal{L}_{\text{dssim}}+\lambda_{\text{3DTV}}\mathcal{L}_{\text{3DTV}}+\lambda_{\text{pTV}}\mathcal{L}_{\text{pTV}},
 \end{equation}
@@ -144,125 +235,28 @@ g_i=(\mathbf{p}_i,\Sigma_i,\rho_i,\mathbf{c}_i),
 \mathcal{L}_{\text{3DTV}} &= \sum_{i=1}^{N}\sum_{d\in\{x,y,z\}}\left|\nabla_d \rho_i\right|, \\
 \mathcal{L}_{\text{pTV}} &= \sum_{p\in\{xy,xz,yz\}}\omega_p(t)\operatorname{TV}(P_p).
 \end{align}
-其中，$\omega_p(t)$ 为视角自适应权重，$\mathcal{L}_{\text{3DTV}}$ 用于约束体密度的空间平滑性，而 $\mathcal{L}_{\text{pTV}}$ 则对 K-Planes 特征施加平面总变分正则。
-
-\subsection{阶段一：Spatial Prior Seeding（\sps）}
-
-\sps\ 回答的第一个问题是：在极少视角条件下，高斯应该从哪里开始。初始化的好坏会显著影响后续优化轨迹。标准 3DGS 往往采用均匀采样或依赖 SfM 点云初始化，但这两种方式都不适合 CT 场景：前者无法区分空气、软组织与骨骼的解剖重要性，后者则因为 X 射线投影的灰度重叠与低纹理特征难以稳定工作~\cite{cai2024xgaussian}. 我们因此使用 FDK 重建产生的粗体密度图 $V_{\text{FDK}}$ 作为空间先验，对初始高斯进行密度加权采样：
-\begin{equation}
-p(\mathbf{x})=\frac{\left(\max(V_{\text{FDK}}(\mathbf{x}),\epsilon)\right)^\gamma}{\sum_{\mathbf{x}'\in\Omega}\left(\max(V_{\text{FDK}}(\mathbf{x}'),\epsilon)\right)^\gamma},
-\end{equation}
-其中 $\epsilon$ 用于避免背景区域出现零概率，$\gamma$ 控制采样集中度。
-
-仅靠密度加权会使高斯过度聚集在亮度最高的骨性结构附近，因此我们引入混合采样：
-\begin{equation}
-\mathcal{X}=\mathcal{X}_{\text{uni}}\cup\mathcal{X}_{\text{prior}},
-\end{equation}
-其中 $|\mathcal{X}_{\text{uni}}|=\alpha M$、$|\mathcal{X}_{\text{prior}}|=(1-\alpha)M$，$M$ 为初始化高斯数。这样既能保证整体覆盖，又能让更多高斯优先分配给解剖复杂区域。采样位置确定后，我们将 FDK 值作为初始密度，并根据局部采样密度设定尺度参数，最终得到 $50$K 个初始高斯。本文中，$\alpha$ 与 $\gamma$ 通过小范围搜索确定后保持固定，以避免在不同视角设定下引入额外的手工调参。
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=\linewidth]{figures/fig_sps.png}
-\caption{\sps\ 模块示意。利用 FDK 粗重建引导密度加权采样，使更多初始高斯落在解剖相关区域，并保留少量均匀补偿采样维持全局覆盖。}
-\label{fig:sps}
-\end{figure}
-
-\subsection{阶段二：Geometry-aware Pruning（\gap）}
-
-\gap\ 回答的第二个问题是：哪些高斯其实应该被删，而不是继续补。在 CT 场景中，传统基于梯度的 densification 往往会在骨组织与软组织边界持续复制高斯，因为这些区域的投影误差梯度最大。问题在于，这类高梯度不一定意味着“覆盖不足”，也可能只是“同一结构被过多高斯竞争表示”。因此，我们不沿用 FSGS 那种面向稀疏区域补点的思路~\cite{zhu2024fsgs}，而是直接在世界坐标系中度量局部拥挤程度。
-
-具体来说，对每个高斯 $G_i$，我们计算其与 $K$ 个最近邻的平均欧氏距离作为邻近度评分：
-\begin{equation}
-s_i=\frac{1}{K}\sum_{j\in\mathcal{N}_K(i)}\|\mathbf{p}_i-\mathbf{p}_j\|_2.
-\end{equation}
-当 $s_i$ 低于阈值 $\tau$ 时，说明该高斯处于过度聚集区域。为了避免误删仍在有效学习的高斯，我们再引入梯度活跃性过滤：只有当其累积位置梯度低于阈值 $\delta$ 时，才将其视为真正的冗余候选，即
-\begin{equation}
-m_i=
-\begin{cases}
-1, & s_i\ge\tau \ \lor\ \|\nabla \mathbf{p}_i\|_1\ge\delta,\\
-0, & \text{otherwise}.
-\end{cases}
-\end{equation}
-实现上，\gap\ 不是替代 3DGS 原有的 densification，而是作为其后的周期性回收步骤运行：先沿用原始 clone/split 机制生成候选高斯，再用邻近度与梯度活跃性筛掉冗余点。最终，每轮最多剪除总高斯数的 $\beta_{\text{prune}}$，并在第 2K 到 20K 次迭代间周期性触发。与此同时，为保持局部覆盖连续性，我们会对保留下来的密化高斯执行尺度收缩：
-\begin{equation}
-\Sigma_i^{\text{new}}=\eta\Sigma_i,\quad 0<\eta<1,
-\end{equation}
-其中新高斯中心通常取局部最近邻的中点
-\begin{equation}
-\tilde{\mathbf{p}}_i=\frac{1}{2}\left(\mathbf{p}_i+\mathbf{p}_{\operatorname{nn}(i)}\right),\quad \operatorname{nn}(i)=\arg\min_{j\in\mathcal{N}_K(i)}\|\mathbf{p}_i-\mathbf{p}_j\|_2.
-\end{equation}
-这一步的关键不在“减少高斯数量”本身，而在建立一种负反馈机制：当标准 3DGS 的密化策略在边界附近过度扩张时，\gap\ 能及时把冗余点回收，使表示容量回到真正需要的位置。
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=\linewidth]{figures/fig_gap.png}
-\caption{\gap\ 模块示意。先依据世界坐标邻近度识别局部过度聚集区域，再结合梯度活跃性过滤，仅删除学习价值较低的冗余高斯。}
-\label{fig:gap}
-\end{figure}
-
-\subsection{阶段三：Adaptive Density Modulation（\adm）}
-
-\adm\ 回答的第三个问题是：留下来的高斯，应如何根据所在区域调整密度。即便有了更合理的初始化与冗余控制，不同解剖区域的密度更新规律仍然并不相同。骨组织应具有更高衰减系数，肺部空气区域应保持更低密度，而软组织往往需要平滑过渡。如果所有高斯都依赖相同的逐点梯度更新，模型会难以学到这种空间异质性。为此，我们引入 \adm，用 K-Planes 对高斯中心位置进行编码，并通过轻量解码器预测位置相关的密度偏移与置信度。与前两者相比，\adm\ 更接近一个局部修正模块：它主要负责让不同解剖区域的密度更新不再共享同一套规则，而不是单独决定整体性能上限。
-
-给定位置 $\mathbf{x}$，我们从三组正交平面特征中采样并拼接成空间编码 $F(\mathbf{x})$：
-\begin{equation}
-f_{uv}(\mathbf{x})=\mathcal{B}\!\left(P_{uv},\Pi_{uv}(\mathbf{x})\right),\quad uv\in\{xy,xz,yz\},
-\end{equation}
-\begin{equation}
-F(\mathbf{x})=\big[f_{xy}(\mathbf{x}),f_{xz}(\mathbf{x}),f_{yz}(\mathbf{x})\big],
-\end{equation}
-其中 $\mathcal{B}(\cdot)$ 表示双线性采样，$P_{xy}$、$P_{xz}$ 与 $P_{yz}$ 分别对应三张正交特征平面。这种 K-Planes 编码最早被用于显式时空辐射场建模，能够以较低成本提供连续空间上下文~\cite{fridovich2022kplanes}。在此基础上，我们用双头 MLP 输出密度偏移 $o(\mathbf{x})$ 和置信度 $c(\mathbf{x})$：
-\begin{equation}
-\big(o(\mathbf{x}),c(\mathbf{x})\big)=h(F(\mathbf{x})).
-\end{equation}
-随后将偏移约束在有限范围内，并结合视角自适应缩放与零均值约束：
-\begin{equation}
-\tilde{o}(\mathbf{x})=\beta(t)\,s_{\text{view}}\,r_{\max}\,c(\mathbf{x})\cdot\big(o(\mathbf{x})-\bar{o}\big),
-\end{equation}
-其中 $\bar{o}$ 为当前 batch 的均值偏移，$r_{\max}$ 为最大调制范围，$s_{\text{view}}$ 表示由视角数决定的缩放系数，$\beta(t)$ 则控制 warmup、hold 与 decay 三个阶段的调制强度。最终密度写成
-\begin{equation}
-\rho_{\text{final}}(\mathbf{x})=\rho_{\text{base}}(\mathbf{x})\cdot\big(1+\tilde{o}(\mathbf{x})\big).
-\end{equation}
-这样，\adm\ 学到的不是全局性的密度抬升，而是围绕空间上下文的相对修正，从而更符合 CT 体数据中“区域异质、局部连续”的分布特征。
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=\linewidth]{figures/fig_adm.png}
-\caption{\adm\ 模块示意。利用 K-Planes 提供连续空间上下文，并预测位置相关的密度偏移与置信度，实现解剖区域相关的密度调制。}
-\label{fig:adm}
-\end{figure}
-
-\subsection{整体训练流程}
-
-\spags\ 的三阶段并非彼此独立，而是形成一个逐步收紧空间结构的优化链路：\sps\ 先把初始化从“无差别铺开”推进到“贴近解剖结构”，\gap\ 再把被错误放大的局部冗余回收到更需要的位置，\adm\ 最后对保留下来的高斯做位置相关的密度修正。若记第 $t$ 次迭代的调制强度为 $\beta(t)$，则其可写成
-\begin{equation}
-\beta(t)=
-\begin{cases}
-\frac{t}{t_w}, & 0\le t<t_w,\\
-1, & t_w\le t<t_h,\\
-\exp\!\big(-\frac{t-t_h}{\tau}\big), & t\ge t_h.
-\end{cases}
-\end{equation}
-在训练上，我们仍以 \rtwo\ 的辐射渲染与重建损失为基础~\cite{hu2024r2}，并在其上叠加空间感知模块。整体上，这一设计不改变推理阶段的基本渲染流程，因此能把额外开销主要限制在训练期间。
+其中，$\omega_p(t)$ 为第 $p$ 张特征平面的时变正则权重，$\mathcal{L}_{1}$ 与 $\mathcal{L}_{\text{dssim}}$ 共同约束投影重建质量，$\mathcal{L}_{\text{3DTV}}$ 用于约束体密度的空间平滑性，而 $\mathcal{L}_{\text{pTV}}$ 则对 K-Planes 特征施加平面总变分正则。训练时，\adm\ 的平面特征与 MLP 参数和主干高斯参数一起通过上述损失联合更新，因此其密度调制是在线学习到的，而非预先固定。由于 \sps\ 只改变初始化、\gap\ 仅在训练中周期性触发、\adm\ 只对密度进行轻量调制，推理阶段的基本 X 射线渲染流程保持不变，额外开销主要发生在训练期间。
 
 \section{实验}
 \label{sec:experiments}
 
 \subsection{实验设置}
 
-\textbf{数据与任务设定。} 我们在 5 个具有代表性的器官场景上评估方法，包括 Chest、Head、Abdomen、Foot 与 Pancreas。每个场景均从完整扫描中选取训练投影，并在 2/3/4 视角条件下构造稀疏输入。该设置覆盖了高对比骨组织、低对比软组织、小器官与复杂混合组织等多种难点；其中，2-view 用于刻画极端欠定情形，4-view 用于观察在观测相对充分时的性能上限，而 3-view 则是后续分析的重点，因为它最能反映实际稀疏 CT 中“信息紧张但仍可被先验纠正”的工作区间。
+\textbf{数据与任务设定。} 我们采用 \href{https://github.com/caiyuanhao1998/X-Gaussian}{X-Gaussian 官方仓库}发布的 processed datasets。其五个 paper scenes 中，Chest 来自 LIDC-IDRI，Head、Abdomen、Foot 与 Pancreas 来自 open scientific visualization dataset；数据包沿用了 NAF/X-Gaussian 系列工作的投影生成与预处理协议，并整理为统一的数据格式。本文在该公开数据基础上进一步抽取每个病例仅保留 2/3/4 个输入投影的子集，并将这一 2--4 view 的病例级优化设定称为极稀疏视角；模型仅使用这些观测投影进行训练，在未观测角度上评估新视图投影质量。
 
 \textbf{对比方法。} 我们选取 5 个与本文最相关的 3DGS 基线：DNGaussian~\cite{li2024dn}、CoR-GS~\cite{zhang2024cor}、FSGS~\cite{zhu2024fsgs}、X-Gaussian~\cite{cai2024xgaussian} 以及 \rtwo~\cite{hu2024r2}。其中前三者分别代表自然图像 sparse-view 3DGS 中较典型的几何正则、协同抑制和补点扩张路线，后两者则提供了面向 X 射线与 CT 场景的直接辐射式对比基础。
 
-\textbf{实现细节。} \sps\ 使用 $\alpha=0.2$、$\gamma=1.0$ 与 50K 初始高斯；\gap\ 采用 $K=5$ 邻居、阈值 $\tau=0.015$、最大剪枝比 $\beta=0.02$、梯度阈值 $\delta=0.0002$；\adm\ 采用分辨率 64 的 K-Planes、特征维度 32，并在 15K 次迭代后启动。所有模型训练 30K 次迭代，主文以 PSNR 作为核心评价指标，并使用 SSIM 作为补充图像结构指标。
+\textbf{评价指标。} 我们报告 PSNR 与 SSIM。按照 X-Gaussian 官方评估脚本的实现，先将渲染结果与真值投影统一归一化到 $[0,1]$，再对每个测试投影逐幅计算指标，并对同一场景的全部测试视角取平均。PSNR 按 $20\log_{10}(1/\sqrt{\mathrm{MSE}})$ 计算，其中 $\mathrm{MSE}$ 为整幅投影上的均方误差；SSIM 使用 $11\times11$ Gaussian window、$\sigma=1.5$，并采用 $C_1=0.01^2$、$C_2=0.03^2$ 的标准设置。
+
+\textbf{实现细节。} \sps\ 使用 $\alpha=0.2$、$\gamma=1.0$ 与 50K 初始高斯；\gap\ 采用 $K=5$ 邻居、阈值 $\tau=0.015$、最大剪枝比 $\beta_{\text{prune}}=0.02$、梯度阈值 $\delta=0.0002$；\adm\ 采用分辨率 64 的 K-Planes、特征维度 32，并在 15K 次迭代后启动。所有模型训练 30K 次迭代。
 
 \subsection{主结果}
 
-表~\ref{tab:comparison} 汇报了 2/3/4 视角下的主对比结果。结果首先支持了本文最核心的主张：\spags\ 的收益主要出现在“信息紧张但仍可被空间先验有效纠正”的区间。具体而言，在最有实际价值的 3-view 设定下，\spags\ 以 28.22 dB 的平均 PSNR 超过 \rtwo\ 的 27.83 dB，并在五个器官中取得更稳定的整体优势；而在 2-view 时，所有方法都受到更强的欠定约束，局部优化很难稳定收敛；在 4-view 时，随着观测逐渐充分，各方法差距被自然压缩。
+表~\ref{tab:comparison} 汇报了五个器官、全部极稀疏协议上的 PSNR 主结果。\spags\ 在各协议的平均结果上均排名第一，并在 Chest、Head、Abdomen 与 Pancreas 上保持稳定领先；相对当前最强基线 \rtwo，平均增益在各协议上始终为正，代表性协议下可达到 0.39 dB。这说明本文的容量重分配不仅改善了高对比边界，也提升了混合软组织区域的投影建模质量。与此同时，在最极端的 2-view 设定下，Foot 与 Pancreas 等场景的提升仍然有限，说明当观测约束进一步削弱时，单靠更合理的初始化与密度重分配仍无法完全替代真实投影信息，这也与该任务的病态性相一致。
 
 \begin{table*}[t]
 \centering
-\caption{五个器官在 2/3/4 视角下的 PSNR 对比（dB，$\uparrow$）。最优加粗，次优下划线。}
+\caption{五个器官在不同极稀疏协议下的 PSNR 对比（dB，$\uparrow$）。最优加粗，次优下划线。}
 \label{tab:comparison}
 \small
 \renewcommand{\arraystretch}{1.08}
@@ -304,20 +298,20 @@ X-Gaussian & \best{22.34} & 25.48 & 26.92 & \best{23.21} & 25.12 & 25.55 & \thir
 \renewcommand{\arraystretch}{1.0}
 \end{table*}
 
-从结果分布上看，\spags\ 的增益并不是平均摊在所有设定上的，而是集中体现在 3-view 这个最关键的工作点。这一点很重要，因为它说明我们的方法并不是简单地“在任何情况下都多加一点修正”，而是在基线尚未自然收敛、但空间感知信息仍然足以改变优化轨迹时，最有效地重新分配表示容量。换句话说，\spags\ 真正改善的是稀疏视角 CT 中最难也最有价值的那一段优化区间。与此同时，2-view 的 Foot 和 Pancreas 仍然是最弱的两个场景，说明当前方法并不是极端欠定条件下的通用解；当观测过少时，FDK 先验和局部空间修正都不足以完全抵消信息缺失。
+最具挑战的结果主要出现在 Foot 与 Pancreas，说明当器官结构更复杂、投影约束更弱时，FDK 空间先验与局部密度修正仍难以完全替代真实观测。
 
-虽然主文以 PSNR 作为主指标，但 SSIM 的补充比较给出了与主结果一致的整体趋势：在 3-view 五器官平均上，\spags\ 的 SSIM 从 \rtwo\ 的 0.9025 提升到 0.9057，并在 Chest、Abdomen、Pancreas 与 Foot 上保持一致改进，仅在 Head 上出现轻微波动。这说明本文关于“3-view 设定最受益、\gap\ 是主要性能来源”的结论并不依赖单一指标。由于篇幅限制，全量 SSIM 对比放在补充材料中。
+SSIM 与 PSNR 保持一致趋势。以代表性协议的五器官平均为例，\spags\ 的 SSIM 从 \rtwo\ 的 0.9025 提升到 0.9057，并在 Chest、Abdomen、Pancreas 与 Foot 上保持一致改进。这说明本文收益并不依赖单一像素误差指标，而在结构相似性上同样成立；全量 SSIM 数值放在补充材料中。
 
-图~\ref{fig:qual-main} 展示了 3-view 设定下的主定性对比。面向自然图像的 3DGS 基线更容易出现条纹状或云雾状伪影，且结构边界会随视角稀疏程度加剧漂移；\rtwo\ 与 \spags\ 则能更稳定地恢复符合 X 射线成像特性的整体解剖轮廓。在 Chest 与 Pancreas 等更具挑战的场景中，\spags\ 的优势并不只是把边缘做得更锐，而是在保持主体灰度分布的同时，进一步压低背景噪声、边缘扩散与局部外溢，这与“回收被错误放大的边界冗余”这一方法目标是一致的。
+图~\ref{fig:qual-main} 展示了代表性极稀疏设定下的主定性对比。相较于面向自然图像的 sparse-view 3DGS 基线，\rtwo\ 与 \spags\ 均能恢复更符合 X 射线成像特性的整体解剖轮廓；进一步与 \rtwo\ 相比，\spags\ 在 Chest 和 Pancreas 等场景中减少了背景噪声、边界扩散与局部外溢。
 
 \begin{figure*}[t]
 \centering
 \includegraphics[width=\textwidth]{figures/fig_qual_main.png}
-\caption{3-view 设定下的主定性对比。每一行对应一个器官场景，最左列给出三张输入训练投影，其余列展示同一目标视角下的真值与各方法输出。与面向自然图像的 sparse-view 3DGS 基线相比，\rtwo\ 与 \spags\ 更符合 X 射线结构分布，而 \spags\ 在胸腔背景、头部轮廓和胰腺区域进一步压低了伪影与边界扩散。}
+\caption{代表性极稀疏设定下的主定性对比。每一行对应一个器官场景，最左列给出训练输入投影，其余列展示同一目标视角下的真值与各方法输出。与面向自然图像的 sparse-view 3DGS 基线相比，\rtwo\ 与 \spags\ 更符合 X 射线结构分布，而 \spags\ 在胸腔背景、头部轮廓和胰腺区域进一步压低了伪影与边界扩散。}
 \label{fig:qual-main}
 \end{figure*}
 
-图~\ref{fig:detail-consistency} 左侧进一步放大了肋骨边界与颅骨边界附近的局部区域，可以看到 \spags\ 比 \rtwo\ 及自然图像基线保留了更平滑的组织过渡与更干净的边缘响应。右侧的跨视角一致性对比则表明，在不同目标角度下，\spags\ 的形态变化更稳定，没有明显的角度特异性伪影。
+图~\ref{fig:detail-consistency} 左侧放大了肋骨与颅骨边界附近的局部区域，\spags\ 在这些区域保留了更平滑的组织过渡并减少了边界伪影。右侧的跨视角一致性对比表明，\spags\ 在不同目标角度下能够维持更稳定的形态结构。
 
 \begin{figure*}[t]
 \centering
@@ -329,83 +323,37 @@ X-Gaussian & \best{22.34} & 25.48 & 26.92 & \best{23.21} & 25.12 & 25.55 & \thir
 
 \subsection{消融实验}
 
-表~\ref{tab:ablation} 汇报了 3-view 设定下的模块消融结果。结果最清楚地表明，\gap\ 是最稳定的增益来源：在最关键的 3-view 设定下，只加入 \gap\ 就能带来 +0.42 dB 的提升，并达到完整模型水平；\sps\ 提供更好的初始化起点，\adm\ 则更多体现在与前两者结合后的稳定修正作用。
+图~\ref{fig:ablation-3view} 汇报了代表性极稀疏设定下的模块消融。仅加入 \gap\ 就可将平均 PSNR 从 27.80 dB 提升到 28.22 dB，说明几何感知剪枝已经完成了最关键的容量重分配；\sps\ 单独带来 0.21 dB 增益，\adm\ 单独带来 0.11 dB 增益，而 \sps+\adm\ 的组合可稳定达到 28.09 dB。这些结果表明，\gap\ 是主要性能来源，而 \sps\ 与 \adm\ 分别承担更好的初始化与更平滑的局部密度细化。
 
-\begin{table}[t]
+\begin{figure}[H]
 \centering
-\caption{3-view 设定下的模块消融。汇报五个器官平均 PSNR 及相对 \rtwo{} 的增益 $\Delta$。}
-\label{tab:ablation}
-\footnotesize
-\renewcommand{\arraystretch}{1.08}
-\setlength{\tabcolsep}{2.8pt}
-\begin{tabular}{@{}lccccc@{}}
-\toprule
-\textbf{Config} & \textbf{\sps} & \textbf{\gap} & \textbf{\adm} & \textbf{PSNR} $\uparrow$ & \textbf{$\Delta$} $\uparrow$ \\
-\midrule
-Baseline &  &  &  & 27.80 & --- \\
-+SPS & \checkmark &  &  & 28.01 & +0.21 \\
-+GAP &  & \checkmark &  & \best{28.22} & \best{+0.42} \\
-+ADM &  &  & \checkmark & 27.91 & +0.11 \\
-+SPS+ADM & \checkmark &  & \checkmark & \second{28.09} & \second{+0.29} \\
-+SPS+GAP & \checkmark & \checkmark &  & \best{28.22} & \best{+0.42} \\
-Full & \checkmark & \checkmark & \checkmark & \best{28.22} & \best{+0.42} \\
-\bottomrule
-\end{tabular}
-\renewcommand{\arraystretch}{1.0}
-\end{table}
+\includegraphics[width=\linewidth]{figures/fig_ablation_3view.pdf}
+\caption{代表性极稀疏设定下的模块消融柱状图。所有数值均为五个器官的平均 PSNR；金色边框标出最优配置。}
+\label{fig:ablation-3view}
+\end{figure}
 
-图~\ref{fig:mechanism-visuals} 进一步给出了模块递进带来的可视化差异与空间结构解释。上半部分展示了 Baseline、+GAP 与 Full 的渐进式消融结果：仅使用 \gap\ 时，边界附近最显著的高亮伪影就已被明显抑制；在此基础上，完整模型还能继续稳定局部灰度过渡。下半部分则从高斯空间分布角度解释了这一收益来源：\sps\ 先将初始化从完全均匀推进到更贴合粗重建的区域，\gap\ 再剔除外围冗余点，最终 \spags\ 在更紧致的空间支撑上完成渲染。
+图~\ref{fig:mechanism-visuals} 展示了模块递进带来的可视化差异与空间结构变化。上半部分中，+GAP 已经减少了边界附近的主要高亮伪影，完整模型则进一步改善局部灰度过渡；下半部分显示，\sps\ 将初始化从均匀分布调整到更贴合粗重建的区域，\gap\ 进一步移除外围冗余高斯，最终 \spags\ 在更紧致的空间支撑上完成渲染。这些现象与柱状图中的数值趋势相一致，说明本文收益主要来自对高斯表示容量的重新分配，而非单纯增加原语数量；也因此 +GAP 与 Full 在 PSNR 上接近，而完整模型进一步改善了局部灰度过渡与训练稳定性。
 
 \begin{figure*}[t]
 \centering
 \includegraphics[width=\textwidth]{figures/fig_ablation_visual.png}\\[0.6em]
 \includegraphics[width=0.82\textwidth]{figures/fig_spatial_distribution.png}
-\caption{结构冗余机制的可视化分析。上：3-view 设定下的渐进式消融可视化，展示 Baseline、+GAP 与 Full 在两组 Chest 案例上的预测结果及残差图。仅加入 \gap\ 时已能去除主要伪影，完整模型则进一步稳定局部灰度过渡。下：高斯空间分布的逐步收紧过程。从均匀初始化到 \sps\ 引导初始化，再到 \gap\ 剪枝与最终 \spags{}，高斯支撑逐步贴合有效结构区域。}
+\caption{结构冗余机制的可视化分析。上：代表性极稀疏设定下的渐进式消融可视化，展示 Baseline、+GAP 与 Full 在两组 Chest 案例上的预测结果及残差图。仅加入 \gap\ 时已能去除主要伪影，完整模型则进一步稳定局部灰度过渡。下：高斯空间分布的逐步收紧过程。从均匀初始化到 \sps\ 引导初始化，再到 \gap\ 剪枝与最终 \spags{}，高斯支撑逐步贴合有效结构区域。}
 \label{fig:mechanism-visuals}
 \label{fig:ablation-visual}
 \label{fig:spatial-structure}
 \end{figure*}
 
-\subsection{结构冗余机制分析}
+\subsection{超参数实验与效率分析}
 
-前面的消融表明 \gap\ 是主要增益来源，但表格本身还不能说明它到底改变了什么空间结构。图~\ref{fig:mechanism-visuals} 提供了一个更直接的机制视角：\sps\ 先把高斯支撑从完全均匀拉到更贴近解剖区域的范围内，\gap\ 再优先回收边界处过度聚集的冗余高斯，而 \adm\ 则在这一更紧致的支撑上做局部密度修正。换句话说，\spags\ 的收益不是单纯来自“更多点”，而是来自把表示容量从边界高密度簇中释放出来，并重新分配到更有结构意义的位置上。
+图~\ref{fig:hparam-compact} 给出了关键超参数在代表性协议上的平均 PSNR 扫描结果。整体上，\sps\ 的均匀混合比例采用 $\alpha=0.2$ 最稳健，说明在极稀疏 CT 中保留一定全局覆盖即可，过大的均匀比例会稀释结构先验；\gap\ 在 $\tau=0.015$ 与 $\beta_{\text{prune}}=2\%$ 时取得最佳结果，表明冗余回收需要保持“足够积极但不过度”的强度；\adm\ 的 warm-up 采用 15K 次迭代最好，说明密度调制更适合在基础几何基本收敛后介入。
 
-这一点也解释了为什么 +GAP 和 Full 在 PSNR 上几乎并列：\gap\ 已经完成了最主要的空间重分配，而 \adm\ 的作用更多体现在局部灰度过渡与训练稳定性上，而不是继续抬高平均分数。因此，当前版本中我们把 \adm\ 定位为辅助稳定模块，而不是主要性能驱动。这个机制分析目前仍主要依赖可视化证据，后续若进一步补充边界区域的密度统计和 pruning 分布统计，可以把这一判断做得更硬。
-
-\subsection{超参数设置与效率分析}
-
-我们将最终采用的关键超参数整理在表~\ref{tab:hyperparams} 中。整体来看，\sps\ 与 \adm\ 的可行区间相对较宽，而 \gap\ 的阈值与最大剪枝比更敏感。这一现象进一步支持了本文的核心结论：决定性能上限的关键不在于是否继续增加高斯，而在于冗余控制强度是否落在合适区间；一旦剪枝过弱，冗余边界会继续吞噬表示容量，剪枝过强则会损伤有效结构。
-
-\begin{table}[t]
+\begin{figure*}[t]
 \centering
-\caption{关键超参数与最终采用配置。对经过调参的项目，同时给出验证时使用的搜索空间。}
-\label{tab:hyperparams}
-\small
-\renewcommand{\arraystretch}{1.08}
-\setlength{\tabcolsep}{3.0pt}
-\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.11\columnwidth}>{\raggedright\arraybackslash}p{0.24\columnwidth}>{\raggedright\arraybackslash}p{0.39\columnwidth}>{\raggedright\arraybackslash}p{0.14\columnwidth}@{}}
-\toprule
-\textbf{模块} & \textbf{参数} & \textbf{搜索空间} & \textbf{最终设置} \\
-\midrule
-\sps & uniform ratio $\alpha$ & 0.2 / 0.3 / 0.4 & \textbf{0.2} \\
-\sps & density exponent $\gamma$ & 0.7 / 0.8 / 1.0 & \textbf{1.0} \\
-\sps & initialization mode & raw / valid mean & \textbf{raw} \\
-\sps & initialized Gaussians $M$ & 50K / 75K & \textbf{50K} \\
-\midrule
-\gap & neighbor count $K$ & fixed & \textbf{5} \\
-\gap & pruning threshold $\tau$ & 0.010 / 0.015 / 0.020 & \textbf{0.015} \\
-\gap & max pruning ratio $\beta$ & 2\% / 3\% / 5\% & \textbf{2\%} \\
-\gap & start iteration & 1K / 2K / 5K & \textbf{2K} \\
-\gap & stop iteration & 15K / 20K / 30K & \textbf{20K} \\
-\midrule
-\adm & warm-up iteration & 12K / 15K / 18K & \textbf{15K} \\
-\adm & max modulation range & 0.2 / 0.3 / 0.4 & \textbf{0.3} \\
-\adm & K-Planes resolution & 64 / 128 & \textbf{64} \\
-\adm & feature dimension $C$ & fixed & \textbf{32} \\
-\bottomrule
-\end{tabular}
-\renewcommand{\arraystretch}{1.0}
-\end{table}
+\includegraphics[width=0.88\textwidth]{figures/fig_hparam_compact.pdf}
+\caption{关键超参数的折线扫描结果。所有曲线均基于代表性极稀疏协议下的五器官平均 PSNR，其他参数保持默认设置。}
+\label{fig:hparam-compact}
+\end{figure*}
 
 \begin{figure*}[t]
 \centering
@@ -417,36 +365,18 @@ Full & \checkmark & \checkmark & \checkmark & \best{28.22} & \best{+0.42} \\
 \centering
 \includegraphics[width=\linewidth]{figures/fig_convergence.pdf}
 \end{minipage}
-\caption{效率与收敛分析。左：不同方法的 PSNR--FPS 权衡，圆点大小表示最终 Gaussian 数量。右：\spags\ 与 \rtwo\ 在 3-view Chest 场景上的 PSNR 收敛曲线，分别按迭代次数和 wall-clock time 统计。}
+\caption{效率与收敛分析。左：不同方法的 PSNR--FPS 权衡，圆点大小表示最终 Gaussian 数量。右：\spags\ 与 \rtwo\ 在代表性 Chest 场景上的 PSNR 收敛曲线，分别按迭代次数和 wall-clock time 统计。}
 \label{fig:efficiency-convergence}
 \end{figure*}
 
-图~\ref{fig:efficiency-convergence} 从效率与优化过程两个角度给出了补充证据。上图显示，\spags\ 在接近 \rtwo\ 推理速度的同时位于更优的 PSNR--FPS 权衡前沿；下图则表明，无论按迭代次数还是按 wall-clock time 统计，\spags\ 都能更早达到更高的 PSNR 平台。按当前实现，\sps/\gap/\adm\ 带来的额外训练开销控制在 10\% 以内，而推理端基本保持同一量级，这说明性能提升并没有以明显牺牲部署效率为代价。
-
-\subsection{讨论}
-
-主结果、消融实验与超参数分析共同支持了一个更具体的结论：在稀疏视角 CT 场景中，真正决定性能上限的往往不是“是否继续补更多高斯”，而是“能否在空间上把高斯放对位置，并及时回收被错误放大的冗余结构”。这也是为什么 \gap\ 在我们的设定里表现得比 \sps\ 与 \adm\ 更强。需要强调的是，这并不意味着稀疏 CT 完全不需要密化，而是说明密化必须建立在空间感知初始化和冗余回收之上；否则，新增表示容量往往会优先被高梯度边界吞噬。另一方面，\sps\ 与 \adm\ 的价值并不主要体现在单独拉高平均分数，而是为训练过程提供更好的起点和更稳定的密度修正机制；它们使 \gap\ 的剪枝判断更可靠，也使最终密度分布更平滑，从而在更广泛的器官与视角设置下保持稳定收益。
-
-图~\ref{fig:failure-cases} 进一步给出了两个最具代表性的 failure cases：2-view Foot 与 2-view Pancreas。在这两种极端欠定场景下，\spags\ 仍能在部分区域压低局部外溢与条纹残差，但无法稳定恢复所有缺失结构，尤其是当投影信息本身不足以唯一约束体密度分布时，初始化与局部修正都难以完全弥补观测缺口。这一现象与主结果中的数值分布是一致的，也进一步说明本文方法最有效的工作区间仍是 3-view 这类中等稀疏设置，而不是 2-view 极端欠定设置。
-
-\begin{figure*}[t]
-\centering
-\includegraphics[width=0.84\textwidth]{figures/fig_failure_cases.png}
-\caption{2-view 极端稀疏设置下的 failure cases。展示 Foot 与 Pancreas 两个最具挑战性的场景，并对比 \rtwo{}、\spags{} 及其残差。可以看到，\spags\ 虽能在局部压低外溢与噪声，但在观测严重不足时仍无法完全恢复缺失结构。}
-\label{fig:failure-cases}
-\end{figure*}
+图~\ref{fig:efficiency-convergence} 从效率与优化过程两个角度汇报了结果。左图显示，\spags\ 在接近 \rtwo\ 推理速度的同时位于更优的 PSNR--FPS 权衡前沿；右图表明，无论按迭代次数还是按 wall-clock time 统计，\spags\ 都能更早达到更高的 PSNR 平台。按当前实现，\sps/\gap/\adm\ 带来的额外训练开销控制在 10\% 以内，而推理端基本保持同一量级，说明性能提升未引入显著额外推理开销。
 
 \FloatBarrier
 
 \section{结论}
 \label{sec:conclusion}
 
-本文提出 \spags，面向稀疏视角 CT 新视图合成，在 3DGS 管线的初始化、密度控制与密度调制三个阶段显式引入空间感知。与已有 sparse-view 3DGS 方法主要围绕补点、深度正则或双场协同不同，我们强调 CT 体数据中的主要矛盾往往不是单纯稀疏，而是结构冗余被高梯度边界持续放大，并据此提出 \sps/\gap/\adm\ 三个互补模块。实验结果表明，\spags\ 在 5 个器官、2/3/4 视角设定中取得提升，尤其在最核心的 3-view 条件下，相比 \rtwo\ 获得 0.39 dB 的平均 PSNR 增益；其中 \gap\ 是主要性能驱动，\sps\ 负责提供更好的初始化起点，而 \adm\ 主要用于稳定局部密度修正。
-
-\paragraph{局限性。}
-当前工作也有两个边界需要如实说明：一是方法最有效的区间仍是 3-view 这类中等稀疏设置，在 2-view 极端欠定场景下提升会明显受限，这一点在图~\ref{fig:failure-cases} 的 Foot 和 Pancreas 案例中表现得尤为明显；二是 \sps\ 依赖 FDK 粗重建作为空间先验，因此当初始先验质量较差时，初始化优势也会相应减弱。
-
-当前工作仍有若干值得继续推进的方向。首先，\adm\ 的特征分辨率与调制范围目前对不同器官共享，未来可以探索跨器官自适应配置；其次，本文主要评估静态稀疏视角 CT，如何扩展到 cone-beam 或 4DCT 场景仍值得深入研究；最后，若能将病例级优化与更强的学习型体先验结合，\spags\ 还有望在极端稀疏条件下进一步提升稳定性。
+本文提出 \spags，一个面向极稀疏 CT 新视图合成的 X-ray Gaussian Splatting 容量重分配框架。我们的核心判断是：在穿透式 X 射线成像下，问题往往不只是高斯数量不足，更在于传统密化把容量错误集中到了高对比边界。围绕这一判断，\sps、\gap\ 和 \adm\ 分别在初始化、冗余回收与局部密度建模三个阶段协同重分配表示容量，并在五个器官、全部极稀疏协议上的主结果、消融与超参数实验中验证了其对 PSNR 与 SSIM 的稳定提升；未来我们将继续探索更强的器官自适应先验，并把该框架扩展到 cone-beam 与动态 CT 场景。
 
 \printbibliography
 \ifXeTeX\else\end{CJK*}\fi
