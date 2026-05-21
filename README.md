@@ -37,8 +37,12 @@
 ```
 ├── main.tex              # 主论文文件
 ├── references.bib        # 参考文献
-├── figures/              # 图片目录
-│   └── ...
+├── assets/
+│   ├── data/            # 实验数值、原始结果和可视化中间数据
+│   ├── fig/             # 论文最终图目录（正文统一从这里引用）
+│   ├── tables/          # 可独立维护的 LaTeX 表格
+│   ├── scripts/         # 仅用于生成实验图的 Python 脚本
+│   └── requirements/    # 评阅、清单、实验方案、图像提示词等要求文档
 ├── egPublStyle-PG2026/   # EG LaTeX 模板样式文件
 │   ├── egpubl.cls        # 文档类
 │   ├── pg2026s.sty       # PG2026 style
@@ -49,14 +53,7 @@
 ## 编译方式
 
 ```bash
-# 使用 biber（推荐）
-pdflatex main
-biber main
-pdflatex main
-pdflatex main
-
-# 或使用 Makefile（如果有的话）
-make
+latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex
 ```
 
 ## 关键 Notes

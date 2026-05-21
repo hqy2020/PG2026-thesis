@@ -1,0 +1,18 @@
+\begin{table}[t]
+\centering
+\caption{Incremental component ablation. We report the five-organ average PSNR2D under the unified 2/3/4-view protocol to isolate accuracy-side component contributions, rather than to support claims about training efficiency or memory usage. \gap\ provides the clearest primary gain, \sps\ mainly improves low-view initialization, and \adm\ behaves more like a late-stage refinement module.}
+\label{tab:component_ablation}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{lccc}
+\toprule
+\textbf{Method} & \textbf{2-view Avg.} & \textbf{3-view Avg.} & \textbf{4-view Avg.} \\
+\midrule
+Baseline & 21.27 & 27.80 & 29.10 \\
++SPS & \best{21.44} & 28.01 & 29.16 \\
++ADM & 21.31 & 27.91 & 29.18 \\
++GAP & 21.28 & \best{28.22} & \best{29.20} \\
+\textbf{\spags} & \best{21.44} & \best{28.22} & \best{29.20} \\
+\bottomrule
+\end{tabular}
+}
+\end{table}

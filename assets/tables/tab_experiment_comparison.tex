@@ -1,0 +1,97 @@
+\begin{table*}[t]
+\centering
+\caption{Main PSNR2D comparison under the unified five-organ, 2/3/4-view protocol. Blank entries denote same-protocol results that are unavailable in the source logs, so we do not estimate or extrapolate them. Best and second-best results are highlighted in bold and underline, respectively.}
+\label{tab:comparison}
+\scriptsize
+\renewcommand{\arraystretch}{1.00}
+\setlength{\tabcolsep}{3.0pt}
+
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lccccccccc@{}}
+\toprule
+\multirow{2}{*}{\textbf{Method}} & \multicolumn{3}{c}{\textbf{Chest}} & \multicolumn{3}{c}{\textbf{Head}} & \multicolumn{3}{c}{\textbf{Abdomen}} \\
+\cmidrule{2-10}
+& \textbf{2v} & \textbf{3v} & \textbf{4v} & \textbf{2v} & \textbf{3v} & \textbf{4v} & \textbf{2v} & \textbf{3v} & \textbf{4v} \\
+\midrule
+DNGaussian & 14.30 & 16.02 & 15.76 & 15.72 & 18.04 & 16.24 & \third{19.33} & 23.51 & \third{24.72} \\
+CoR-GS & 14.96 & 18.55 & 20.29 & 16.24 & 20.36 & 23.40 & 18.50 & 22.45 & 23.03 \\
+FSGS & \third{17.86} & 19.99 & \third{21.03} & 19.43 & \third{21.53} & \third{24.91} & 18.75 & 23.34 & 23.63 \\
+X-Gaussian & 17.79 & \third{20.29} & 20.90 & \third{19.62} & 21.52 & 24.46 & 18.93 & \third{23.54} & 23.85 \\
+\rtwo & \second{21.05} & \second{26.22} & \second{25.47} & \second{23.54} & \second{26.60} & \best{28.66} & \second{24.85} & \second{29.26} & \second{30.56} \\
+X-Field$^{*}$ &  &  &  &  &  &  &  &  &  \\
+\textbf{\spags} & \best{21.26} & \best{26.81} & \best{25.83} & \best{23.63} & \best{26.63} & \second{28.52} & \best{24.97} & \best{29.73} & \best{30.89} \\
+\bottomrule
+\end{tabular}
+}
+
+\vspace{2pt}
+
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lccccccccc@{}}
+\toprule
+\multirow{2}{*}{\textbf{Method}} & \multicolumn{3}{c}{\textbf{Foot}} & \multicolumn{3}{c}{\textbf{Pancreas}} & \multicolumn{3}{c}{\textbf{Avg}} \\
+\cmidrule{2-10}
+& \textbf{2v} & \textbf{3v} & \textbf{4v} & \textbf{2v} & \textbf{3v} & \textbf{4v} & \textbf{2v} & \textbf{3v} & \textbf{4v} \\
+\midrule
+DNGaussian & \third{20.17} & 23.51 & 19.33 & 16.15 & 22.43 & 25.47 & 17.13 & 20.70 & 20.30 \\
+CoR-GS & \third{20.17} & \third{25.53} & 26.83 & 16.15 & 23.25 & 23.96 & 17.20 & 22.03 & 23.50 \\
+FSGS & \second{22.17} & 25.37 & \third{27.08} & \second{23.03} & \third{25.27} & \third{26.22} & 20.25 & 23.10 & \third{24.57} \\
+X-Gaussian & \best{22.34} & 25.48 & 26.92 & \best{23.21} & 25.12 & 25.55 & \third{20.38} & \third{23.19} & 24.34 \\
+\rtwo & 19.39 & \second{28.48} & \best{30.04} & \third{17.83} & \second{28.61} & \best{30.90} & \second{21.33} & \second{27.83} & \second{29.13} \\
+X-Field$^{*}$ &  &  &  &  &  &  & 20.57 & 24.97 & 26.41 \\
+\textbf{\spags} & 19.55 & \best{28.49} & \second{29.86} & 17.80 & \best{29.43} & \best{30.90} & \best{21.44} & \best{28.22} & \best{29.20} \\
+\bottomrule
+\end{tabular}
+}
+
+\renewcommand{\arraystretch}{1.0}
+\end{table*}
+
+\begin{table*}[t]
+\centering
+\caption{Main SSIM2D comparison under the same protocol. Blank entries indicate same-protocol results that are unavailable in the source logs, so we report only the available values. Best and second-best results are highlighted in bold and underline, respectively.}
+\label{tab:comparison-ssim}
+\scriptsize
+\renewcommand{\arraystretch}{1.00}
+\setlength{\tabcolsep}{3.0pt}
+
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lccccccccc@{}}
+\toprule
+\multirow{2}{*}{\textbf{Method}} & \multicolumn{3}{c}{\textbf{Chest}} & \multicolumn{3}{c}{\textbf{Head}} & \multicolumn{3}{c}{\textbf{Abdomen}} \\
+\cmidrule{2-10}
+& \textbf{2v} & \textbf{3v} & \textbf{4v} & \textbf{2v} & \textbf{3v} & \textbf{4v} & \textbf{2v} & \textbf{3v} & \textbf{4v} \\
+\midrule
+DNGaussian &  &  &  &  &  &  &  &  &  \\
+CoR-GS &  &  &  &  &  &  &  &  &  \\
+FSGS &  &  &  &  &  &  &  &  &  \\
+X-Gaussian &  &  &  &  &  &  &  &  &  \\
+\rtwo &  &  &  &  &  &  &  &  &  \\
+X-Field$^{*}$ &  &  &  &  &  &  &  &  &  \\
+\textbf{\spags} &  &  &  &  &  &  &  &  &  \\
+\bottomrule
+\end{tabular}
+}
+
+\vspace{2pt}
+
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lccccccccc@{}}
+\toprule
+\multirow{2}{*}{\textbf{Method}} & \multicolumn{3}{c}{\textbf{Foot}} & \multicolumn{3}{c}{\textbf{Pancreas}} & \multicolumn{3}{c}{\textbf{Avg}} \\
+\cmidrule{2-10}
+& \textbf{2v} & \textbf{3v} & \textbf{4v} & \textbf{2v} & \textbf{3v} & \textbf{4v} & \textbf{2v} & \textbf{3v} & \textbf{4v} \\
+\midrule
+DNGaussian &  &  &  &  &  &  &  &  &  \\
+CoR-GS &  &  &  &  &  &  &  &  &  \\
+FSGS &  &  &  &  &  &  &  &  &  \\
+X-Gaussian &  &  &  &  &  &  &  &  &  \\
+\rtwo &  &  &  &  &  &  & \second{0.794} & \second{0.903} & \best{0.924} \\
+X-Field$^{*}$ &  &  &  &  &  &  & 0.717 & 0.850 & 0.880 \\
+\textbf{\spags} &  &  &  &  &  &  & \best{0.797} & \best{0.904} & \best{0.924} \\
+\bottomrule
+\end{tabular}
+}
+
+\renewcommand{\arraystretch}{1.0}
+\end{table*}
