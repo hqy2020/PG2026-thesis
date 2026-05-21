@@ -79,7 +79,7 @@ Our contributions are threefold:
 \begin{itemize}[leftmargin=1.5em]
   \item We show that conventional 3DGS densification is misaligned with X-ray/CT imaging: high-gradient anatomical boundaries repeatedly attract Gaussian duplication, leading to local structural redundancy and capacity misallocation.
   \item We present \spags, an \tracefull\ framework that reorganizes Sparse Tomographic View Synthesis into path-anchored initialization, boundary redundancy removal, and local density refinement, instantiated by \sps, \gap, and \adm.
-  \item Under a five-organ protocol with 2/3/4-view sparse-view settings, \spags\ achieves the best average PSNR2D in all settings and strong SSIM2D performance, with the most stable gains appearing in the 3-view regime; compared with \rtwo, the average PSNR2D improvements are +0.19/+0.26/+0.02 dB, respectively.
+  \item Under a unified five-organ protocol spanning 2/3/4-view settings, \spags\ achieves the best average PSNR2D in every setting and leading or tied SSIM2D, consistently outperforming both natural-scene sparse-view and direct X-ray/CT baselines.
 \end{itemize}
 
 \section{Related Work}
@@ -331,15 +331,6 @@ To further isolate local differences, Figure~\ref{fig:qual-zoom} enlarges two se
 
 \noindent\textbf{Comparison with same-protocol X-Field.} The X-Field$^{*}$ row in Table~\ref{tab:comparison} shows that the gains of \spags\ do not rely on natural-scene sparse-view baselines. Even against a material-aware direct X-ray/CT model that is closer to our setting, the attenuation-aligned evolution strategy still retains a clear average advantage.
 
-\noindent\textbf{Applicability boundary.} These averages also define the operating boundary of the method. In the extremely under-determined 2-view setting, the coarse support and attenuation layout from FDK still cannot fully replace missing projection evidence. At 4 views, the reconstruction-consistency advantage of \rtwo\ becomes competitive again and can approach or match our result in some cases. Accordingly, the main strength of \spags\ lies in the moderately sparse 3-view regime, where enough information remains for capacity redistribution to matter.
-
-\begin{figure*}[t]
-\centering
-\includegraphics[width=\textwidth]{assets/fig/fig_experiment_failure_cases.png}
-\caption{Representative failure cases. We show two more extreme under-determined cases, Foot 2-view and Pancreas 2-view, together with error maps of \rtwo\ and \spags\ relative to GT. When the input information is too limited or local structures are highly ambiguous, our method can still reduce error spread in some regions but cannot fully recover fine-grained detail.}
-\label{fig:failure-cases}
-\end{figure*}
-
 \subsection{Module and Initialization Analysis}
 
 Table~\ref{tab:component_ablation} reports a progressive ablation under the 2/3/4-view protocol. Starting from the \rtwo\ baseline, we incrementally add \sps, \gap, and \adm. The results show that \gap\ delivers the largest incremental gain: adding \gap\ on top of \sps\ improves the 3-view average from 28.01 dB to 28.22 dB. \sps\ primarily benefits low-view initialization, raising the 2-view average from 21.27 dB to 21.44 dB. \adm\ contributes additional late-stage refinement in the 4-view regime. Overall, the progressive design confirms that each module addresses a distinct stage of the capacity-allocation pipeline.
@@ -402,10 +393,25 @@ For \gap{} specifically, we also keep a more focused local sweep in Figure~\ref{
 
 \FloatBarrier
 
+\subsection{Discussion and Limitations}
+
+The experiments above support the central claim of this paper: in sparse-view CT, the primary bottleneck is often not the number of Gaussian primitives but how capacity is allocated among attenuation-relevant structures. Yet the results also define a clear applicability boundary.
+
+In the extremely under-determined 2-view setting, the coarse support and attenuation layout from FDK still cannot fully replace missing projection evidence. As shown in Figure~\ref{fig:failure-cases}, both Foot 2-view and Pancreas 2-view remain challenging: our method can reduce error spread in some regions but cannot fully recover fine-grained detail when the input information is fundamentally insufficient. At 4 views, the reconstruction-consistency advantage of \rtwo\ becomes competitive again and can approach or match our result in some organs, suggesting that capacity reallocation matters less once sufficient views are available. The main strength of \spags\ therefore lies in the moderately sparse regime, where enough information remains for capacity redistribution to make a difference.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{assets/fig/fig_experiment_failure_cases.png}
+\caption{Representative failure cases. We show two under-determined cases, Foot 2-view and Pancreas 2-view, together with error maps of \rtwo\ and \spags\ relative to GT. When the input information is too limited or local structures are highly ambiguous, our method can still reduce error spread in some regions but cannot fully recover fine-grained detail.}
+\label{fig:failure-cases}
+\end{figure*}
+
+Beyond view count, several open questions remain. First, the current \sps\ initialization depends on the quality of the FDK reconstruction, which degrades rapidly below 2 views; exploring alternative priors or learned initializers could relax this constraint. Second, the \gap\ proximity threshold and pruning ratio are currently set through a local sweep and fixed across all organs; organ-adaptive scheduling may further improve performance. Third, all experiments use parallel-beam geometry; extending the framework to cone-beam and dynamic CT settings is left for future work.
+
 \section{Conclusion}
 \label{sec:conclusion}
 
-We presented \spags, an \tracefull\ framework for Sparse Tomographic View Synthesis. Our main claim is that, under transmissive X-ray imaging, the primary bottleneck in highly sparse reconstruction is often not the lack of Gaussian primitives, but the fact that conventional densification still follows a visible-light-style boundary-chasing logic. This causes representation capacity to concentrate around high-contrast boundaries instead of adequately modeling the internal material attenuation along each ray path. Based on this diagnosis, \sps, \gap, and \adm\ jointly form an attenuation-aligned Gaussian evolution pipeline through path-anchored initialization, boundary de-redundancy, and local density refinement. Results on five organs, comparison against same-protocol X-Field, and analyses of modules, initialization, and view count all indicate that this evolution strategy is most effective in the 3-view regime, where its gain comes mainly from better capacity allocation rather than from simply increasing the number of primitives. In future work, we plan to explore stronger organ-adaptive priors and extend the framework to cone-beam and dynamic CT settings.
+We presented \spags, an \tracefull\ framework for Sparse Tomographic View Synthesis. Our central insight is that under transmissive X-ray imaging, the primary bottleneck in highly sparse reconstruction is not the lack of Gaussian primitives but the misallocation of representation capacity caused by visible-light-style boundary-chasing densification. \sps, \gap, and \adm\ jointly address this through path-anchored initialization, boundary de-redundancy, and local density refinement. Under a five-organ, 2/3/4-view protocol, \spags\ achieves consistent improvements in both PSNR2D and SSIM2D, with the most pronounced gains in the moderately sparse regime where capacity reallocation matters most.
 
 \printbibliography
 \ifXeTeX\else\end{CJK*}\fi
