@@ -87,19 +87,13 @@ Our contributions are threefold:
 
 \subsection{Sparse-view Novel View Synthesis}
 
-3D Gaussian Splatting (3DGS) explicitly represents a scene with a set of anisotropic Gaussians and achieves efficient rendering through differentiable rasterization, offering a strong quality-efficiency trade-off relative to conventional NeRF formulations~\cite{kerbl20233d}. Since its introduction in 2023, 3DGS has been extended to structured representations, anti-aliased rendering, dynamic scenes, and compact compression~\cite{survey3dgs2024,scaffoldgs2024,mipsplatting2024,sugar2024,fourdgs2024,xu2024grid,wu2024deformable,lu2024compact,roessle2024densification}. Under sparse-view novel view synthesis, existing work has gradually split into two directions: per-scene optimization of Gaussian primitives and feed-forward prediction from a few input views.
-
-The per-scene optimization line stays closest to the original 3DGS test-time optimization setting, but diverges in how it explains failure. FSGS mainly attributes degradation to insufficient coverage, and therefore augments densification with proximity-guided unpooling, pseudo views, and monocular depth priors~\cite{zhu2024fsgs}. CoR-GS instead treats the problem as unstable single-scene optimization and introduces dual-field co-regularization with co-pruning to suppress geometric disagreement~\cite{zhang2024cor}. DNGaussian focuses on geometric recovery errors under sparse-view inputs and explicitly injects geometric priors through global-local depth normalization~\cite{li2024dn}. More recent methods continue along structure regularization and generative pseudo-view synthesis: DropGaussian reduces training-view overfitting through random dropping and structure-aware pruning, whereas GS-GS uses diffusion-generated pseudo views to improve unseen regions and cross-view consistency~\cite{park2025dropgaussian,kong2025gsgs}.
-
-The other direction is generalizable or feed-forward Gaussian prediction, which moves the burden of completing geometry and appearance priors into large-scale pretraining. pixelSplat samples Gaussian centers from probabilistic depth distributions on image pairs~\cite{charatan2024pixelsplat}; MVSplat further aggregates multi-view correspondence through a plane-sweeping cost volume~\cite{chen2024mvsplat}; and DepthSplat and MonoSplat explicitly incorporate depth estimation and monocular foundation priors to improve geometric stability and cross-domain generalization~\cite{depthsplat2025,liu2025monosplat}. Overall, regardless of whether the method is per-scene optimized or feed-forward, most extremely sparse NVS work still frames the core problem as coverage shortage, geometric instability, or prior deficiency. In contrast, our focus is the capacity allocation problem that arises specifically in CT, where each detector pixel corresponds to attenuation along a single ray rather than multi-source radiance accumulation.
+3D Gaussian Splatting (3DGS) represents a scene with anisotropic Gaussians and renders through differentiable rasterization~\cite{kerbl20233d}. Under sparse-view novel view synthesis, per-scene optimization methods diverge in how they explain failure: FSGS attributes degradation to insufficient coverage and augments densification with proximity-guided unpooling and depth priors~\cite{zhu2024fsgs}; CoR-GS treats the problem as unstable optimization and introduces dual-field co-regularization with co-pruning~\cite{zhang2024cor}; DNGaussian injects geometric priors through depth normalization~\cite{li2024dn}. A parallel feed-forward line moves geometry completion into large-scale pretraining~\cite{charatan2024pixelsplat,chen2024mvsplat,depthsplat2025,liu2025monosplat}. Regardless of the direction, most sparse NVS work frames the core problem as coverage shortage, geometric instability, or prior deficiency. In contrast, our focus is the capacity-allocation problem specific to CT, where each detector pixel corresponds to attenuation along a single ray.
 
 \subsection{X-ray Novel View Synthesis and Tomographic Reconstruction}
 
-Conventional CT reconstruction can be broadly grouped into analytical and iterative methods. Analytical methods such as FDK rely on filtered back-projection and are computationally efficient, but they suffer from severe streak artifacts in sparse-view settings; iterative methods such as SART can incorporate prior constraints more flexibly, although at higher computational cost~\cite{feldkamp1984practical,andersen1984simultaneous}. Since 2023, learning-based sparse-view X-ray/CT methods can roughly be organized by representation into two families: implicit attenuation fields and explicit radiative primitives.
+Learning-based sparse-view X-ray/CT methods fall into two families. Implicit methods extend neural attenuation fields with X-ray imaging structure: SAX-NeRF jointly models line dependencies and projection context~\cite{cai2024saxnerf}, while Geometry-Aware Attenuation Learning shifts toward population-level encoder-decoder inference~\cite{liu2025geometryaware}. These preserve the expressiveness of continuous density fields but require dense ray sampling or heavy 3D decoding.
 
-The implicit line extends neural field or neural attenuation field modeling, but with greater emphasis on X-ray imaging structure and scan geometry. Structure-Aware Sparse-View X-ray 3D Reconstruction (SAX-NeRF) jointly models 3D line dependencies and 2D projection context through a Lineformer and masked local-global ray sampling, optimizing novel view synthesis and CT reconstruction within one framework~\cite{cai2024saxnerf}. Geometry-Aware Attenuation Learning back-projects multi-view 2D features into a 3D volume-feature grid according to scan geometry and then reconstructs CBCT volumes with a 3D decoder, representing a shift from per-instance self-supervised optimization to population-level encoder-decoder inference~\cite{liu2025geometryaware}. These methods preserve the expressive power of continuous volumetric density fields, but they typically still require dense ray sampling or heavy 3D volumetric decoding.
-
-The explicit line instead redesigns the primitive representation around X-ray penetration and attenuation. X-Gaussian introduced radiative Gaussians and differentiable X-ray rasterization for projection-domain novel view synthesis~\cite{cai2024xgaussian}. \rtwo\ pushed the representation further toward reconstruction consistency by correcting 3D-to-2D integration bias and introducing differentiable voxelization, allowing radiative Gaussians to better support sparse-view tomography~\cite{hu2024r2}. Building on this line, X-Field strengthens physical consistency with material-aware ellipsoids and path segmentation~\cite{xfield2025}; DGR directly reconstructs voxel grids using discretized Gaussian functions~\cite{dgr2025}; GR-Gaussian uses graph-structured gradients to suppress needle-like artifacts under extreme sparsity; and X$^2$-Gaussian extends radiative Gaussians to continuous-time 4D CT~\cite{grgaussian2025,x2gaussian2025}. Taken together, X-ray/CT research is moving from borrowing visible-light representations to redesigning them around transmission imaging, attenuation accumulation, and reconstruction consistency. Our work belongs to the explicit radiative-primitives line, but its contribution is not another physical branch. Instead, we argue that even with a physically aligned renderer, sparse-view CT still suffers if Gaussian capacity allocation continues to inherit the boundary-chasing logic of visible-light densification.
+The explicit line redesigns primitives around X-ray attenuation. X-Gaussian introduced radiative Gaussians and differentiable X-ray rasterization~\cite{cai2024xgaussian}; \rtwo\ further aligned the representation with reconstruction consistency through integration-bias correction and differentiable voxelization~\cite{hu2024r2}. Subsequent work strengthens physical consistency: X-Field uses material-aware ellipsoids and path segmentation~\cite{xfield2025}; DGR reconstructs voxel grids via discretized Gaussians~\cite{dgr2025}; GR-Gaussian suppresses needle-like artifacts with graph-structured gradients; and X$^2$-Gaussian extends radiative Gaussians to 4D CT~\cite{grgaussian2025,x2gaussian2025}. Our work belongs to the explicit radiative-primitives line, but its contribution is not another physical branch. Instead, we argue that even with a physically aligned renderer, sparse-view CT still suffers if Gaussian capacity allocation inherits the boundary-chasing logic of visible-light densification.
 
 \section{Method}
 \label{sec:method}
@@ -140,7 +134,35 @@ Except for our new \sps, \gap, and \adm\ modules, the radiative rasterization, d
 
 \subsection{Overall Framework}
 
-As shown in Figure~\ref{fig:pipeline}, \spags\ instantiates the attenuation-aligned Gaussian evolution pipeline as three sequential modules embedded into the explicit radiative Gaussian backbone of \rtwo. \sps\ seeds Gaussians into more relevant anatomical regions during initialization using the coarse FDK reconstruction. \gap\ then periodically reclaims locally redundant Gaussians after densification, preventing high-gradient boundaries from dominating Gaussian growth. Finally, \adm\ refines the density distribution of retained Gaussians based on position-aware context during later optimization. In short, we do not redesign X-ray physics; we reorganize the optimization loop itself into path anchoring, boundary de-redundancy, and local refinement.
+As shown in Figure~\ref{fig:pipeline}, \spags\ instantiates the attenuation-aligned Gaussian evolution pipeline as three sequential modules embedded into the explicit radiative Gaussian backbone of \rtwo. \sps\ seeds Gaussians into more relevant anatomical regions during initialization using the coarse FDK reconstruction. \gap\ then periodically reclaims locally redundant Gaussians after densification, preventing high-gradient boundaries from dominating Gaussian growth. Finally, \adm\ refines the density distribution of retained Gaussians based on position-aware context during later optimization. In short, we do not redesign X-ray physics; we reorganize the optimization loop itself into path anchoring, boundary de-redundancy, and local refinement. Algorithm~\ref{alg:training} summarizes the complete training procedure.
+
+\begin{algorithm}[t]
+\caption{\spags\ Training Pipeline}\label{alg:training}
+\begin{algorithmic}[1]
+\Require Sparse projections $\mathcal{P}$, FDK volume $V_{\text{FDK}}$, iterations $T$
+\Ensure Optimized Gaussian set $\mathcal{G}^{*}$
+\State \textbf{Stage 1 --- Initialization (\sps):}
+\State \quad Compute density-weighted sampling $p(\mathbf{x})$ from $V_{\text{FDK}}$ \hfill \textit{// Eq.\,(5)}
+\State \quad Mix with uniform: $q(\mathbf{x}) \gets \alpha / |\Omega| + (1{-}\alpha)\,p(\mathbf{x})$ \hfill \textit{// Eq.\,(6)}
+\State \quad Sample $M$ centers; set scales and densities from $V_{\text{FDK}}$
+\State \textbf{Stage 2 --- Main optimization loop:}
+\For{$t = 1, \ldots, T$}
+  \State Render $\hat{I}_v \gets \mathcal{R}(\mathcal{G}; \pi_v)$ for observed views \hfill \textit{// Eq.\,(4)}
+  \State Compute loss $\mathcal{L}$ \hfill \textit{// Eq.\,(11)}
+  \State Update $\mathcal{G}$, \adm\ parameters via back-propagation
+  \If{$t \bmod T_{\text{densify}} = 0$}
+    \State Standard densification (clone / split)
+    \If{$t \in [T_{\text{gap}}, T_{\text{gap,end}}]$}
+      \State \textbf{\gap:} compute proximity $s_i$; prune by mask $m_i$ \hfill \textit{// Eq.\,(7)--(8)}
+    \EndIf
+  \EndIf
+  \If{$t \ge T_{\text{adm}}$}
+    \State \textbf{\adm:} predict $\tilde{o}(\mathbf{x})$; modulate $\rho_{\text{final}}$ \hfill \textit{// Eq.\,(10)}
+  \EndIf
+\EndFor
+\State \Return $\mathcal{G}^{*} \gets \mathcal{G}$
+\end{algorithmic}
+\end{algorithm}
 
 \begin{figure*}[t]
 \centering
@@ -320,9 +342,9 @@ To further isolate local differences, Figure~\ref{fig:qual-zoom} enlarges two se
 
 \subsection{Module and Initialization Analysis}
 
-Table~\ref{tab:component_ablation} first isolates the accuracy contribution of the three modules. Because the currently archived experiment assets only preserve this set of average PSNR2D results, we use the table strictly to answer which module delivers the main gain, rather than extrapolating to training efficiency, memory, or Gaussian count. The results show that \gap\ remains the dominant contributor: adding \gap\ alone improves the five-organ 3-view average PSNR2D from 27.80 dB to 28.22 dB and reaches the same average upper bound as the full model in 4-view. By contrast, \sps\ behaves more like an initialization gain under low-view settings, while the standalone effect of \adm\ is smaller and more consistent with a late-stage refinement module.
+Table~\ref{tab:component_ablation} reports a progressive ablation under the 2/3/4-view protocol. Starting from the \rtwo\ baseline, we incrementally add \sps, \gap, and \adm. The results show that \gap\ delivers the largest incremental gain: adding \gap\ on top of \sps\ improves the 3-view average from 28.01 dB to 28.22 dB. \sps\ primarily benefits low-view initialization, raising the 2-view average from 21.27 dB to 21.44 dB. \adm\ contributes additional late-stage refinement in the 4-view regime. Overall, the progressive design confirms that each module addresses a distinct stage of the capacity-allocation pipeline.
 
-\input{assets/tables/tab_experiment_densify_vs_gap.tex}
+\input{assets/tables/tab_experiment_component.tex}
 
 \begin{figure*}[t]
 \centering

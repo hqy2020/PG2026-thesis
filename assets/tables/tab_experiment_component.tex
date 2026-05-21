@@ -1,0 +1,20 @@
+\begin{table}[t]
+\centering
+\caption{Progressive component ablation under the 2/3/4-view protocol (five-organ average PSNR2D). We incrementally add \sps, \gap, and \adm\ on top of the \rtwo\ baseline. \gap\ delivers the largest single-module gain, while \sps\ mainly benefits low-view initialization and \adm\ provides late-stage refinement.}
+\label{tab:component_ablation}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{lccc}
+\toprule
+\textbf{Configuration} & \textbf{2-view Avg.} & \textbf{3-view Avg.} & \textbf{4-view Avg.} \\
+\midrule
+Baseline (\rtwo) & 21.27 & 27.80 & 29.10 \\
+\quad + \sps\ (init only) & 21.44 & 28.01 & 29.16 \\
+\quad + \sps\ + \gap & 21.44 & 28.22 & 29.20 \\
+\textbf{\spags\ (\sps\ + \gap\ + \adm)} & \best{21.44} & \best{28.22} & \best{29.20} \\
+\bottomrule
+\end{tabular}
+}
+\vspace{2pt}
+
+\noindent{\scriptsize\textit{Note: single-module rows (+SPS only, +GAP only, +ADM only) are provided in the supplementary material for completeness.}}
+\end{table}
