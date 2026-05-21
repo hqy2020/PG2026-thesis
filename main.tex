@@ -272,13 +272,13 @@ Here, $\omega_p(t)$ is the time-varying regularization weight for the $p$-th fea
 
 \subsection{Main Results}
 
-Tables~\ref{tab:comparison} and~\ref{tab:comparison-ssim} report the main PSNR2D and SSIM2D results, respectively. For PSNR2D, we report per-organ values for CoR-GS, DNGaussian, FSGS, X-Gaussian, \rtwo, and \spags, and additionally include the same-protocol average of X-Field. For SSIM2D, only the averages of X-Field, \rtwo, and \spags are available in the source logs, so we leave the unavailable same-protocol cells blank.
-
-In PSNR2D, \spags\ achieves the best average result at all three sparsity levels, with the most stable gains concentrated in the 3-view regime. Compared with \rtwo, the average PSNR2D gains of \spags\ are +0.19/+0.26/+0.02 dB under 2/3/4-view settings, respectively. Compared with X-Field, the corresponding average gains are +0.95/+3.12/+2.79 dB. These improvements support our main claim: when the input information is still too limited for stable reconstruction, path anchoring and redundancy recovery allocate capacity more effectively to the interior structures that actually govern attenuation.
+Table~\ref{tab:comparison} reports the main PSNR2D comparison across all baselines. \spags\ achieves the best average result at all three sparsity levels, with the most stable gains concentrated in the 3-view regime. Compared with \rtwo, the average PSNR2D gains are +0.19/+0.26/+0.02 dB under 2/3/4-view settings, respectively. Compared with X-Field, the corresponding average gains are +0.95/+3.12/+2.79 dB. These improvements support our main claim: when the input information is still too limited for stable reconstruction, path anchoring and redundancy recovery allocate capacity more effectively to the interior structures that actually govern attenuation.
 
 \input{assets/tables/tab_experiment_comparison.tex}
 
-The available SSIM2D results show the same trend as PSNR2D: \spags\ achieves the best average SSIM2D under 2-view and 3-view settings, and ties \rtwo\ at the third decimal place in 4-view. Taken together, both metrics indicate that the strongest operating regime of our method is the moderately sparse 3-view setting.
+Table~\ref{tab:comparison-ssim} reports the available SSIM2D averages. \spags\ achieves the best average SSIM2D under 2-view and 3-view settings and ties \rtwo\ at the third decimal place in 4-view. Both metrics indicate that the strongest operating regime of our method is the moderately sparse 3-view setting.
+
+\input{assets/tables/tab_experiment_comparison_ssim.tex}
 
 Figure~\ref{fig:qual-main} presents representative qualitative comparisons. Keeping both natural-scene sparse-view 3DGS references and direct X-ray baselines, it reveals two distinct error patterns: the former tend to exhibit blur, streaking, and boundary leakage, whereas the latter better preserve the overall anatomical attenuation pattern. On top of that, \spags\ further suppresses background noise, boundary diffusion, and local spillover in scenes such as Chest and Pancreas.
 
@@ -351,6 +351,12 @@ Figure~\ref{fig:spatial-distribution} further visualizes this process as an evol
 Table~\ref{tab:view_count} summarizes the input-view analysis under our unified protocol. As the number of inputs increases from 2 to 4, the average PSNR2D of \spags\ improves from 21.52 dB to 29.15 dB and the average SSIM2D improves from 0.797 to 0.924. This confirms that additional views continuously improve overall projection reconstruction quality. However, from the perspective of our central argument, the 3-view regime remains the most informative operating point because it is where capacity misallocation and redundancy control are most directly observable.
 
 \input{assets/tables/tab_experiment_view_count.tex}
+
+\subsection{Computational Cost}
+
+Table~\ref{tab:efficiency} compares the computational cost of \spags\ against the direct X-ray baselines under the 3-view setting. Because \sps\ only modifies initialization, \gap\ adds a lightweight periodic pruning pass, and \adm\ introduces a compact K-Planes encoder plus a dual-head MLP, the additional training overhead relative to \rtwo\ remains moderate. Moreover, \gap\ actively reduces the final Gaussian count by reclaiming redundant primitives around high-gradient boundaries, which partially offsets the cost introduced by \adm. At inference, neither \gap\ nor \sps\ is active, so the rendering cost is determined solely by the radiative rasterizer and the lightweight \adm\ density lookup.
+
+\input{assets/tables/tab_experiment_efficiency.tex}
 
 \subsection{Hyperparameter Sensitivity}
 
