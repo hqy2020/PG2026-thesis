@@ -1,19 +1,32 @@
 \begin{table}[t]
 \centering
-\caption{Computational cost comparison under the 3-view setting. We report training time (minutes), final Gaussian count ($\times$1K), and peak GPU memory (GB). All methods are evaluated on the same hardware.}
+\caption{Computational cost comparison under the 3-view setting (five-organ average). Train Time:
+end-to-end training minutes. \#Gaussians: final primitive count ($\times$10$^3$) after densification/pruning.
+GPU Mem: peak memory during training (GB). FPS: rendering frames per second at inference.
+PSNR2D: five-organ average (dB), from Table~\ref{tab:comparison}. Cost columns will be filled
+from matched experiment logs before quantitative efficiency claims are made. \best{Bold}: best per column.}
 \label{tab:efficiency}
 \resizebox{\linewidth}{!}{%
-\begin{tabular}{lccc}
+\begin{tabular}{@{}lccccc@{}}
 \toprule
-\textbf{Method} & \textbf{Time (min)$\downarrow$} & \textbf{\#Gaussians (K)$\downarrow$} & \textbf{GPU Mem (GB)$\downarrow$} \\
+\textbf{Method}
+  & \textbf{Time$\downarrow$}
+  & \textbf{\#Gauss.$\downarrow$}
+  & \textbf{Mem.$\downarrow$}
+  & \textbf{FPS$\uparrow$}
+  & \textbf{PSNR2D$\uparrow$} \\
+& \textbf{(min)} & \textbf{(K)} & \textbf{(GB)} & & \textbf{(dB)} \\
 \midrule
-X-Gaussian & -- & -- & -- \\
-\rtwo & -- & -- & -- \\
-\textbf{\spags} & -- & -- & -- \\
+X-Gaussian~\cite{cai2024xgaussian}
+  & {--} & {--} & {--} & {--} & 23.19 \\
+\rtwo~\cite{hu2024r2}
+  & {--} & {--} & {--} & {--} & 27.83 \\
+\textbf{\spags}\ (Ours)
+  & {--} & {--} & {--} & {--} & \best{28.22} \\
 \bottomrule
 \end{tabular}
 }
 \vspace{2pt}
 
-\noindent{\scriptsize\textit{Note: ``--'' denotes results to be completed from experiment logs. Per-organ breakdown is provided in the supplementary material.}}
+\noindent{\scriptsize ``--'' indicates values pending from experiment logs requested in \texttt{assets/ask/experiment\allowbreak\_2026-05-23\allowbreak\_T01\allowbreak\_T02\allowbreak\_T04\allowbreak\_main\allowbreak\_metrics\allowbreak\_efficiency.md}. PSNR2D is taken from Table~\ref{tab:comparison}.}
 \end{table}

@@ -74,6 +74,8 @@ CT 描述口径固定要求：
 - 主文中先明确该证据属于 qualitative figure 还是 quantitative table，再决定放图还是放表
 - caption 中不要把 figure/table 混称为“图表”
 
+具体绘图分工见 §12，资产命名前缀规范见 §13。
+
 ### 4. 不要git查找过期的文件
 
 尽量不要git log 查找过期的文件，否则会导致错误。
@@ -272,5 +274,82 @@ latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex
 - 当发现表格中有 `--` 占位符或 caption 中标注 "to be completed" 时，自动触发向实验 agent 发起请求
 - 不要编造实验数据；所有数值必须来自实验 agent 的真实产出
 - 请求发出后，先继续处理其他可独立完成的修改，等 answer 到位后再填入表格并编译验证
+- `ask` 文件名遵循 §13 的章节前缀规范，写作 `<section>_YYYY-MM-DD_<brief-task>.md`
 
 不要直接给一个混杂的“图表优化建议”大列表。
+
+### 12. 绘图工作流的二分协议
+
+后续任何涉及"画一张图"的请求，默认按下面两类区分处理，不允许把两条管线混用。
+
+**示意图（concept / schematic figure）**
+
+定义：teaser、pipeline 流程图、SPS / GAP / ADM 模块解释图、机制示意、引言对比示意等所有用于"讲清楚做了什么 / 为什么这么做"的非数据驱动概念图。
+
+工作流：
+- 必须调用 `assets/data/image2.md` 文档里描述的 `gpt-image-2` API（`POST /v1/images/generations` 或 `POST /v1/images/edits`），脚本默认走 Python `requests`
+- 默认 `model = gpt-image-2`，`output_format = png`
+- 生成产物落地到 `assets/fig/`，并按 §13 加章节前缀
+- 文字标注（模块名、坐标轴、数字）尽量后置到 `tex` 排版阶段处理，不依赖生成模型直接烘焙到位
+- 不要用 Python `matplotlib` 等代码绘制方式来画概念示意图
+
+**实验图（quantitative / experimental figure）**
+
+定义：曲线图、bar chart、误差分布、超参扫描曲线、视角扫描曲线、训练曲线、空间分布可视化等所有由实验数值驱动的定量图。
+
+工作流：
+- 必须在 `assets/scripts/` 下写 Python 脚本（`matplotlib` / `seaborn` 等）绘制
+- 数据输入只能从 `assets/data/` 读取，禁止把数值硬编码在脚本里
+- 输出 PNG / PDF 落地到 `assets/fig/`，并按 §13 加章节前缀
+- 不要用 `gpt-image-2` API 生成 bar chart 或曲线图
+
+**实验图依赖的数据 / 中间可视化产物**
+
+- 任何实验数值、原始 metric 表、per-organ 细分、可视化中间产物（如 sinogram、Gaussian count 时序、梯度图等）默认通过 `assets/ask/<section>_YYYY-MM-DD_<task>.md` 向实验 agent 发起请求
+- 实验 agent 完成后把回复说明放到 `assets/answer/`、把真正的数据产物放到 `assets/data/`
+- 拿到数据后再由本仓库的 Python 脚本读 `assets/data/` 出实验图，不要在 ask 里要求实验 agent 直接出最终主文用图
+
+**总原则**
+
+- 示意图走 image2 API、实验图走 Python，二者不混管线
+- 一切图片最终都先落地到 `assets/fig/`，并由 `main.tex` 的 `\includegraphics` 引用
+- 涉及生成或绘制顺序错乱时（例如本应是示意图却被实验脚本画了，或本应是实验图却被 image2 烘焙了），默认按上述分工纠正
+
+### 13. assets/ 命名前缀规范
+
+`assets/` 下所有论文资产文件的**文件名开头**必须是以下四个章节关键词之一：
+
+- `intro_`：teaser、引言用比较示意、引言用概念图
+- `related_`：相关工作小节专属示意
+- `method_`：pipeline、SPS / GAP / ADM 模块图、机制解释图
+- `experiment_`：定量表、消融、定性对比、效率、视角扫描、超参图、失败案例、训练曲线、per-organ 数据等所有实验产物
+
+命名形式：
+- `<section>_<原描述>.<ext>`
+- 原有的功能词（`fig_*`、`tab_*`、`req_*`）以及 F01 / T01 这类 ID 编号，全部保留在 section 前缀**之后**作为辅助标识
+- 例如：`intro_F01_req_fig_teaser.md`、`method_fig_pipeline_image2_prompt.md`、`experiment_2026-05-21_efficiency-and-ssim.md`、`experiment_T04_req_tab_efficiency.md`
+
+适用范围：
+- `assets/ask/`、`assets/answer/`、`assets/data/`、`assets/fig/`、`assets/prompts/`、`assets/review/`、`assets/scripts/`、`assets/tables/` 下的所有论文资产文件，统一遵守
+
+豁免清单（属于工作流附件，不是章节资产）：
+- `assets/data/image2.md`（gpt-image-2 API 工具文档）
+- `assets/review/README.md`（目录索引）
+- `assets/review/VISUAL_STYLE.md`（全局视觉规范）
+- 任何 `.gitkeep`、`.DS_Store` 等占位 / 系统文件
+
+ID 兼容性：
+- `assets/review/` 内部 md 之间的 wiki-link `[[F0X_xxx]]` / `[[T0X_xxx]]` 视为 ID 别名，可以继续保留旧编号不带章节前缀；这种引用方式不强制改写
+- 但 `README.md` 中的 markdown 链接（`[label](F0X_xxx.md)` 形式）必须指向真实文件名，需同步带上章节前缀
+
+### 14. AI agent 辅助科研的链路完整性原则
+
+后续使用 AI agent 辅助 `PG2026` 论文科研与写作时，默认目标不是简单把文字写得更顺，而是帮助建立和检查完整的科研链路：数据链、证据链、逻辑链必须闭合，并且最终表达要突出 `XRA-GS` 的核心创新点。
+
+执行要求：
+- 数据链：所有实验数值、定量表、实验图和结论性描述都必须能追溯到 `assets/data/`、`assets/answer/` 或明确的实验 agent 输出；缺失数据按 §11 通过 `assets/ask/` 发起请求，不编造数据
+- 证据链：每个主文核心结论都要对应至少一种明确证据，优先是 quantitative table、qualitative figure、ablation、efficiency result 或 failure/limitation analysis
+- 逻辑链：写作与改稿默认检查 `problem -> gap -> method -> evidence -> limitation/discussion` 是否连贯，避免只堆结果或只润色局部句子
+- 创新点：所有摘要、引言贡献、方法概述、消融分析和结论总结都要回扣 `XRA-GS` 以及 `SPS / GAP / ADM`，避免把创新点写散、写弱或漂移成其他模块
+- Agent 协作：需要实验、复核、风格对齐、图表设计或逻辑审查时，可以使用合适的 AI agent 分工，但每次协作都要保留输入、输出、路径和未解决问题，确保后续可追踪
+- 可见待办：投稿推进路线图统一维护在 `assets/todolist/project_research_chain_todolist.md`；每次完成阶段性工作后必须同步更新该文件，及时把已完成事项勾选为 `☑`，并记录当前版本、验收状态和下一步

@@ -1,16 +1,20 @@
 \begin{table}[t]
 \centering
-\caption{SSIM2D average comparison. Per-organ SSIM2D for DNGaussian, CoR-GS, FSGS, and X-Gaussian are unavailable under our protocol; we therefore report only same-protocol averages for the methods whose logs are accessible. Best and second-best results are highlighted in \textbf{bold} and \underline{underline}, respectively.}
+\caption{SSIM2D comparison (five-organ average). Per-organ SSIM2D logs for CoR-GS, DNGaussian,
+FSGS, and X-Gaussian are unavailable under our unified 2/3/4-view protocol; we therefore report
+same-protocol averages only for the three methods with accessible logs. \best{Bold}: best;
+\second{underline}: second-best.}
 \label{tab:comparison-ssim}
+\setlength{\tabcolsep}{5pt}
 \resizebox{\linewidth}{!}{%
-\begin{tabular}{lccc}
+\begin{tabular}{@{}lccc@{}}
 \toprule
-\textbf{Method} & \textbf{2-view Avg.} & \textbf{3-view Avg.} & \textbf{4-view Avg.} \\
+\textbf{Method} & \textbf{2v Avg.} & \textbf{3v Avg.} & \textbf{4v Avg.} \\
 \midrule
 X-Field$^{*}$ & 0.717 & 0.850 & 0.880 \\
-\rtwo & \second{0.794} & \second{0.903} & \best{0.924} \\
-\textbf{\spags} & \best{0.797} & \best{0.904} & \best{0.924} \\
+\rtwo~\cite{hu2024r2} & \second{0.794} & \second{0.903} & \best{0.924} \\
+\textbf{\spags}\ (Ours) & \best{0.797} & \best{0.904} & \best{0.924} \\
 \bottomrule
-\end{tabular}
+\end{tabular}%
 }
 \end{table}

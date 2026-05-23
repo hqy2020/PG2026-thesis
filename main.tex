@@ -26,11 +26,13 @@
 \PrintedOrElectronic
 \usepackage{egweblnk}
 
+\usepackage{xcolor}
 \usepackage{amsmath,amssymb,booktabs,multirow,array}
 \usepackage{algorithm}
 \usepackage{algpseudocode}
 \usepackage{enumitem}
 \usepackage{placeins}
+\usepackage[percent]{overpic}
 
 \hypersetup{hidelinks}
 
@@ -39,7 +41,7 @@
 \newcommand{\sps}{SPS}
 \newcommand{\gap}{GAP}
 \newcommand{\adm}{ADM}
-\newcommand{\rtwo}{R\textsuperscript{2}-Gaussian}
+\newcommand{\rtwo}{R2-Gaussian}
 \newcommand{\tracefull}{X-ray Attenuation-Aligned Gaussian Splatting}
 \newcommand{\best}[1]{\textbf{#1}}
 \newcommand{\second}[1]{\underline{#1}}
@@ -52,7 +54,7 @@
 \maketitle
 
 \begin{abstract}
-Sparse Tomographic View Synthesis seeks to recover unseen X-ray projections from only a few acquired views, a capability that is valuable for low-dose scanning, fast acquisition, and trajectory-constrained imaging. Existing X-ray/CT 3D Gaussian Splatting methods already employ radiative rendering, yet their Gaussian evolution still largely follows the error/gradient-driven densification rules designed for visible-light scenes. As a result, model capacity is repeatedly drawn toward high-contrast anatomical boundaries, such as bone-soft tissue interfaces, while lower-contrast interior structures that also contribute to path attenuation remain underrepresented. To address this mismatch, we present \spags, an \tracefull\ framework for Sparse Tomographic View Synthesis. \spags\ first uses Support-Profile Seeding (SPS) to anchor initialization with the anatomical support and coarse attenuation layout provided by a coarse FDK reconstruction, then applies Geometry-aware Pruning (GAP) to remove redundant Gaussians around over-densified boundaries, and finally refines local density distributions with Adaptive Density Modulation (ADM). Under a unified protocol spanning five organs and 2/3/4-view settings, \spags\ achieves the best average PSNR2D in every setting while maintaining leading or tied SSIM2D performance over prior baselines.
+Sparse Tomographic View Synthesis---recovering unseen X-ray projections from a minimal set of acquired views---is essential for low-dose scanning, fast acquisition, and trajectory-constrained CT imaging. Existing X-ray/CT 3D Gaussian Splatting methods adopt physically accurate radiative rendering yet inherit the error/gradient-driven densification rules from visible-light 3DGS, which systematically draws Gaussian capacity toward high-contrast anatomical boundaries while under-representing the interior structures that equally participate in X-ray attenuation. We present \spags, an \tracefull\ framework that remedies this capacity misallocation by redesigning the Gaussian evolution pipeline rather than modifying the rendering branch. \sps\ (Support-Profile Seeding) anchors initialization to the FDK-derived attenuation support and coarse density profile; \gap\ (Geometry-aware Pruning) periodically reclaims Gaussians over-accumulated near anatomical boundaries; and \adm\ (Adaptive Density Modulation) performs position-dependent density refinement throughout training. Under a unified evaluation protocol covering five organs with 2/3/4 sparse-view inputs, \spags\ achieves the best average PSNR2D across all view-count settings and leading or tied SSIM2D among methods with accessible same-protocol SSIM logs.
 \end{abstract}
 
 \section{Introduction}
@@ -62,24 +64,24 @@ Novel view synthesis has recently expanded from natural-image rendering to radio
 
 Sparse Tomographic View Synthesis differs fundamentally from natural-scene novel view synthesis. Each detector measurement reflects the remaining energy of a single X-ray after it traverses internal materials, so the observation is determined by attenuation integrated along the entire path rather than by local radiance emitted from a surface point. X-Field observed that many 3D representations were originally built around visible-light imaging, while DGR further emphasized that successful instance reconstruction depends not only on local heuristics, but on whether the representation, reconstruction target, and optimization loop are genuinely aligned with tomographic objectives~\cite{xfield2025,dgr2025}. For CT, this means that the problem should not be framed purely as surface coverage; it must also be understood as a capacity-allocation problem over the internal structures that actually participate in attenuation.
 
-Most sparse-view 3DGS methods explain performance degradation in terms of insufficient coverage, unstable optimization, or geometric error, and therefore keep the same error/gradient-driven densification backbone while adding coverage compensation, co-regularization, or geometric/physical priors. FSGS expands coverage with proximity-guided unpooling, pseudo views, and monocular depth priors~\cite{zhu2024fsgs}; CoR-GS stabilizes single-scene optimization through disagreement-aware co-regularization and co-pruning~\cite{zhang2024cor}; DNGaussian mitigates geometric degradation through depth normalization~\cite{li2024dn}. In the X-ray/CT domain, X-Gaussian and \rtwo\ further align the renderer with radiative transport and projection-consistency correction~\cite{cai2024xgaussian,hu2024r2}. Yet even when alpha compositing has already been replaced by X-ray radiative projection, optimization still follows a visible-light intuition as long as primitive growth is dominated by ``duplicate or split where gradients are strong.'' This logic prioritizes the most abrupt projection changes at anatomical boundaries, instead of the full internal path that determines attenuation.
+Most sparse-view 3DGS methods explain performance degradation in terms of insufficient coverage, unstable optimization, or geometric error, and therefore keep the same error/gradient-driven densification backbone while adding coverage compensation, co-regularization, or geometric/physical priors. FSGS expands coverage with proximity-guided unpooling, pseudo views, and monocular depth priors~\cite{zhu2024fsgs}; CoR-GS stabilizes single-scene optimization through disagreement-aware co-regularization and co-pruning~\cite{zhang2024cor}; DNGaussian mitigates geometric degradation through depth normalization~\cite{li2024dn}. In the X-ray/CT domain, X-Gaussian and \rtwo\ further align the renderer with radiative transport and projection-consistency correction~\cite{cai2024xgaussian,hu2024r2}. Even after alpha compositing is replaced by X-ray radiative projection, optimization remains governed by a visible-light intuition whenever primitive growth is driven by gradient-magnitude-triggered duplication and splitting. Such an evolution rule prioritizes the most abrupt projection changes near anatomical boundaries, rather than the integrated internal path that determines attenuation.
 
-Our central observation is therefore that the true bottleneck in extremely sparse CT is often not the number of Gaussians, but the amount of effective representation capacity assigned to attenuation-relevant structures. CT volumes are not dominated by a few visible surfaces; instead, they are occupied by continuous tissue densities. High-contrast boundaries, such as bone-soft tissue interfaces, generate sharper projection variation and thus repeatedly attract gradient-driven densification. The model consequently keeps spawning smaller and narrower Gaussians around these boundaries, while lower-contrast interior tissues behind the boundary remain weakly represented even though they also contribute to the same X-ray path. The resulting failure mode is not merely insufficient coverage, but structural redundancy and capacity misallocation.
+Our central observation is therefore that the true bottleneck in extremely sparse CT is often not the number of Gaussians, but the amount of effective representation capacity assigned to attenuation-relevant structures. CT volumes are not dominated by a few visible surfaces; instead, they are occupied by continuous tissue densities. High-contrast boundaries, such as bone-soft tissue interfaces, generate sharper projection variation and thus repeatedly attract gradient-driven densification. As a result, smaller and narrower Gaussians accumulate around these boundaries, while lower-contrast interior tissues that share the same X-ray path remain under-represented. The dominant failure mode is therefore not insufficient coverage, but structural redundancy and capacity misallocation.
 
-To address this problem, we propose \spags, an \tracefull\ framework for Sparse Tomographic View Synthesis. Rather than appending more auxiliary branches onto a conventional densification backbone, \spags\ rewrites the Gaussian evolution process itself into three stages: path-anchored initialization, boundary redundancy recovery, and local density refinement. Figure~\ref{fig:intro-compare} illustrates the key idea. The top row summarizes the standard error/gradient-driven densification pipeline commonly used in highly sparse instance reconstruction, whereas the bottom row shows how \spags\ uses a coarse FDK support to anchor initialization and then reallocates capacity through \gap\ and \adm. Concretely, the framework is instantiated by Support-Profile Seeding (\sps), Geometry-aware Pruning (\gap), and Adaptive Density Modulation (\adm), which respectively handle initialization, redundancy recovery, and local refinement.
+To address this problem, we propose \spags, an \tracefull\ framework for Sparse Tomographic View Synthesis. Rather than appending more auxiliary branches onto a conventional densification backbone, \spags\ rewrites the Gaussian evolution process itself into three stages: path-anchored initialization, boundary redundancy recovery, and local density refinement. Figure~\ref{fig:intro-compare} illustrates the key idea. The top row summarizes the standard error/gradient-driven densification pipeline commonly used in highly sparse instance reconstruction, whereas the bottom row shows how \spags\ uses a coarse FDK support to anchor initialization and then reallocates capacity through \gap\ and \adm. Concretely, the framework is instantiated by Support-Profile Seeding (\sps), Geometry-aware Pruning (\gap), and Adaptive Density Modulation (\adm), which respectively handle initialization, redundancy recovery, and local refinement. We evaluate \spags\ under a unified protocol covering five organs (Chest, Head, Abdomen, Foot, Pancreas) with 2, 3, and 4 input views, and compare against six representative baselines drawn from both visible-light sparse-view NVS (CoR-GS, DNGaussian, FSGS) and X-ray/CT (X-Gaussian, \rtwo, X-Field), so that the gains can be attributed to the evolution-rule redesign rather than to baseline selection.
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=0.97\textwidth]{assets/fig/fig_intro_compare.png}
+\IfFileExists{assets/fig/intro_fig_compare.png}{\includegraphics[width=0.97\textwidth]{assets/fig/intro_fig_compare.png}}{\fbox{\parbox[c][6cm][c]{0.95\textwidth}{\centering Placeholder: regenerate \texttt{assets/fig/intro\_fig\_compare.png} via \texttt{assets/scripts/intro\_fig\_compare\_image2\_call.py} once \texttt{IMAGE2\_API\_KEY} is provisioned.}}}
 \caption{Comparison between a conventional sparse-view 3DGS workflow and \spags. The top row summarizes the common error/gradient-driven densification pipeline in highly sparse CT, which tends to place newly spawned Gaussians near high-gradient anatomical boundaries. The bottom row shows our attenuation-aligned evolution pipeline, which uses coarse FDK support for path-anchored initialization, then reclaims redundant Gaussians with \gap\ and refines local density distributions with \adm. The figure emphasizes that our intervention targets the Gaussian evolution rule rather than the X-ray imaging equation itself.}
 \label{fig:intro-compare}
 \end{figure*}
 
 Our contributions are threefold:
 \begin{itemize}[leftmargin=1.5em]
-  \item We show that conventional 3DGS densification is misaligned with X-ray/CT imaging: high-gradient anatomical boundaries repeatedly attract Gaussian duplication, leading to local structural redundancy and capacity misallocation.
-  \item We present \spags, an \tracefull\ framework that reorganizes Sparse Tomographic View Synthesis into path-anchored initialization, boundary redundancy removal, and local density refinement, instantiated by \sps, \gap, and \adm.
-  \item Under a unified five-organ protocol spanning 2/3/4-view settings, \spags\ achieves the best average PSNR2D in every setting and leading or tied SSIM2D, consistently outperforming both natural-scene sparse-view and direct X-ray/CT baselines.
+  \item We reframe sparse-view CT reconstruction with explicit Gaussian primitives as a \emph{capacity-allocation} problem rather than a coverage or geometric-stability problem, identifying boundary-driven redundancy as the dominant failure mode when visible-light densification rules are inherited by X-ray pipelines.
+  \item We instantiate this viewpoint as \spags, which intervenes at the \emph{Gaussian evolution rule} rather than at the X-ray imaging equation: \sps\ anchors initialization with the FDK support profile, \gap\ reclaims boundary redundancy, and \adm\ refines local density via online position-dependent modulation.
+  \item Under a unified five-organ protocol with 2/3/4 input views, benchmarked against six representative baselines spanning visible-light sparse-view NVS (CoR-GS, DNGaussian, FSGS) and X-ray/CT methods (X-Gaussian, \rtwo, X-Field), \spags\ delivers the strongest average PSNR2D results, with SSIM2D reported for methods whose same-protocol logs are available.
 \end{itemize}
 
 \section{Related Work}
@@ -87,13 +89,13 @@ Our contributions are threefold:
 
 \subsection{Sparse-view Novel View Synthesis}
 
-3D Gaussian Splatting (3DGS) represents a scene with anisotropic Gaussians and renders through differentiable rasterization~\cite{kerbl20233d}. Under sparse-view novel view synthesis, per-scene optimization methods diverge in how they explain failure: FSGS attributes degradation to insufficient coverage and augments densification with proximity-guided unpooling and depth priors~\cite{zhu2024fsgs}; CoR-GS treats the problem as unstable optimization and introduces dual-field co-regularization with co-pruning~\cite{zhang2024cor}; DNGaussian injects geometric priors through depth normalization~\cite{li2024dn}. A parallel feed-forward line moves geometry completion into large-scale pretraining~\cite{charatan2024pixelsplat,chen2024mvsplat,depthsplat2025,liu2025monosplat}. Regardless of the direction, most sparse NVS work frames the core problem as coverage shortage, geometric instability, or prior deficiency. In contrast, our focus is the capacity-allocation problem specific to CT, where each detector pixel corresponds to attenuation along a single ray.
+3D Gaussian Splatting (3DGS) represents a scene with anisotropic Gaussians and renders through differentiable rasterization~\cite{kerbl20233d}. Under sparse-view novel view synthesis, per-scene optimization methods diverge in how they explain failure: FSGS attributes degradation to insufficient coverage and augments densification with proximity-guided unpooling and depth priors~\cite{zhu2024fsgs}; CoR-GS treats the problem as unstable optimization and introduces dual-field co-regularization with co-pruning~\cite{zhang2024cor}; DNGaussian injects geometric priors through depth normalization~\cite{li2024dn}. A parallel feed-forward line moves geometry completion into large-scale pretraining~\cite{charatan2024pixelsplat,chen2024mvsplat,depthsplat2025,liu2025monosplat}. Explicit-and-hybrid representations such as K-Planes~\cite{fridovich2022kplanes} demonstrate that plane-decomposed spatial encodings provide continuous positional context at low cost; we adopt this encoding in \adm\ for position-dependent density refinement. Regardless of the direction, these methods share an error/gradient-driven densification backbone that prioritizes high-contrast surfaces. In CT, where each detector pixel integrates attenuation along the entire traversed path rather than sampling surface radiance, this evolutionary logic systematically misallocates capacity toward anatomical boundaries and underrepresents the interior structures that also participate in attenuation.
 
 \subsection{X-ray Novel View Synthesis and Tomographic Reconstruction}
 
-Learning-based sparse-view X-ray/CT methods fall into two families. Implicit methods extend neural attenuation fields with X-ray imaging structure: SAX-NeRF jointly models line dependencies and projection context~\cite{cai2024saxnerf}, while Geometry-Aware Attenuation Learning shifts toward population-level encoder-decoder inference~\cite{liu2025geometryaware}. These preserve the expressiveness of continuous density fields but require dense ray sampling or heavy 3D decoding.
+Learning-based sparse-view X-ray/CT methods fall into two families. Implicit methods extend neural attenuation fields with X-ray imaging structure: SAX-NeRF jointly models line dependencies and projection context~\cite{cai2024saxnerf}, while Geometry-Aware Attenuation Learning shifts toward population-level encoder-decoder inference~\cite{liu2025geometryaware}.
 
-The explicit line redesigns primitives around X-ray attenuation. X-Gaussian introduced radiative Gaussians and differentiable X-ray rasterization~\cite{cai2024xgaussian}; \rtwo\ further aligned the representation with reconstruction consistency through integration-bias correction and differentiable voxelization~\cite{hu2024r2}. Subsequent work strengthens physical consistency: X-Field uses material-aware ellipsoids and path segmentation~\cite{xfield2025}; DGR reconstructs voxel grids via discretized Gaussians~\cite{dgr2025}; GR-Gaussian suppresses needle-like artifacts with graph-structured gradients; and X$^2$-Gaussian extends radiative Gaussians to 4D CT~\cite{grgaussian2025,x2gaussian2025}. Our work belongs to the explicit radiative-primitives line, but its contribution is not another physical branch. Instead, we argue that even with a physically aligned renderer, sparse-view CT still suffers if Gaussian capacity allocation inherits the boundary-chasing logic of visible-light densification.
+The explicit line redesigns primitives around X-ray attenuation. X-Gaussian introduced radiative Gaussians and differentiable X-ray rasterization~\cite{cai2024xgaussian}; \rtwo\ further aligned the representation with reconstruction consistency through integration-bias correction and differentiable voxelization~\cite{hu2024r2}. Subsequent work strengthens physical consistency: X-Field introduces material-aware ellipsoids and path segmentation for physics-aligned attenuation modeling~\cite{xfield2025}---its contribution targets the imaging equation rather than the evolution rule governing where primitives accumulate, leaving capacity misallocation from boundary-driven densification as an unaddressed bottleneck in sparse-view CT; DGR targets discretized voxel reconstruction~\cite{dgr2025}; GR-Gaussian addresses artifact suppression through graph-structured gradients~\cite{grgaussian2025}; X$^2$-Gaussian extends radiative Gaussians to 4D dynamic CT~\cite{x2gaussian2025}; and Layer-Based CT partitions volumes into anatomical depth layers for slice-wise reconstruction~\cite{layerbased2025}. These extensions target 4D dynamic CT, discretized voxel recovery, artifact-suppression graphs, or slice-wise volumetric reconstruction---objectives that fall outside the sparse-view novel-view projection protocol our experiments evaluate, and we therefore omit them from the main comparison. Our work belongs to the explicit radiative-primitives line, but its contribution is not another physical branch. Instead, we argue that even with a physically aligned renderer, sparse-view CT still suffers if Gaussian capacity allocation inherits the boundary-chasing logic of visible-light densification. This misallocation operates at three distinct stages: \emph{initialization} that ignores the X-ray attenuation support, \emph{boundary over-densification} during training, and \emph{undifferentiated point-wise density updates} in later refinement. \sps, \gap, and \adm\ each address one of these stages in turn, forming an attenuation-aligned Gaussian evolution pipeline rather than a modified rendering branch.
 
 \section{Method}
 \label{sec:method}
@@ -129,6 +131,7 @@ g_i=(\mathbf{p}_i,\Sigma_i,\rho_i,\mathbf{c}_i),
 denoting the center, covariance, density, and appearance/radiative parameters, respectively. For any view $\pi_v$, the \rtwo-style radiative renderer can be written as
 \begin{equation}
 \hat{I}_v=\mathcal{R}(\mathcal{G};\pi_v).
+\label{eq:renderer}
 \end{equation}
 Except for our new \sps, \gap, and \adm\ modules, the radiative rasterization, densification, and differentiable voxelization settings follow \rtwo~\cite{hu2024r2}. Importantly, X-Gaussian and \rtwo\ have already aligned the renderer with X-ray radiative projection. The mismatch we target lies mainly in the Gaussian evolution rule rather than in the imaging equation itself. In this baseline, Gaussians are still usually duplicated or split according to projection-error gradients. This is effective for improving surface coverage in natural scenes, but in CT it tends to keep pushing the evolving Gaussian set toward high-gradient anatomical boundaries. The model therefore uses the right X-ray renderer, yet still organizes Gaussians with a visible-light-style growth logic, which is precisely the issue our three modules address.
 
@@ -142,22 +145,22 @@ As shown in Figure~\ref{fig:pipeline}, \spags\ instantiates the attenuation-alig
 \Require Sparse projections $\mathcal{P}$, FDK volume $V_{\text{FDK}}$, iterations $T$
 \Ensure Optimized Gaussian set $\mathcal{G}^{*}$
 \State \textbf{Stage 1 --- Initialization (\sps):}
-\State \quad Compute density-weighted sampling $p(\mathbf{x})$ from $V_{\text{FDK}}$ \hfill \textit{// Eq.\,(5)}
-\State \quad Mix with uniform: $q(\mathbf{x}) \gets \alpha / |\Omega| + (1{-}\alpha)\,p(\mathbf{x})$ \hfill \textit{// Eq.\,(6)}
+\State \quad Compute density-weighted sampling $p(\mathbf{x})$ from $V_{\text{FDK}}$ \hfill \textit{// Eq.~\eqref{eq:sps-profile}}
+\State \quad Mix with uniform: $q(\mathbf{x}) \gets \alpha / |\Omega| + (1{-}\alpha)\,p(\mathbf{x})$ \hfill \textit{// Eq.~\eqref{eq:sps-mixture}}
 \State \quad Sample $M$ centers; set scales and densities from $V_{\text{FDK}}$
 \State \textbf{Stage 2 --- Main optimization loop:}
 \For{$t = 1, \ldots, T$}
-  \State Render $\hat{I}_v \gets \mathcal{R}(\mathcal{G}; \pi_v)$ for observed views \hfill \textit{// Eq.\,(4)}
-  \State Compute loss $\mathcal{L}$ \hfill \textit{// Eq.\,(11)}
+  \State Render $\hat{I}_v \gets \mathcal{R}(\mathcal{G}; \pi_v)$ for observed views \hfill \textit{// Eq.~\eqref{eq:renderer}}
+  \State Compute loss $\mathcal{L}$ \hfill \textit{// Eq.~\eqref{eq:training-loss}}
   \State Update $\mathcal{G}$, \adm\ parameters via back-propagation
   \If{$t \bmod T_{\text{densify}} = 0$}
     \State Standard densification (clone / split)
     \If{$t \in [T_{\text{gap}}, T_{\text{gap,end}}]$}
-      \State \textbf{\gap:} compute proximity $s_i$; prune by mask $m_i$ \hfill \textit{// Eq.\,(7)--(8)}
+      \State \textbf{\gap:} compute proximity $s_i$; prune by mask $m_i$ \hfill \textit{// Eqs.~\eqref{eq:gap-proximity}--\eqref{eq:gap-mask}; $T_{\text{gap}}\!=\!2\text{K}$, $T_{\text{gap,end}}\!=\!20\text{K}$}
     \EndIf
   \EndIf
   \If{$t \ge T_{\text{adm}}$}
-    \State \textbf{\adm:} predict $\tilde{o}(\mathbf{x})$; modulate $\rho_{\text{final}}$ \hfill \textit{// Eq.\,(10)}
+    \State \textbf{\adm:} predict $\tilde{o}(\mathbf{x})$; modulate $\rho_{\text{final}}$ \hfill \textit{// Eq.~\eqref{eq:adm-density}}
   \EndIf
 \EndFor
 \State \Return $\mathcal{G}^{*} \gets \mathcal{G}$
@@ -166,29 +169,64 @@ As shown in Figure~\ref{fig:pipeline}, \spags\ instantiates the attenuation-alig
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=0.98\textwidth]{assets/fig/fig_method_pipeline.png}
-\caption{Overview of \spags. Given highly sparse CT projections and a coarse FDK reconstruction, \sps\ performs path-anchored initialization from foreground support and coarse attenuation layout, \gap\ reclaims boundary redundancy, and \adm\ refines density in a position-aware manner. Together they form the attenuation-aligned Gaussian evolution pipeline that produces the target novel-view X-ray projection.}
+\IfFileExists{assets/fig/method_fig_pipeline.png}{%
+\begin{overpic}[width=0.98\textwidth]{assets/fig/method_fig_pipeline.png}
+  % --- module block labels ---
+  \put(5,48){\colorbox{white!80!gray}{\footnotesize\textbf{Input}}}
+  \put(1.5,34){\parbox{7em}{\centering\scriptsize Sparse X-ray\\[-1pt]Projections}}
+  \put(1.5,18){\parbox{7em}{\centering\scriptsize FDK Coarse\\[-1pt]Recon.}}
+  % SPS purple block
+  \put(20,55){\colorbox{purple!15}{\color[HTML]{7B5CA6}\small\textbf{SPS}}}
+  \put(18,44){\parbox{8em}{\centering\scriptsize Path-anchored\\[-1pt]initialization}}
+  % Loop box label
+  \put(37,88){\scriptsize\textit{Training loop}}
+  % ADM orange block
+  \put(38,55){\colorbox{orange!15}{\color[HTML]{E07B39}\small\textbf{ADM}}}
+  \put(36,44){\parbox{8em}{\centering\scriptsize Density\\[-1pt]modulation}}
+  % GAP teal block
+  \put(55,55){\colorbox{teal!15}{\color[HTML]{3CA897}\small\textbf{GAP}}}
+  \put(54,44){\parbox{8em}{\centering\scriptsize Redundancy\\[-1pt]recovery}}
+  % Output
+  \put(83,55){\colorbox{white!80!gray}{\footnotesize\textbf{Output}}}
+  \put(82,34){\parbox{7em}{\centering\scriptsize Novel View\\[-1pt]Rendering}}
+  % Legend
+  \put(2,93){\colorbox[HTML]{7B5CA6}{\color{white}\scriptsize~Init~}}
+  \put(11,93){\colorbox[HTML]{3CA897}{\color{white}\scriptsize~Pruning~}}
+  \put(22,93){\colorbox[HTML]{E07B39}{\color{white}\scriptsize~Refinement~}}
+\end{overpic}%
+}{\fbox{\parbox[c][6cm][c]{0.95\textwidth}{\centering Placeholder: \texttt{assets/fig/method\_fig\_pipeline.png}}}}
+\caption{\textbf{Overall framework of \spags.} Given sparse X-ray projections $\{(I_v,\pi_v)\}_{v=1}^{V}$ and a coarse FDK reconstruction $V_{\text{FDK}}$, \sps\ (purple) performs path-anchored initialization along the attenuation support outside the optimization loop. An iterative training loop then interleaves \adm\ (orange, position-aware density modulation) and \gap\ (teal, gradient-aware redundancy recovery), supervised end-to-end by the rendering loss. Solid arrows denote data flow; dashed arrows denote gradient flow. The output is a novel-view X-ray projection together with the recovered tomographic volume.}
 \label{fig:pipeline}
 \end{figure*}
 
 \subsection{Support-Profile Seeding (\sps)}
 
-\sps\ initializes Gaussian primitives in anatomically relevant regions using support-profile cues from the coarse FDK reconstruction. Initialization strongly influences the downstream optimization trajectory, yet neither of the standard 3DGS initializers fits CT well: uniform sampling cannot distinguish the anatomical importance of air, soft tissue, and bone, while SfM-based point-cloud initialization is unstable under gray-value overlap and weak local texture in X-ray projection~\cite{cai2024xgaussian}. Crucially, we do not use a vague spatial prior. Instead, we draw on three concrete signals contained in the FDK reconstruction: foreground anatomical support, low-frequency attenuation layout, and a coarse intensity hierarchy that differentiates air, soft tissue, and bony structures. The sparse-view CT literature also widely treats FDK/FBP reconstruction as a coarse CT volume with streak artifacts whose main value lies in global structure layout and useful frequency content rather than reliable fine detail~\cite{wang2022rfinet,li2023gloredi,li2025threedgrct,hu2024r2}. In bone-dominant scenes such as Head, Foot, and parts of Chest, these support profiles can even be interpreted as a coarse anatomical scaffold that remains compatible with landmark-oriented structure cues, as CBCT/CT volumes are widely used for craniofacial landmark localization and TMJ condyle-fossa morphology assessment~\cite{shahidi2014cbctlandmark,chen2023tmjcbct}. Therefore, \sps\ is better understood as exploiting an FDK-derived, landmark-capable anatomical scaffold for initialization, while in soft-tissue-dominant scenes such as Abdomen and Pancreas the more conservative interpretation is still coarse anatomical support and attenuation layout. Based on this view, we use the coarse density volume $V_{\text{FDK}}$ produced by FDK and define a density-weighted sampling distribution over a discrete voxel grid $\Omega$:
+\sps\ initializes Gaussian primitives in anatomically relevant regions using support-profile cues from the coarse FDK reconstruction. Initialization strongly influences the downstream optimization trajectory, yet neither of the standard 3DGS initializers fits CT well: uniform sampling cannot distinguish the anatomical importance of air, soft tissue, and bone, while SfM-based point-cloud initialization is unstable under gray-value overlap and weak local texture in X-ray projection~\cite{cai2024xgaussian}. Crucially, we do not use a vague spatial prior. Instead, we draw on three concrete signals contained in the FDK reconstruction: foreground anatomical support, low-frequency attenuation layout, and a coarse intensity hierarchy that differentiates air, soft tissue, and bony structures. The sparse-view CT literature also widely treats FDK/FBP reconstruction as a coarse CT volume with streak artifacts whose main value lies in global structure layout and useful frequency content rather than reliable fine detail~\cite{wang2022rfinet,li2023gloredi,li2025threedgrct,hu2024r2}. Based on these structural properties of the FDK reconstruction, we use the coarse density volume $V_{\text{FDK}}$ produced by FDK and define a density-weighted sampling distribution over a discrete voxel grid $\Omega$:
 \begin{equation}
 p(\mathbf{x})=\frac{\left(\max(V_{\text{FDK}}(\mathbf{x}),\epsilon)\right)^\gamma}{\sum_{\mathbf{x}'\in\Omega}\left(\max(V_{\text{FDK}}(\mathbf{x}'),\epsilon)\right)^\gamma},
+\label{eq:sps-profile}
 \end{equation}
 where $\epsilon$ avoids zero probability in background regions and $\gamma$ controls sampling concentration.
 
 Density weighting alone would over-concentrate Gaussians near the brightest bony structures and could mistake the strongest sparse-view FDK responses for precise geometry. We therefore mix uniform sampling with the support-profile distribution:
 \begin{equation}
 q(\mathbf{x})=\alpha\frac{1}{|\Omega|}+(1-\alpha)p(\mathbf{x}),\quad \mathbf{x}\in\Omega,
+\label{eq:sps-mixture}
 \end{equation}
 and independently sample $M$ initial centers $\{\mathbf{x}_m\}_{m=1}^{M}$ from $q(\mathbf{x})$, where $M$ is the number of initial Gaussians. This design preserves global coverage while allocating more Gaussians to anatomical regions with meaningful attenuation support, without collapsing entirely onto dense bony boundaries. After sampling the locations, we initialize Gaussian densities from the FDK values and set scale parameters according to the local sampling density, yielding $50$K initial Gaussians. In all experiments, $\alpha$ and $\gamma$ are selected by a small local search and then fixed to avoid scene-specific manual tuning.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\linewidth]{assets/fig/fig_method_sps.png}
-\caption{Illustration of \sps. The coarse FDK reconstruction provides foreground support and coarse attenuation layout to guide density-weighted sampling, so that more initial Gaussians fall into anatomically relevant regions while a small amount of uniform compensation sampling preserves global coverage.}
+\IfFileExists{assets/fig/method_fig_sps.png}{%
+\begin{overpic}[width=\linewidth]{assets/fig/method_fig_sps.png}
+  \put(1,92){\colorbox{white}{\footnotesize\textbf{(a)}}}
+  \put(34,92){\colorbox{white}{\footnotesize\textbf{(b)}}}
+  \put(67,92){\colorbox{white}{\footnotesize\textbf{(c)}}}
+  % Equation overlay at bottom-right of panel (b)
+  \put(40,5){\parbox{22em}{\centering\scriptsize$p(\mathbf{x})\!\propto\!V_{\text{FDK}}(\mathbf{x})^{\gamma},\quad q\!=\!\alpha/|\Omega|\!+\!(1\!-\!\alpha)p$}}
+\end{overpic}%
+}{\fbox{\parbox[c][5cm][c]{0.95\linewidth}{\centering Placeholder: \texttt{assets/fig/method\_fig\_sps.png}}}}
+\caption{\textbf{Support-Profile Seeding (\sps).} (a) From the sparse projections, a coarse FDK volume is reconstructed; the horizontal attenuation profile along an anatomical scan line exposes the support-profile cue (purple curve). (b) \sps\ converts the attenuation magnitude into a density-weighted sampling map (viridis) and mixes it with a uniform prior, so capacity concentrates on anatomically relevant support while a small uniform term retains global coverage. (c) Compared with random initialization (gray dots), \sps\ produces an initial Gaussian set (purple dots) already aligned with the attenuation support before any optimization step.}
 \label{fig:sps}
 \end{figure}
 
@@ -199,6 +237,7 @@ and independently sample $M$ initial centers $\{\mathbf{x}_m\}_{m=1}^{M}$ from $
 Specifically, for each Gaussian $G_i$, let $\mathcal{N}_K(i)$ denote the index set of its $K$ nearest neighbors excluding itself. We compute the mean Euclidean distance to these neighbors as a proximity score:
 \begin{equation}
 s_i=\frac{1}{K}\sum_{j\in\mathcal{N}_K(i)}\|\mathbf{p}_i-\mathbf{p}_j\|_2.
+\label{eq:gap-proximity}
 \end{equation}
 When $s_i$ falls below a threshold $\tau$, the Gaussian lies in an overly crowded region. To avoid deleting Gaussians that are still learning useful structure, we further introduce a gradient-activity filter. Let $\bar{g}_i$ denote the accumulated $L_1$ statistic of the positional gradient of this Gaussian over the current densification cycle. We define a retention mask $m_i\in\{0,1\}$ as
 \begin{equation}
@@ -207,6 +246,7 @@ m_i=
 1, & s_i\ge\tau \ \lor\ \bar{g}_i\ge\delta,\\
 0, & \text{otherwise}.
 \end{cases}
+\label{eq:gap-mask}
 \end{equation}
 where $m_i=0$ means that the Gaussian is treated as a redundancy candidate in the current cycle. In implementation, \gap\ does not replace the original 3DGS densification; it is a periodic recovery step applied afterwards. We first generate candidate Gaussians through the standard duplication/splitting rule and then use $m_i$ to filter redundant ones. In each cycle, we prune at most a fraction $\beta_{\text{prune}}$ of the total Gaussians, and the module is triggered periodically from 2K to 20K iterations. To avoid suddenly making local support too sparse after pruning, we only shrink the covariance of newly retained Gaussians:
 \begin{equation}
@@ -216,8 +256,16 @@ where $m_i=0$ means that the Gaussian is treated as a redundancy candidate in th
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\linewidth]{assets/fig/fig_method_gap.png}
-\caption{Illustration of \gap. We first identify locally over-crowded regions through world-coordinate proximity, then combine this measure with gradient activity to delete only redundant Gaussians with limited remaining learning value.}
+\IfFileExists{assets/fig/method_fig_gap.png}{%
+\begin{overpic}[width=\linewidth]{assets/fig/method_fig_gap.png}
+  \put(1,92){\colorbox{white}{\footnotesize\textbf{(a)}}}
+  \put(34,92){\colorbox{white}{\footnotesize\textbf{(b)}}}
+  \put(67,92){\colorbox{white}{\footnotesize\textbf{(c)}}}
+  % Pruning criterion overlay
+  \put(36,5){\parbox{22em}{\centering\scriptsize prune if $(s_i<\tau)\wedge(\bar{g}_i<\delta)$;\enspace remove $\leq\beta_{\text{prune}}\!\cdot\!N$}}
+\end{overpic}%
+}{\fbox{\parbox[c][5cm][c]{0.95\linewidth}{\centering Placeholder: \texttt{assets/fig/method\_fig\_gap.png}}}}
+\caption{\textbf{Geometry-aware Pruning (\gap).} (a) After standard gradient-driven densification, Gaussians accumulate around high-attenuation boundaries, producing visible over-densification clusters. (b) For each Gaussian, \gap\ measures local crowding by the mean Euclidean distance to its $K$ nearest neighbors and combines it with the accumulated gradient activity over the current densification cycle: a Gaussian is flagged as a redundancy candidate (red $\times$) only if both KNN distance is below $\tau$ and gradient activity is below $\delta$; otherwise it is retained (green $\circ$). (c) After removing at most a fraction $\beta_{\text{prune}}$ of the redundant candidates, the cleaned distribution preserves the attenuation support while freeing capacity for under-served interior regions.}
 \label{fig:gap}
 \end{figure}
 
@@ -234,33 +282,42 @@ f_{uv}(\mathbf{x})=\mathcal{B}\!\left(P_{uv},\Pi_{uv}(\mathbf{x})\right),\quad u
 \begin{equation}
 F(\mathbf{x})=\operatorname{concat}\!\big(f_{xy}(\mathbf{x}),f_{xz}(\mathbf{x}),f_{yz}(\mathbf{x})\big),
 \end{equation}
-where $\mathcal{B}(\cdot)$ denotes bilinear sampling, $P_{xy}$, $P_{xz}$, and $P_{yz}$ are the three orthogonal feature planes, and $\operatorname{concat}(\cdot)$ denotes channel-wise concatenation. K-Planes encoding was originally introduced for explicit spatiotemporal radiance fields and provides continuous spatial context at low cost~\cite{fridovich2022kplanes}. Based on this encoding, a dual-head MLP predicts a density offset $o(\mathbf{x})$ and a confidence gate $c(\mathbf{x})$:
+where $\mathcal{B}(\cdot)$ denotes bilinear sampling, $P_{xy}$, $P_{xz}$, and $P_{yz}$ are the three orthogonal feature planes, and $\operatorname{concat}(\cdot)$ denotes channel-wise concatenation. K-Planes encoding was originally introduced for explicit spatiotemporal radiance fields and provides continuous spatial context at low cost~\cite{fridovich2022kplanes}. Based on this encoding, a dual-head MLP predicts a density offset $\Delta\sigma(\mathbf{x})$ and a confidence gate $g(\mathbf{x})$:
 \begin{equation}
-\big(o(\mathbf{x}),c(\mathbf{x})\big)=h(F(\mathbf{x})).
+\big(\Delta\sigma(\mathbf{x}),g(\mathbf{x})\big)=h(F(\mathbf{x})).
 \end{equation}
 We then center the offsets by the batch mean and apply a view-dependent scaling:
 \begin{equation}
-\tilde{o}(\mathbf{x})=\beta(t)\,s_{\text{view}}\,r_{\max}\,c(\mathbf{x})\cdot\big(o(\mathbf{x})-\bar{o}\big),
+\tilde{o}(\mathbf{x})=\beta(t)\,s_{\text{view}}\,r_{\max}\,g(\mathbf{x})\cdot\big(\Delta\sigma(\mathbf{x})-\overline{\Delta\sigma}\big),
 \end{equation}
-where $\bar{o}$ is the mean offset of the current batch, $r_{\max}$ is the maximum modulation amplitude, and $s_{\text{view}}$ is a scaling factor that varies with the number of input views. To prevent modulation from disrupting basic geometric convergence early in training, we use a warm-up/hold/decay schedule for $\beta(t)$:
+where $\overline{\Delta\sigma}$ is the mean density offset of the current batch, $r_{\max}$ is the maximum modulation amplitude, and $s_{\text{view}}$ is a view-count scaling factor (concretely, $s_{\text{view}}\!=\!0.5,\,0.7,\,1.0$ for 2, 3, and 4 input views, respectively). To prevent modulation from disrupting basic geometric convergence early in training, we use a warm-up/hold/decay schedule for $\beta(t)$:
 \begin{equation}
 \beta(t)=
 \begin{cases}
 \frac{t}{t_w}, & 0\le t<t_w,\\
 1, & t_w\le t<t_h,\\
-\exp\!\big(-\frac{t-t_h}{\tau}\big), & t\ge t_h.
+\exp\!\big(-\frac{t-t_h}{\kappa}\big), & t\ge t_h.
 \end{cases}
 \end{equation}
-The final density is
+where $t_w$ marks the end of the warm-up phase, $t_h$ marks the end of the hold phase, and $\kappa$ is the exponential decay time constant. The final density is
 \begin{equation}
 \rho_{\text{final}}(\mathbf{x})=\rho_{\text{base}}(\mathbf{x})\cdot\big(1+\tilde{o}(\mathbf{x})\big).
+\label{eq:adm-density}
 \end{equation}
 Therefore, \adm\ learns not a global density boost, but a spatial-context-aware relative correction that better matches the locally continuous yet regionally heterogeneous structure of CT data.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\linewidth]{assets/fig/fig_method_adm.png}
-\caption{Illustration of \adm. K-Planes provide continuous spatial context, and a dual-head predictor estimates position-dependent density offsets and confidence gates to realize anatomy-aware density modulation.}
+\IfFileExists{assets/fig/method_fig_adm.png}{%
+\begin{overpic}[width=\linewidth]{assets/fig/method_fig_adm.png}
+  \put(1,92){\colorbox{white}{\footnotesize\textbf{(a)}}}
+  \put(34,92){\colorbox{white}{\footnotesize\textbf{(b)}}}
+  \put(67,92){\colorbox{white}{\footnotesize\textbf{(c)}}}
+  % Core formula overlay
+  \put(36,4){\parbox{22em}{\centering\scriptsize$\rho_{\text{final}}\!=\!\rho_{\text{base}}\!\cdot\!(1\!+\!\tilde{o}),\quad\tilde{o}\!=\!\beta(t)\,g(\mathbf{x})\,(\Delta\sigma(\mathbf{x})\!-\!\overline{\Delta\sigma})$}}
+\end{overpic}%
+}{\fbox{\parbox[c][5cm][c]{0.95\linewidth}{\centering Placeholder: \texttt{assets/fig/method\_fig\_adm.png}}}}
+\caption{\textbf{Adaptive Density Modulation (\adm).} (a) Three orthogonal K-Planes feature maps (viridis) encode position-dependent spatial context for every Gaussian center. (b) The concatenated K-Planes feature is decoded by a lightweight dual-head MLP that predicts a density offset $\Delta\sigma(\mathbf{x})$ (orange) and a confidence gate $g(\mathbf{x})\in[0,1]$ (slate); the modulated density combines them through $\rho_{\text{final}}=\rho_{\text{base}}\cdot(1+\tilde{o})$. (c) The resulting density difference map (inferno) shows that \adm\ amplifies density in regions where the attenuation support requires fine detail and damps modulation where evidence is uncertain.}
 \label{fig:adm}
 \end{figure}
 
@@ -269,6 +326,7 @@ Therefore, \adm\ learns not a global density boost, but a spatial-context-aware 
 The three modules of \spags\ and the radiative rendering backbone of \rtwo\ form a single end-to-end training pipeline. During training, we supervise reprojection results on the observed views with the following overall loss:
 \begin{equation}
 \mathcal{L}=\mathcal{L}_{1}+\lambda_{\text{dssim}}\mathcal{L}_{\text{dssim}}+\lambda_{\text{3DTV}}\mathcal{L}_{\text{3DTV}}+\lambda_{\text{pTV}}\mathcal{L}_{\text{pTV}},
+\label{eq:training-loss}
 \end{equation}
 where
 \begin{align}
@@ -277,141 +335,269 @@ where
 \mathcal{L}_{\text{3DTV}} &= \sum_{i=1}^{N}\sum_{d\in\{x,y,z\}}\left|\nabla_d \rho_i\right|, \\
 \mathcal{L}_{\text{pTV}} &= \sum_{p\in\{xy,xz,yz\}}\omega_p(t)\operatorname{TV}(P_p).
 \end{align}
-Here, $\omega_p(t)$ is the time-varying regularization weight for the $p$-th feature plane. $\mathcal{L}_{1}$ and $\mathcal{L}_{\text{dssim}}$ jointly constrain projection reconstruction quality, $\mathcal{L}_{\text{3DTV}}$ encourages spatial smoothness in volumetric density, and $\mathcal{L}_{\text{pTV}}$ imposes planar total-variation regularization on the K-Planes features. During training, the plane features and MLP parameters of \adm\ are jointly updated with the backbone Gaussian parameters under the same loss, so density modulation is learned online rather than fixed in advance. Since \sps\ only changes initialization, \gap\ is triggered periodically during training, and \adm\ applies lightweight density modulation, the basic X-ray rendering process at inference remains unchanged and the extra cost is concentrated in training.
+Here, $\omega_p(t)$ is the time-varying regularization weight for the $p$-th feature plane; it follows the same warm-up/hold/decay schedule as $\beta(t)$, ramping linearly from $0$ to $\omega_0$ over the first $t_w$ iterations, holding at $\omega_0$ until $t_h$, then decaying exponentially with time constant $\kappa$. $\mathcal{L}_{1}$ and $\mathcal{L}_{\text{dssim}}$ jointly constrain projection reconstruction quality, $\mathcal{L}_{\text{3DTV}}$ encourages spatial smoothness in volumetric density, and $\mathcal{L}_{\text{pTV}}$ imposes planar total-variation regularization on the K-Planes features. During training, the plane features and MLP parameters of \adm\ are jointly updated with the backbone Gaussian parameters under the same loss, so density modulation is learned online rather than fixed in advance. Since \sps\ only changes initialization, \gap\ is triggered periodically during training, and \adm\ applies lightweight density modulation, the basic X-ray rendering process at inference remains unchanged and the extra cost is concentrated in training.
 
 \section{Experiments}
 \label{sec:experiments}
 
 \subsection{Experimental Setup}
 
-\textbf{Data and task setting.} We use the processed datasets released in the \href{https://github.com/caiyuanhao1998/X-Gaussian}{official X-Gaussian repository}. Among the five scenes used in prior work, Chest comes from LIDC-IDRI, while Head, Abdomen, Foot, and Pancreas come from the open scientific visualization dataset. The package follows the projection generation and preprocessing protocol of the NAF/X-Gaussian line and organizes the data into a unified format. On top of this public data, we further construct a sparse-view setting by keeping only 2/3/4 input projections for each case. All models are trained only on these observed projections and evaluated on unseen angles in terms of novel-view projection quality.
+\textbf{Data and task setting.} We evaluate on the five-organ dataset from the X-Gaussian
+repository~\cite{cai2024xgaussian}: Chest (LIDC-IDRI) and Head, Abdomen, Foot, and Pancreas
+(open scientific visualization dataset). Following the NAF/X-Gaussian preprocessing and projection
+protocol, we construct sparse-view settings by retaining only 2, 3, or 4 input projections per
+scene. Models are trained exclusively on observed projections and evaluated on held-out novel
+angles.
 
-\textbf{Baselines.} Our main comparisons include CoR-GS~\cite{zhang2024cor}, DNGaussian~\cite{li2024dn}, FSGS~\cite{zhu2024fsgs}, \rtwo~\cite{hu2024r2}, X-Gaussian~\cite{cai2024xgaussian}, and same-protocol X-Field~\cite{xfield2025}. X-Gaussian, \rtwo, and X-Field serve as the most direct X-ray/CT baselines, representing radiative Gaussian novel view synthesis, reconstruction consistency, and material-aware direct modeling, respectively. CoR-GS, DNGaussian, and FSGS are representative sparse-view 3DGS references from natural-scene NVS and help reveal how different densification workflows fail under tomographic projection.
+\textbf{Baselines.} We compare against six methods in two groups. \emph{Direct X-ray/CT
+baselines:} X-Gaussian~\cite{cai2024xgaussian} (radiative Gaussian splatting),
+\rtwo~\cite{hu2024r2} (reconstruction-consistency regularization), and
+X-Field~\cite{xfield2025} (material-aware implicit modeling) represent the state of the art for
+X-ray novel view synthesis. \emph{Natural-scene sparse-view 3DGS references:}
+CoR-GS~\cite{zhang2024cor}, DNGaussian~\cite{li2024dn}, and FSGS~\cite{zhu2024fsgs} characterize
+how gradient-driven densification degrades under tomographic projection. X-Field is re-evaluated
+under our identical protocol and denoted as X-Field$^*$ in the result tables and figures.
 
-\textbf{Metrics.} We use projection-domain PSNR2D and SSIM2D as the primary metrics. Following the official X-Gaussian evaluation script, rendered projections and ground-truth projections are first normalized to $[0,1]$, then each test projection is evaluated independently and averaged over all test views of the same scene. PSNR2D is computed as $20\log_{10}(1/\sqrt{\mathrm{MSE}})$, where $\mathrm{MSE}$ is the mean squared error over the full projection. SSIM2D is computed with an $11\times11$ Gaussian window, $\sigma=1.5$, and the standard constants $C_1=0.01^2$ and $C_2=0.03^2$.
+\textbf{Metrics.} Following the official X-Gaussian evaluation script, PSNR2D and SSIM2D are
+computed on $[0,1]$-normalized projections averaged over all held-out views of each scene and then
+over the five organs. PSNR2D is $20\log_{10}(1/\sqrt{\text{MSE}})$; SSIM2D uses an
+$11\!\times\!11$ Gaussian window ($\sigma\!=\!1.5$, $C_1\!=\!0.01^2$, $C_2\!=\!0.03^2$).
 
-\textbf{Implementation details.} \sps\ uses $\alpha=0.2$, $\gamma=1.0$, and 50K initial Gaussians. \gap\ uses $K=5$ neighbors, threshold $\tau=0.015$, maximum pruning ratio $\beta_{\text{prune}}=0.02$, and gradient threshold $\delta=0.0002$. \adm\ uses K-Planes at resolution 64 with feature dimension 32 and is activated after 15K iterations. All models are trained for 30K iterations.
+\textbf{Implementation details.} \sps\ uses $\alpha\!=\!0.2$, $\gamma\!=\!1.0$, and 50K initial
+Gaussians. \gap\ uses $K\!=\!5$ neighbors, threshold $\tau\!=\!0.015$, maximum pruning ratio
+$\beta_{\text{prune}}\!=\!0.02$, and gradient threshold $\delta\!=\!0.0002$. \adm\ uses
+K-Planes at resolution $64\!\times\!32$ and activates after 15K iterations. All models are
+trained for 30K iterations.
 
 \subsection{Main Results}
 
-Table~\ref{tab:comparison} reports the main PSNR2D comparison across all baselines. \spags\ achieves the best average result at all three sparsity levels, with the most stable gains concentrated in the 3-view regime. Compared with \rtwo, the average PSNR2D gains are +0.19/+0.26/+0.02 dB under 2/3/4-view settings, respectively. Compared with X-Field, the corresponding average gains are +0.95/+3.12/+2.79 dB. These improvements support our main claim: when the input information is still too limited for stable reconstruction, path anchoring and redundancy recovery allocate capacity more effectively to the interior structures that actually govern attenuation.
+Table~\ref{tab:comparison} reports PSNR2D across all five organs and three sparsity levels.
+\spags\ achieves the best five-organ average at every sparsity level. Gains over \rtwo\ are
+$+0.11/+0.39/+0.07$\,dB under 2/3/4-view settings; gains over X-Field$^*$ are
+$+0.87/+3.25/+2.79$\,dB. The most pronounced margin occurs at 3 views, consistent with our
+central argument: capacity misallocation is most directly addressable when projection evidence is
+sufficient to guide redistribution yet too limited for standard densification to converge to a
+spatially consistent solution.
 
 \input{assets/tables/tab_experiment_comparison.tex}
 
-Table~\ref{tab:comparison-ssim} reports the available SSIM2D averages. \spags\ achieves the best average SSIM2D under 2-view and 3-view settings and ties \rtwo\ at the third decimal place in 4-view. Both metrics indicate that the strongest operating regime of our method is the moderately sparse 3-view setting.
+Table~\ref{tab:comparison-ssim} reports SSIM2D averages for the three methods with accessible
+logs under our unified protocol. \spags\ leads at 2- and 3-view settings and ties \rtwo\ at the
+third decimal place in 4-view, confirming the same trend as PSNR2D.
 
 \input{assets/tables/tab_experiment_comparison_ssim.tex}
 
-Figure~\ref{fig:qual-main} presents representative qualitative comparisons. Keeping both natural-scene sparse-view 3DGS references and direct X-ray baselines, it reveals two distinct error patterns: the former tend to exhibit blur, streaking, and boundary leakage, whereas the latter better preserve the overall anatomical attenuation pattern. On top of that, \spags\ further suppresses background noise, boundary diffusion, and local spillover in scenes such as Chest and Pancreas.
+Figure~\ref{fig:qual-main} provides qualitative comparisons across all five organs under the
+2-view setting. The natural-scene sparse-view baselines (CoR-GS, DNGaussian, FSGS) produce
+characteristic boundary leakage and streak artifacts under tomographic projection; the direct
+X-ray baselines (X-Gaussian, \rtwo, X-Field$^*$) preserve global attenuation structure more
+faithfully. \spags\ further reduces background diffusion and local over-accumulation near
+high-contrast anatomical boundaries, consistent with the quantitative gains in
+Table~\ref{tab:comparison}.
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=\textwidth]{assets/fig/fig_experiment_qual_main.png}
-\caption{Main qualitative comparison. Each row corresponds to a representative organ scene. The columns show GT, FSGS, X-Gaussian, \rtwo, and \spags, together with two local zoom-ins. Compared with natural-scene densification references, direct X-ray baselines better preserve the global anatomical attenuation layout; on top of that, \spags\ further suppresses background noise, boundary leakage, and local artifact spread.}
+\IfFileExists{assets/fig/experiment_fig_qual_main.png}{%
+  \includegraphics[width=\textwidth]{assets/fig/experiment_fig_qual_main.png}%
+}{\fbox{\parbox[c][7cm][c]{0.95\textwidth}{\centering\small
+  Placeholder: \texttt{assets/fig/experiment\_fig\_qual\_main.png}\\[4pt]
+  5 organs (rows) $\times$ 8 cols (GT / CoR-GS / DNGaussian / FSGS / X-Field$^*$ / X-Gaussian /
+  \rtwo / \spags) + error map col, 2-view setting
+}}}
+\caption{\textbf{Qualitative comparison on five organs, 2-view setting.} Rows: Chest, Head,
+Abdomen, Foot, Pancreas (top to bottom). Columns: GT, CoR-GS, DNGaussian, FSGS, X-Field$^*$,
+X-Gaussian, \rtwo, and \spags\ (Ours, last column). Natural-scene references produce streak
+artifacts and boundary leakage; direct X-ray baselines preserve global attenuation structure;
+\spags\ further suppresses local over-accumulation and background diffusion. Rightmost column:
+error maps (inferno, shared vmax). Red boxes mark regions enlarged in
+Figure~\ref{fig:qual-detail-consistency}.}
 \label{fig:qual-main}
 \end{figure*}
 
-To further isolate local differences, Figure~\ref{fig:qual-zoom} enlarges two sensitive regions corresponding to the lower-chest boundary in Chest 2-view and a local structure in Foot 2-view. Compared with FSGS and CoR-GS, \spags\ clearly reduces streak-like spread and local over-bright accumulation around these high-gradient regions; compared with \rtwo{}, it also yields tighter boundary behavior with less blurry spillover.
+Figure~\ref{fig:qual-detail-consistency} provides two complementary analyses. The upper portion
+enlarges the Chest and Foot regions marked in Figure~\ref{fig:qual-main}, isolating boundary and
+structure recovery at the local scale. The lower portion evaluates a Chest 2-view case at three
+novel angles ($0^\circ$, $45^\circ$, $90^\circ$), confirming that the advantage of \spags\ over
+\rtwo\ is stable across viewing directions rather than concentrated at a single angle.
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=\textwidth]{assets/fig/fig_experiment_qual_zoom.png}
-\caption{Local zoom-in qualitative results. The two ROIs come from representative Chest 2-view and Foot 2-view cases. Compared with FSGS and CoR-GS, \spags\ exhibits fewer streak artifacts and less local over-exposure near high-gradient boundaries; compared with \rtwo{}, it further reduces boundary spillover and background diffusion.}
-\label{fig:qual-zoom}
+\IfFileExists{assets/fig/experiment_fig_qual_detail_consistency.png}{%
+  \includegraphics[width=\textwidth]{assets/fig/experiment_fig_qual_detail_consistency.png}%
+}{\fbox{\parbox[c][7cm][c]{0.95\textwidth}{\centering\small
+  Placeholder: \texttt{assets/fig/experiment\_fig\_qual\_detail\_consistency.png}\\[4pt]
+  Upper: zoom-in Chest + Foot (4 cols: GT / \rtwo / X-Gaussian / \spags)\\
+  Lower: Chest 2-view at $0^\circ$/$45^\circ$/$90^\circ$ (3 rows $\times$ 4 cols)
+}}}
+\caption{\textbf{Local detail and cross-view consistency.} \emph{Upper half:} Zoom-ins from the
+red boxes in Figure~\ref{fig:qual-main} for Chest (left) and Foot (right), comparing GT,
+\rtwo, X-Gaussian, and \spags. \spags\ reduces streak spread and boundary diffusion in both
+regions. \emph{Lower half:} A Chest 2-view case rendered at $0^\circ$, $45^\circ$, and
+$90^\circ$. The quality advantage of \spags\ persists across all three angles, indicating
+consistent global attenuation reconstruction rather than angle-specific improvement.}
+\label{fig:qual-detail-consistency}
 \end{figure*}
 
-\noindent\textbf{Cross-view consistency.} Beyond per-organ averages, we also examine stability across unseen angles. Figure~\ref{fig:consistency} shows a Chest 2-view case at three representative novel views, 0$^\circ$, 45$^\circ$, and 90$^\circ$. The results indicate that the advantage of \spags\ over \rtwo\ is not restricted to one particular angle, but remains visible across multiple unseen views through a more stable global attenuation pattern.
-
-\begin{figure*}[t]
-\centering
-\includegraphics[width=\textwidth]{assets/fig/fig_experiment_consistency.png}
-\caption{Cross-view consistency visualization for a Chest 2-view case. The three columns correspond to novel views at 0$^\circ$, 45$^\circ$, and 90$^\circ$. Compared with \rtwo, \spags\ preserves a more stable global attenuation contour and less local error spread across multiple unseen angles.}
-\label{fig:consistency}
-\end{figure*}
-
-\noindent\textbf{Comparison with same-protocol X-Field.} The X-Field$^{*}$ row in Table~\ref{tab:comparison} shows that the gains of \spags\ do not rely on natural-scene sparse-view baselines. Even against a material-aware direct X-ray/CT model that is closer to our setting, the attenuation-aligned evolution strategy still retains a clear average advantage.
+\noindent\textbf{Same-protocol comparison with X-Field.} The X-Field$^*$ row in
+Table~\ref{tab:comparison} confirms that the gains of \spags\ are not an artifact of protocol
+asymmetry. Re-evaluated under our identical 2/3/4-view setting, X-Field$^*$ trails \spags\ by a
+consistent average margin across all sparsity levels.
 
 \subsection{Module and Initialization Analysis}
 
-Table~\ref{tab:component_ablation} reports a progressive ablation under the 2/3/4-view protocol. Starting from the \rtwo\ baseline, we incrementally add \sps, \gap, and \adm. The results show that \gap\ delivers the largest incremental gain: adding \gap\ on top of \sps\ improves the 3-view average from 28.01 dB to 28.22 dB. \sps\ primarily benefits low-view initialization, raising the 2-view average from 21.27 dB to 21.44 dB. \adm\ contributes additional late-stage refinement in the 4-view regime. Overall, the progressive design confirms that each module addresses a distinct stage of the capacity-allocation pipeline.
+Table~\ref{tab:component_ablation} reports a progressive ablation starting from the \rtwo\
+backbone. \sps\ raises the 2-view average PSNR2D from 21.27 to 21.44\,dB, establishing that
+path-anchored initialization provides a meaningful head start in the most under-determined regime.
+\gap\ delivers the largest PSNR2D increment, improving the 3-view average from 28.01 to
+28.22\,dB by reclaiming capacity from over-densified boundary regions. The final \spags\ row
+matches or improves the available PSNR2D measurements across all view counts, while intermediate
+SSIM2D values are pending from the experiment logs.
 
 \input{assets/tables/tab_experiment_component.tex}
 
+Figure~\ref{fig:ablation-visual} translates the progressive ablation into local visual evidence.
+Residual maps $|\hat{I} - I_\text{gt}|$ are shown below each prediction. This visual analysis is
+used to inspect where the progressive modules change the reconstruction, while the corresponding
+intermediate SSIM2D values remain pending from the experiment logs.
+
 \begin{figure*}[t]
 \centering
-\includegraphics[width=\textwidth]{assets/fig/fig_experiment_ablation_visual.png}
-\caption{Representative qualitative module ablation. Each row shows a region that is prone to boundary bias or background leakage; the top row gives predictions and the bottom row shows the corresponding residual maps $|\mathrm{pred}-\mathrm{gt}|$. Compared with the baseline, adding \gap\ alone already suppresses local over-allocation near the boundary and background leakage, while the full \spags\ further tightens residual spread.}
+\IfFileExists{assets/fig/experiment_fig_ablation_visual.png}{%
+  \includegraphics[width=\textwidth]{assets/fig/experiment_fig_ablation_visual.png}%
+}{\fbox{\parbox[c][6cm][c]{0.95\textwidth}{\centering\small
+  Placeholder: \texttt{assets/fig/experiment\_fig\_ablation\_visual.png}\\[4pt]
+  Chest 3-view --- top: GT / Baseline / +\sps\ / +\sps+\gap\ / Full \spags\\
+  bottom: residual maps $|\hat{I}-I_\text{gt}|$ (inferno); $\Delta$SSIM2D annotated under each col
+}}}
+\caption{\textbf{Progressive module ablation, Chest 3-view.} Top row: rendered projections for
+GT, Baseline (\rtwo), +\sps, +\sps+\gap, and full \spags. Bottom row: residual maps
+$|\hat{I}-I_\text{gt}|$ (inferno, shared vmax with Figure~\ref{fig:qual-main}). Quantitative
+intermediate SSIM2D values are pending from experiment logs and are therefore not used for module-level claims here.}
 \label{fig:ablation-visual}
 \end{figure*}
 
-Figure~\ref{fig:ablation-visual} provides the local visual evidence corresponding to Table~\ref{tab:component_ablation}. We select two regions that most clearly expose boundary bias and background spillover, showing that the main gain from \gap\ is visible in local residual structure rather than only in average PSNR2D.
-
-Table~\ref{tab:init_ablation} isolates the initialization strategy. Compared with random initialization, SPS-guided seeding improves average PSNR2D at all three sparsity levels, including an increase from 27.80 dB to 28.01 dB in 3-view. This result shows that placing Gaussians first into more relevant attenuation-support regions is already useful. The full \spags\ then builds on this foundation with \gap\ and \adm\ for capacity recovery and local refinement.
-
-\input{assets/tables/tab_experiment_init_ablation.tex}
-
-Figure~\ref{fig:spatial-distribution} further visualizes this process as an evolution trajectory of Gaussian distribution. Compared with uniform initialization, SPS first pushes Gaussians toward more relevant foreground support regions. \gap\ then reclaims obviously redundant clusters near the boundary. The final \spags\ representation retains the main attenuation contour while producing a more compact capacity allocation. The goal of this figure is to support our mechanism explanation of capacity misallocation and recovery, rather than to serve as a standalone accuracy claim.
+Figure~\ref{fig:spatial-distribution} is reserved for visualizing the cumulative effect of the
+three modules on Gaussian spatial distribution once the corresponding Gaussian-center and count
+logs are available. Until those logs are confirmed, the mechanism is evaluated through the
+available quantitative ablation in Table~\ref{tab:component_ablation}.
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=\textwidth]{assets/fig/fig_experiment_spatial_distribution.png}
-\caption{Visualization of Gaussian spatial distribution evolution. From left to right we show the baseline with uniform initialization, SPS initialization, the result after \gap\ recovery, and the final \spags\ representation. The top row shows the Gaussian distribution in a representative slice, and the bottom row shows the corresponding projection results, illustrating how capacity gradually shifts from indiscriminate coverage to effective attenuation-support regions.}
+\IfFileExists{assets/fig/experiment_fig_spatial_distribution.png}{%
+  \includegraphics[width=\textwidth]{assets/fig/experiment_fig_spatial_distribution.png}%
+}{\fbox{\parbox[c][5cm][c]{0.95\textwidth}{\centering\small
+  Placeholder: \texttt{assets/fig/experiment\_fig\_spatial\_distribution.png}\\[4pt]
+  4 panels: Uniform Init ($\approx$50K) $\to$ +\sps\ ($\approx$42K) $\to$
+  +\sps+\gap\ ($\approx$38K) $\to$ Full \spags\ ($\approx$35K); attenuation profile strip above
+}}}
+\caption{\textbf{Gaussian spatial distribution evolution.} Four panels (left to right): uniform
+initialization, after \sps, after \gap\ pruning, and full \spags, for a representative Chest
+organ. Top strip: FDK attenuation profile (magma shading). The final figure will use logged
+Gaussian centers and counts rather than schematic estimates.}
 \label{fig:spatial-distribution}
 \end{figure*}
 
+Table~\ref{tab:init_viewcount} (left) isolates the initialization strategy. SPS-guided seeding
+outperforms random initialization at all sparsity levels; the full \spags\ further improves upon
+SPS-only through \gap\ and \adm, confirming that path-anchored initialization and capacity
+recovery are complementary operations.
+
+\input{assets/tables/tab_experiment_init_viewcount.tex}
+
 \subsection{View-count Analysis}
 
-Table~\ref{tab:view_count} summarizes the input-view analysis under our unified protocol. As the number of inputs increases from 2 to 4, the average PSNR2D of \spags\ improves from 21.52 dB to 29.15 dB and the average SSIM2D improves from 0.797 to 0.924. This confirms that additional views continuously improve overall projection reconstruction quality. However, from the perspective of our central argument, the 3-view regime remains the most informative operating point because it is where capacity misallocation and redundancy control are most directly observable.
-
-\input{assets/tables/tab_experiment_view_count.tex}
+Table~\ref{tab:init_viewcount} (right) reports the view-count trend for four representative
+methods. \spags\ achieves the highest five-organ average PSNR2D at every sparsity level. The
+relative gain over \rtwo\ is largest at 3 views, where capacity misallocation is most directly
+observable; at 4 views the reconstruction-consistency regularization in \rtwo\ partially closes
+the gap, consistent with the applicability boundary discussed in
+Section~\ref{sec:discussion}.
 
 \subsection{Computational Cost}
 
-Table~\ref{tab:efficiency} compares the computational cost of \spags\ against the direct X-ray baselines under the 3-view setting. Because \sps\ only modifies initialization, \gap\ adds a lightweight periodic pruning pass, and \adm\ introduces a compact K-Planes encoder plus a dual-head MLP, the additional training overhead relative to \rtwo\ remains moderate. Moreover, \gap\ actively reduces the final Gaussian count by reclaiming redundant primitives around high-gradient boundaries, which partially offsets the cost introduced by \adm. At inference, neither \gap\ nor \sps\ is active, so the rendering cost is determined solely by the radiative rasterizer and the lightweight \adm\ density lookup.
+Table~\ref{tab:efficiency} is reserved for training and inference cost under the 3-view setting.
+The current manuscript keeps the table structure in place, but Time, final Gaussian count, GPU
+memory, and FPS must be filled from experiment logs before making quantitative efficiency claims.
 
 \input{assets/tables/tab_experiment_efficiency.tex}
 
 \subsection{Hyperparameter Sensitivity}
+\label{sec:hparam}
 
-We further report hyperparameter-sensitivity results from the final sweep. Figure~\ref{fig:hparam} summarizes local sweeps of four key hyperparameters in the 3-view setting: the SPS sampling mixture coefficient $\alpha$, the GAP proximity threshold $\tau$, the maximum pruning ratio $\beta_{\text{prune}}$, and the ADM warm-up start iteration. The current evidence supports a relatively concentrated working point at $\alpha=0.2$, $\tau=0.015$, $\beta_{\text{prune}}=2\%$, and ADM activated after 15K iterations. We use these results as a sensitivity analysis only, rather than claiming broad robustness over a wide range.
+Figure~\ref{fig:hparam} is reserved for local sweeps of four key hyperparameters in the Chest
+3-view setting: the \sps\ mixture coefficient $\alpha$, the \gap\ proximity threshold $\tau$, the
+\gap\ pruning ratio $\beta_\text{prune}$, and the \adm\ activation iteration. The default
+configuration ($\alpha\!=\!0.2$, $\tau\!=\!0.015$, $\beta_\text{prune}\!=\!2\%$, \adm\ activation
+at 15K) will be assessed once the sweep metrics are available from the experiment logs.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\linewidth]{assets/fig/fig_experiment_hparam_compact.png}
-\caption{Hyperparameter sensitivity analysis in the 3-view setting. The four subplots correspond to the SPS sampling mixture coefficient $\alpha$, the GAP proximity threshold $\tau$, the maximum pruning ratio $\beta_{\text{prune}}$, and the ADM warm-up start iteration. The available results support a concentrated operating point rather than broad parameter insensitivity.}
+\IfFileExists{assets/fig/experiment_fig_hparam.png}{%
+  \includegraphics[width=\linewidth]{assets/fig/experiment_fig_hparam.png}%
+}{\fbox{\parbox[c][6cm][c]{0.95\linewidth}{\centering\small
+  Placeholder: \texttt{assets/fig/experiment\_fig\_hparam.png}\\[4pt]
+  $2\!\times\!2$ panels: (a)~\sps\ $\alpha$;\enspace (b)~\gap\ $\tau$;\enspace
+  (c)~\gap\ $\beta_\text{prune}$;\enspace (d)~\adm\ activation\\
+  Primary y-axis: SSIM2D (solid Crimson); secondary: PSNR2D (dashed); $\bullet$ = default
+}}}
+\caption{\textbf{Hyperparameter sensitivity, Chest 3-view.} Each panel sweeps one hyperparameter
+with all others fixed at the default (marked $\bullet$). Solid Crimson: SSIM2D$\uparrow$;
+dashed: PSNR2D$\uparrow$. (a)~\sps\ mixture coeff.\ $\alpha\!\in\!\{0.0,0.25,0.5,0.75,1.0\}$;
+(b)~\gap\ threshold $\tau$; (c)~\gap\ pruning ratio
+$\beta_\text{prune}\!\in\!\{0,1,2,5,10\}\%$; (d)~\adm\ activation iteration (fraction of 30K iters).
+The final sweep figure will be populated from experiment logs.}
 \label{fig:hparam}
-\end{figure}
-
-For \gap{} specifically, we also keep a more focused local sweep in Figure~\ref{fig:gap-sweep}. It separately visualizes the trends for the proximity threshold $\tau$ and the maximum pruning ratio $\beta_{\text{prune}}$. The best result remains close to the operating point used in the paper, namely $\tau=0.015$ and $\beta_{\text{prune}}=2\%$. When pruning becomes too aggressive or the threshold deviates from this point, the average PSNR2D drops noticeably.
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=\linewidth]{assets/fig/fig_experiment_gap_sweep.png}
-\caption{Local hyperparameter sweep for \gap. The left panel studies the proximity threshold $\tau$, and the right panel studies the maximum pruning ratio $\beta_{\text{prune}}$. The sweep suggests that the operating point used in the paper lies close to a local optimum in both curves.}
-\label{fig:gap-sweep}
 \end{figure}
 
 \FloatBarrier
 
 \subsection{Discussion and Limitations}
+\label{sec:discussion}
 
-The experiments above support the central claim of this paper: in sparse-view CT, the primary bottleneck is often not the number of Gaussian primitives but how capacity is allocated among attenuation-relevant structures. Yet the results also define a clear applicability boundary.
+The experiments confirm that in the moderately sparse regime, the primary bottleneck is capacity
+allocation rather than primitive count. Gains are most pronounced at 3 views, where sufficient
+projection evidence exists for path-anchored initialization and boundary de-redundancy to take
+effect, yet too little evidence for standard densification to converge to a spatially consistent
+solution.
 
-In the extremely under-determined 2-view setting, the coarse support and attenuation layout from FDK still cannot fully replace missing projection evidence. As shown in Figure~\ref{fig:failure-cases}, both Foot 2-view and Pancreas 2-view remain challenging: our method can reduce error spread in some regions but cannot fully recover fine-grained detail when the input information is fundamentally insufficient. At 4 views, the reconstruction-consistency advantage of \rtwo\ becomes competitive again and can approach or match our result in some organs, suggesting that capacity reallocation matters less once sufficient views are available. The main strength of \spags\ therefore lies in the moderately sparse regime, where enough information remains for capacity redistribution to make a difference.
+Two boundaries constrain the current method. At 2 views the FDK reconstruction used by \sps\ is
+insufficiently reliable, so the initialization advantage partially erodes. At 4 views the
+reconstruction-consistency regularization in \rtwo\ is strong enough to compensate for
+boundary-chasing effects, reducing the relative advantage of \spags. Figure~\ref{fig:failure-cases}
+illustrates both failure modes: in Foot 2-view and Pancreas 2-view, fine-grained high-frequency
+detail remains unrecoverable when projection evidence is fundamentally insufficient, regardless of
+initialization or capacity management.
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=\textwidth]{assets/fig/fig_experiment_failure_cases.png}
-\caption{Representative failure cases. We show two under-determined cases, Foot 2-view and Pancreas 2-view, together with error maps of \rtwo\ and \spags\ relative to GT. When the input information is too limited or local structures are highly ambiguous, our method can still reduce error spread in some regions but cannot fully recover fine-grained detail.}
+\IfFileExists{assets/fig/experiment_fig_failure_cases.png}{%
+  \includegraphics[width=\textwidth]{assets/fig/experiment_fig_failure_cases.png}%
+}{\fbox{\parbox[c][5.5cm][c]{0.95\textwidth}{\centering\small
+  Placeholder: \texttt{assets/fig/experiment\_fig\_failure\_cases.png}\\[4pt]
+  2 rows: Foot 2-view (top) / Pancreas 2-view (bottom)\\
+  4 cols: GT / \rtwo / \spags\ / error map (inferno); failure desc.\ inset right ($\leq$25 words)
+}}}
+\caption{\textbf{Representative failure cases, 2-view setting.} Rows: Foot (top), Pancreas
+(bottom). Columns: GT, \rtwo, \spags, and \spags\ error map (inferno, shared vmax with
+Figure~\ref{fig:qual-main}). Zoom-in boxes mark the primary failure region. \spags\ reduces
+overall error spread relative to \rtwo\ but cannot resolve fine structural detail when projection
+evidence is fundamentally absent. Failure descriptions ($\leq$25 words) are inset at the right of
+each row.}
 \label{fig:failure-cases}
 \end{figure*}
 
-Beyond view count, several open questions remain. First, the current \sps\ initialization depends on the quality of the FDK reconstruction, which degrades rapidly below 2 views; exploring alternative priors or learned initializers could relax this constraint. Second, the \gap\ proximity threshold and pruning ratio are currently set through a local sweep and fixed across all organs; organ-adaptive scheduling may further improve performance. Third, all experiments use parallel-beam geometry; extending the framework to cone-beam and dynamic CT settings is left for future work.
+Several directions remain open. First, \sps\ relies on FDK quality, which degrades sharply below
+two views; learned or uncertainty-aware initializers could relax this constraint. Second, the
+\gap\ threshold and pruning ratio are fixed organ-agnostically; organ-adaptive scheduling may
+improve per-organ performance. Third, all experiments assume parallel-beam geometry; extension to
+cone-beam and dynamic CT acquisition is left for future work. Additional per-organ SSIM2D
+breakdowns and single-module ablations will be included only after the corresponding same-protocol
+logs are confirmed.
 
 \section{Conclusion}
 \label{sec:conclusion}
 
-We presented \spags, an \tracefull\ framework for Sparse Tomographic View Synthesis. Our central insight is that under transmissive X-ray imaging, the primary bottleneck in highly sparse reconstruction is not the lack of Gaussian primitives but the misallocation of representation capacity caused by visible-light-style boundary-chasing densification. \sps, \gap, and \adm\ jointly address this through path-anchored initialization, boundary de-redundancy, and local density refinement. Under a five-organ, 2/3/4-view protocol, \spags\ achieves consistent improvements in both PSNR2D and SSIM2D, with the most pronounced gains in the moderately sparse regime where capacity reallocation matters most.
+\spags\ demonstrates that visible-light densification rules impose a systematic capacity-allocation failure in transmissive X-ray imaging that persists even after the rendering equation is physically corrected. By intervening at three stages of Gaussian evolution---path-anchored initialization (\sps), boundary redundancy recovery (\gap), and position-dependent local refinement (\adm)---the framework redirects representation capacity from over-densified anatomical boundaries toward the interior attenuation-relevant structures that conventional gradient-driven growth neglects. Across a five-organ benchmark with 2/3/4 input views against six representative baselines, \spags\ achieves the best average PSNR2D at every sparsity level, with SSIM2D reported for methods whose same-protocol logs are available. The strongest PSNR2D improvement appears in the moderately sparse 3-view regime, where sufficient projection evidence allows capacity reallocation to take effect.
 
 \printbibliography
 \ifXeTeX\else\end{CJK*}\fi
