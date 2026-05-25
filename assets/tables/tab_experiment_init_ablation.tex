@@ -1,6 +1,6 @@
 \begin{table}[t]
 \centering
-\caption{Initialization comparison. We use random initialization without \sps/\gap/\adm\ as the baseline, and compare it with the SPS-only initialization variant and the full \spags\ pipeline. SPS-guided seeding already improves low-view performance consistently, while the full pipeline further boosts 3-view and 4-view quality.}
+\caption{Initialization comparison. We use random initialization without \sps/\gap/\adm\ as the baseline, and compare it with the SPS-only initialization variant and the full \XRAGS\ pipeline. SPS-guided seeding already improves low-view performance consistently, while the full pipeline further boosts 3-view and 4-view quality.}
 \label{tab:init_ablation}
 \resizebox{\linewidth}{!}{%
 \begin{tabular}{lccc}
@@ -9,7 +9,7 @@
 \midrule
 Random & 21.27 & 27.80 & 29.10 \\
 SPS-guided & \best{21.44} & \second{28.01} & \second{29.16} \\
-\textbf{\spags} & \best{21.44} & \best{28.22} & \best{29.20} \\
+\textbf{\XRAGS} & \best{21.44} & \best{28.22} & \best{29.20} \\
 \bottomrule
 \end{tabular}
 }
