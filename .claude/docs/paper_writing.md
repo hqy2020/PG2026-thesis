@@ -44,6 +44,24 @@
 
 引用建议合并到一个 `\cite{a,b,c}`，避免单段散落 5+ 个 `\cite`。
 
+### 同行工作叙述语气（2026-05-28 增补）
+
+- 讨论同行 sparse-view / X-ray Gaussian 工作时，默认采用"不同角度都可能成立 + 实验已证 work"的平和措辞：`approach this limitation from complementary angles` / `explores a similarly diverse set of perspectives` / `these different angles all yield empirical gains, which suggests ... multiple compatible explanations rather than a single root cause`。
+- 避免"都错只有我们对"的语气：禁用 `inherits the same diagnosis`、`whether the remedy is X or Y, all share Z` 这类把同行论点压扁成单一 backbone 的句式。
+- 在 §2.2 末尾必须显式衔接到我们的 `\adm`（"takes inspiration from this line of work / we adopt the lesson that ..."），让 K-Planes 的引用不再只是孤立顺带。
+
+### Tomographic NVS 同类工作压缩节奏（2026-05-28 增补）
+
+X-ray Gaussian / 隐式神经场同类工作在 Related Work 中按 implicit / explicit 两族归纳一句话即可，**不**逐方法细讲：
+
+1. 一句任务背景 + 传统 FDK/SART 限制；
+2. 一句 implicit 族：4 类技术路线（self-supervised sinogram / hash encoding / transformer 结构建模 / population-level encoder–decoder），单 `\cite{...}` 引一组；
+3. 一句 explicit 族：3 类主线 (radiative kernel + rasterizer / integration-bias + voxelization / material-aware + segment-length) + 旁支 4 个 (discretized voxel / artifact-suppression / 4D / slice-wise) 括号内一笔免责"outside our sparse-view novel-view protocol, omitted from main comparison"；
+4. 一句共性问题（focus 落在 imaging equation 或 kernel 上，不在 evolution rule）；
+5. 一句 `\XRAGS\` 代入（`\sps` / `\gap` / `\adm` 对齐 initialization / pruning / refinement 到 attenuation path）。
+
+末尾不再展开三阶段诊断（这是与 §3 Method 的硬连接，但要简短），避免重复 intro。
+
 ## 图片要求
 
 - 图片服务论文论证而非展示感；优先支持方法流程、定性对比、误差分析、模块机制解释
