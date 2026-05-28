@@ -24,6 +24,26 @@
 - 默认收束到 `Sparse Tomographic View Synthesis`
 - 引言故事：从通用 NVS → 经 `Sparse View Synthesis` 与 `Tomographic Novel View Synthesis` 两条约束 → 汇合到本文 `Sparse Tomographic View Synthesis`
 
+## Related Work 骨架（反向递进，2026-05-28 落定）
+
+三段式，**从远到近**：
+
+1. `Gaussian Splatting` — 底层工具
+   - 引出 3DGS（`kerbl20233d`）+ surface / dynamic / SLAM / 3D 生成 / 效率扩展各一句
+   - 末段收束到「densification 与 SH color 都假设 dense view + surface radiance」
+2. `Sparse View Synthesis` — 稀疏视角下的退化与正则
+   - NeRF 系（depth / semantic / patch+frequency）+ 3DGS 系（FSGS/CoR-GS/DNGaussian/DropGaussian + feed-forward 一族）+ K-Planes 复用提示（`fridovich2022kplanes` 标注 ADM 中复用）
+   - 末段收束到「这些 sparse-view 方案仍共享 error/gradient-driven densification + 高对比度表面优先」
+3. `Tomographic Novel View Synthesis` — X-ray/CT 物理特殊性
+   - 传统 (FDK / SART) → 隐式 (IntraTomo / NAF / SAX-NeRF / Geometry-Aware) → 显式 radiative (X-Gaussian / R²-Gaussian / X-Field) + 旁支 (DGR / GR-Gaussian / X²-Gaussian / Layer-Based) 并附「不进入主比较」免责
+   - 末段必须收束到「三阶段错误分配 → SPS/GAP/ADM」与 `XRA-GS`，与 §3 Method 硬连接
+
+每段末尾用**一句轻量桥接句**点出局限、引出下一段；不重复 intro 论点，不预告 method 细节。
+
+句式可借鉴 R²-Gaussian §2 / CoR-GS §2 / X-Field §2 / X²-Gaussian §2 的扩展列举节奏，但全部改写为 `XRA-GS` 口径，**保持 §14 物理论证骨架**（attenuation-aligned，不写 attenuation-aware；禁用 fortunate coupling / replace the densification mechanism）与 §15 术语（`Gaussians` 不写 `primitive`）。
+
+引用建议合并到一个 `\cite{a,b,c}`，避免单段散落 5+ 个 `\cite`。
+
 ## 图片要求
 
 - 图片服务论文论证而非展示感；优先支持方法流程、定性对比、误差分析、模块机制解释
