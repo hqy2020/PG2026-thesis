@@ -62,6 +62,45 @@ X-ray Gaussian / 隐式神经场同类工作在 Related Work 中按 implicit / e
 
 末尾不再展开三阶段诊断（这是与 §3 Method 的硬连接，但要简短），避免重复 intro。
 
+## Method 章节密度（2026-05-28 落定，对齐 R²GS §3+§4.1 / X-Field §3.1）
+
+§3 Method 总长度目标 **≈ 1.5 页**，结构固定：
+
+1. `§ Preliminary`（半页）：分两段 paragraph，不再分小节
+   - 段 A：X-ray attenuation imaging（Beer–Lambert + 对数化，1 公式：`−log(I/I₀)=∫μdl`）
+   - 段 B：Radiative Gaussian backbone（核函数 + 密度场 + 渲染算子，2 公式：`G(x)`、`σ(x)=ΣG_i` / `Î=R(G;π)`）
+   - 段末一句 problem statement：backbone 对齐了 renderer，本文要 realign 的是 evolution rule
+2. `§ Overall Framework`（一段 + pipeline 图）：一句话串起 SPS→GAP→ADM 在 init/loop/refine 的位置；**不写 algorithm 伪代码块**
+3. `§ SPS / § GAP / § ADM`：每模块一段 paragraph，结构「motivation 一句 + 单/双公式 + 一句作用机制」
+4. `§ Training Loss`：单式 `L = L₁ + λ_d L_dssim + λ_v L_3DTV + λ_p L_pTV` + 一句各项含义；不再拆 4 个 align 子公式
+
+### 公式瘦身规则
+
+| 模块 | 保留 | 删除 |
+|---|---|---|
+| Preliminary | Beer–Lambert / Gaussian kernel / 密度场 / 渲染算子 共 3 式 | 视觉光 α-compositing（已在 intro 提到名字） |
+| SPS | 单式 `q(x)=α/\|Ω\|+(1−α)V_FDK(x)^γ/Z` | α、γ 数值 / 50K 初值 / "small local search" 描述 |
+| GAP | `s_i=⟨‖p_i−p_j‖⟩_{j∈N_K(i)}` + `m_i={1 if s_i≥τ ∨ ḡ_i≥δ, 0 else}` | τ、δ、K、β_prune 数值 / Σ shrink 公式 / [2K,20K] 区间 |
+| ADM | `F(x)=concat(bilinear)` + `ρ_final=ρ_base(1+g(Δσ−Δσ̄))` | β(t) 三段调度 / s_view 数值 / r_max / warm-up·hold·decay 描述 |
+| Loss | 单 L 公式 | 4 个子损失的 align 块 |
+
+### 超参数清零（论文不是技术报告）
+
+正文严禁出现以下技术报告式描述（一律下沉到补充材料或代码）：
+
+- 具体数值：`50K initial Gaussians` / `2K, 20K iterations` / `α = 0.2` / `γ = 1.0` / `K = 5` / `τ = 0.05` / `δ = 0.0002` / `β_prune = 0.03` / `s_view = {0.5, 0.7, 1.0}` / `gap_scale_shrink_factor = 0.8` 等
+- 训练调度：`warm-up phase` / `hold phase` / `exponential decay` / `[2K, 20K] interval` 等
+- 实现枝节：`small local search` / `bilinear interpolation` 作为独立强调 / 内存优化技巧
+- 验证命令：`grep -n -E "50K|2K|20K|warm-up|hold phase|exponential decay" main.tex` 在 §3 范围内应清零
+
+### 代码-论文对齐措辞（不写超参数但学术化提及机制）
+
+公式与文字必须与 GitHub 代码（`hqy2020/PG2026`）实现对齐，**但学术化为机制描述**而非配置项。例：
+
+- SPS 写「density-weighted mixture distribution that interpolates between a uniform prior and a power-shaped attenuation profile」（对齐 `initialize_pcd.py` 的 `weights^γ` + `uniform_ratio` + `density_rescale`，不写出 γ / α / 50K）
+- GAP 写「flag Gaussians that are simultaneously locally crowded and recently inactive as redundancy candidates, prune a bounded fraction per cycle, slightly contract the covariance of retained neighbors」（对齐 `proximity_densifier.py` 双条件 + shrink，不写 K / τ / δ / β_prune）
+- ADM 写「dual-head MLP outputs a density offset and a confidence gate; the offset is batch-centered and applied as a relative modulation, with magnitude scaled by the number of input views」（对齐 `kplanes.py` + `gaussian_model.py` 双头 + zero-mean + view-adaptive，不写 K-Planes 分辨率 / r_max / s_view）
+
 ## 图片要求
 
 - 图片服务论文论证而非展示感；优先支持方法流程、定性对比、误差分析、模块机制解释
