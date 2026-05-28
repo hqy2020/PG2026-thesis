@@ -91,7 +91,7 @@ Our main contributions are summarized as follows:
 
 \subsection{Sparse View Synthesis}
 
-Neural Radiance Fields (NeRF) recover a continuous volumetric field through coordinate MLPs and volume rendering~\cite{mildenhall2021nerf}, and degrade noticeably when only a handful of input views are available. NeRF-side sparse-view methods approach this limitation from complementary angles, each adding a different external prior that has been empirically validated: depth supervision from sparse structure-from-motion points~\cite{deng2022dsnerf,sparsenerf2023}, semantic consistency from pretrained vision encoders~\cite{jain2021dietnerf}, and geometric/appearance regularization with frequency-domain annealing~\cite{niemeyer2022regnerf,freenerf2023}. Sparse-view 3DGS work explores a similarly diverse set of perspectives on the explicit Gaussian set: FSGS attributes degradation to insufficient coverage and augments densification with proximity-guided unpooling and depth priors~\cite{zhu2024fsgs}; CoR-GS treats it as unstable optimization and adds dual-field co-regularization with co-pruning~\cite{zhang2024cor}; DNGaussian injects geometry through depth normalization~\cite{li2024dn}; and DropGaussian counters overfitting via stochastic Gaussian dropout~\cite{park2025dropgaussian}. A complementary feed-forward line further moves geometry completion into large-scale pretraining~\cite{charatan2024pixelsplat,chen2024mvsplat,depthsplat2025,liu2025monosplat}. These different angles all yield empirical gains, which suggests that sparse-view degradation admits multiple compatible explanations rather than a single root cause, and our \adm\ takes inspiration from this line of work: we adopt the lesson that sparse-view Gaussians benefit from an additional positional signal beyond raw photometric gradients, and we instantiate this signal through a plane-decomposed encoding in the spirit of K-Planes~\cite{fridovich2022kplanes} for position-dependent density refinement. What remains shared across these methods, however, is a densification backbone designed for visible-light surface radiance; the next subsection turns to how that assumption itself is challenged under X-ray line integration.
+Neural Radiance Fields (NeRF) recover a continuous volumetric field through coordinate MLPs and volume rendering~\cite{mildenhall2021nerf}, and degrade noticeably when only a handful of input views are available. NeRF-side sparse-view methods approach this limitation from complementary angles, each adding a different external prior that has been empirically validated: depth supervision from sparse structure-from-motion points~\cite{deng2022dsnerf,sparsenerf2023}, semantic consistency from pretrained vision encoders~\cite{jain2021dietnerf}, and geometric/appearance regularization with frequency-domain annealing~\cite{niemeyer2022regnerf,freenerf2023}. Sparse-view 3DGS work explores a similarly diverse set of perspectives on the explicit Gaussian set: FSGS attributes degradation to insufficient coverage and augments densification with proximity-guided unpooling and depth priors~\cite{zhu2024fsgs}; CoR-GS treats it as unstable optimization and adds dual-field co-regularization with co-pruning~\cite{zhang2024cor}; DNGaussian injects geometry through depth normalization~\cite{li2024dn}; and DropGaussian counters overfitting via stochastic Gaussian dropout~\cite{park2025dropgaussian}. A complementary feed-forward line further moves geometry completion into large-scale pretraining~\cite{charatan2024pixelsplat,chen2024mvsplat,depthsplat2025,liu2025monosplat}. These different angles all yield empirical gains, which suggests that sparse-view degradation admits multiple compatible explanations rather than a single root cause. The next subsection turns to how that assumption itself is challenged under X-ray line integration.
 
 \subsection{Tomographic Novel View Synthesis}
 
@@ -100,242 +100,126 @@ Sparse-view tomographic novel view synthesis aims to recover unseen X-ray projec
 \section{Method}
 \label{sec:method}
 
-Figure~\ref{fig:intro-compare} already summarizes the core distinction at the pipeline level: \XRAGS\ does not keep stacking auxiliary branches on top of an existing densification backbone, but instead reorders how Gaussians are initialized, reclaimed, and refined. We now turn to the implementation level and show how this attenuation-aligned evolution pipeline is instantiated by \sps, \gap, and \adm\ on top of the radiative Gaussian backbone of \rtwo.
+\subsection{Preliminary}
+\label{sec:preliminary}
 
-\subsection{Problem Formulation}
-
-Let the sparse-view observation set be $\mathcal{P}=\{(I_v,\pi_v)\}_{v=1}^{V}$, where $I_v$ denotes the $v$-th X-ray projection and $\pi_v$ denotes its corresponding acquisition geometry. Given a coarse FDK reconstruction volume $V_{\text{FDK}}$ obtained from these observations, our goal is to learn an explicit radiative Gaussian representation in a per-case optimization setting so that unseen-angle target projections can be synthesized from only a few observed projections. Although this task is naturally coupled with volumetric density recovery, our primary optimization target remains novel-view quality in the projection domain.
-
-\subsection{3DGS and X-ray Rendering Background}
-
-To clarify that our problem is not simply ``adding another prior,'' we first contrast the pixel formation mechanisms of visible-light 3DGS and X-ray projection. In standard visible-light 3DGS, the color of a pixel is typically accumulated through front-to-back compositing of multiple splats ordered along the viewing ray:
+\paragraph{X-ray attenuation imaging.}
+An X-ray detector pixel records the residual energy of a single ray after traversing the object, governed by the Beer--Lambert law. For a ray $\mathbf{r}$ with source intensity $I_0$ and attenuation field $\mu(\mathbf{x})$, the standard practice is to work in the logarithmic domain~\cite{kak2001principles}, so that each pixel becomes a line integral of attenuation along the ray:
 \begin{equation}
-\mathbf{C}(\mathbf{r})=\sum_{i=1}^{N_{\mathbf{r}}} T_i\,\alpha_i\,\mathbf{c}_i,\qquad
-T_i=\prod_{j<i}(1-\alpha_j),
+I(\mathbf{r})=-\log\frac{I'(\mathbf{r})}{I_0}=\int_{\mathbf{r}}\mu(\mathbf{x})\,\mathrm{d}l.
+\label{eq:beer-lambert}
 \end{equation}
-where $\mathbf{r}$ is the camera ray, and $\alpha_i$ and $\mathbf{c}_i$ denote the opacity and radiance attributes of the $i$-th splat. The core intuition is that a pixel is formed by the accumulation of local surface contributions.
+Unlike $\alpha$-compositing in visible-light rendering, this integral is linear and order-independent: every point along $\mathbf{r}$ contributes additively, with no occlusion between front and back materials.
 
-In X-ray imaging, however, a detector pixel corresponds more closely to the remaining energy of a single ray after traversing internal materials. Its physical measurement can be written as
+\paragraph{Radiative Gaussian backbone.}
+We represent the scanned object with a set of radiative Gaussians $\mathcal{G}=\{G_i\}_{i=1}^{N}$, following the recent line of explicit Gaussian-based tomographic representations~\cite{cai2024xgaussian,hu2024r2}. Each Gaussian $G_i$ is parameterized by a center $\mathbf{p}_i$, a covariance $\Sigma_i$, and a non-negative density $\rho_i$, defining a local density field
 \begin{equation}
-\begin{aligned}
-I(\mathbf{r}) &= I_0\exp\!\left(-\int_{\mathbf{r}}\mu(\mathbf{x})\,\mathrm{d}l\right),\\
--\log\frac{I(\mathbf{r})}{I_0} &= \int_{\mathbf{r}}\mu(\mathbf{x})\,\mathrm{d}l,
-\end{aligned}
+G_i(\mathbf{x})=\rho_i\exp\!\Big(-\tfrac{1}{2}(\mathbf{x}-\mathbf{p}_i)^{\!\top}\Sigma_i^{-1}(\mathbf{x}-\mathbf{p}_i)\Big),
+\label{eq:radiative-gaussian}
 \end{equation}
-where $\mu(\mathbf{x})$ is the attenuation coefficient at spatial location $\mathbf{x}$ and $\mathrm{d}l$ is the differential path length along the ray. In other words, an X-ray pixel is not a sum of surface colors; it is the integral of attenuation contributions from different materials along a single path. What matters is how much of each material occupies the path, rather than how strong the local response is at one boundary point.
-
-We represent the scene as a Gaussian set $\mathcal{G}=\{g_i\}_{i=1}^{N}$, where each Gaussian is written as
-\begin{equation}
-g_i=(\mathbf{p}_i,\Sigma_i,\rho_i,\mathbf{c}_i),
-\end{equation}
-denoting the center, covariance, density, and appearance/radiative parameters, respectively. For any view $\pi_v$, the \rtwo-style radiative renderer can be written as
+and the global attenuation field is the sum $\mu(\mathbf{x})=\sum_{i=1}^{N}G_i(\mathbf{x})$. Substituting this representation into Eq.~\eqref{eq:beer-lambert} admits a differentiable X-ray rasterizer $\mathcal{R}$, so that for any acquisition geometry $\pi_v$ a projection can be rendered as
 \begin{equation}
 \hat{I}_v=\mathcal{R}(\mathcal{G};\pi_v).
 \label{eq:renderer}
 \end{equation}
-Except for our new \sps, \gap, and \adm\ modules, the radiative rasterization, densification, and differentiable voxelization settings follow \rtwo~\cite{hu2024r2}. Importantly, X-Gaussian and \rtwo\ have already aligned the renderer with X-ray radiative projection. The mismatch we target lies mainly in the Gaussian evolution rule rather than in the imaging equation itself. In this baseline, Gaussians are still usually duplicated or split according to projection-error gradients. This is effective for improving surface coverage in natural scenes, but in CT it tends to keep pushing the evolving Gaussian set toward high-gradient anatomical boundaries. The model therefore uses the right X-ray renderer, yet still organizes Gaussians with a visible-light-style growth logic, which is precisely the issue our three modules address.
+
+\paragraph{Problem statement.}
+Given a sparse-view observation set $\mathcal{P}=\{(I_v,\pi_v)\}_{v=1}^{V}$ and a coarse FDK reconstruction $V_{\text{FDK}}$, our goal is to learn $\mathcal{G}$ in a per-case optimization setting so that target projections at unseen angles can be synthesized from only a few observed projections. The radiative backbone has already aligned the renderer with X-ray physics; what remains misaligned in this regime is the evolution rule that shapes $\mathcal{G}$ during training, where gradient-driven densification continues to concentrate Gaussians at high-gradient anatomical boundaries. \XRAGS\ realigns this evolution rule through three modules introduced below, while leaving the rasterizer and the differentiable voxelizer of \rtwo~\cite{hu2024r2} unchanged.
 
 \subsection{Overall Framework}
+\label{sec:framework}
 
-As shown in Figure~\ref{fig:pipeline}, \XRAGS\ instantiates the attenuation-aligned Gaussian evolution pipeline as three sequential modules embedded into the explicit radiative Gaussian backbone of \rtwo. \sps\ seeds Gaussians into more relevant anatomical regions during initialization using the coarse FDK reconstruction. \gap\ then periodically reclaims locally redundant Gaussians after densification, preventing high-gradient boundaries from dominating Gaussian growth. Finally, \adm\ refines the density distribution of retained Gaussians based on position-aware context during later optimization. In short, we do not redesign X-ray physics; we reorganize the optimization loop itself into path anchoring, boundary de-redundancy, and local refinement. Algorithm~\ref{alg:training} summarizes the complete training procedure.
-
-\begin{algorithm}[t]
-\caption{\XRAGS\ Training Pipeline}\label{alg:training}
-\begin{algorithmic}[1]
-\Require Sparse projections $\mathcal{P}$, FDK volume $V_{\text{FDK}}$, iterations $T$
-\Ensure Optimized Gaussian set $\mathcal{G}^{*}$
-\State \textbf{Stage 1 --- Initialization (\sps):}
-\State \quad Compute density-weighted sampling $p(\mathbf{x})$ from $V_{\text{FDK}}$ \hfill \textit{// Eq.~\eqref{eq:sps-profile}}
-\State \quad Mix with uniform: $q(\mathbf{x}) \gets \alpha / |\Omega| + (1{-}\alpha)\,p(\mathbf{x})$ \hfill \textit{// Eq.~\eqref{eq:sps-mixture}}
-\State \quad Sample $M$ centers; set scales and densities from $V_{\text{FDK}}$
-\State \textbf{Stage 2 --- Main optimization loop:}
-\For{$t = 1, \ldots, T$}
-  \State Render $\hat{I}_v \gets \mathcal{R}(\mathcal{G}; \pi_v)$ for observed views \hfill \textit{// Eq.~\eqref{eq:renderer}}
-  \State Compute loss $\mathcal{L}$ \hfill \textit{// Eq.~\eqref{eq:training-loss}}
-  \State Update $\mathcal{G}$, \adm\ parameters via back-propagation
-  \If{$t \bmod T_{\text{densify}} = 0$}
-    \State Standard densification (clone / split)
-    \If{$t \in [T_{\text{gap}}, T_{\text{gap,end}}]$}
-      \State \textbf{\gap:} compute proximity $s_i$; prune by mask $m_i$ \hfill \textit{// Eqs.~\eqref{eq:gap-proximity}--\eqref{eq:gap-mask}; $T_{\text{gap}}\!=\!2\text{K}$, $T_{\text{gap,end}}\!=\!20\text{K}$}
-    \EndIf
-  \EndIf
-  \If{$t \ge T_{\text{adm}}$}
-    \State \textbf{\adm:} predict $\tilde{o}(\mathbf{x})$; modulate $\rho_{\text{final}}$ \hfill \textit{// Eq.~\eqref{eq:adm-density}}
-  \EndIf
-\EndFor
-\State \Return $\mathcal{G}^{*} \gets \mathcal{G}$
-\end{algorithmic}
-\end{algorithm}
+As illustrated in Figure~\ref{fig:pipeline}, \XRAGS\ instantiates the attenuation-aligned evolution pipeline as three modules acting at three distinct stages of optimization: \sps\ replaces standard initialization by seeding Gaussians along the FDK attenuation support; \gap\ acts inside the densification loop and reclaims locally redundant Gaussians produced by gradient-driven growth; \adm\ acts on retained Gaussians and refines their density values using position-dependent spatial context. At inference, the rasterizer remains identical to the radiative backbone, so the added cost is concentrated in training.
 
 \begin{figure*}[t]
 \centering
 \IfFileExists{assets/fig/method_fig_pipeline.png}{%
-\begin{overpic}[width=0.98\textwidth]{assets/fig/method_fig_pipeline.png}
-  % --- module block labels ---
-  \put(5,48){\colorbox{white!80!gray}{\footnotesize\textbf{Input}}}
-  \put(1.5,34){\parbox{7em}{\centering\scriptsize Sparse X-ray\\[-1pt]Projections}}
-  \put(1.5,18){\parbox{7em}{\centering\scriptsize FDK Coarse\\[-1pt]Recon.}}
-  % SPS purple block
-  \put(20,55){\colorbox{purple!15}{\color[HTML]{7B5CA6}\small\textbf{SPS}}}
-  \put(18,44){\parbox{8em}{\centering\scriptsize Path-anchored\\[-1pt]initialization}}
-  % Loop box label
-  \put(37,88){\scriptsize\textit{Training loop}}
-  % ADM orange block
-  \put(38,55){\colorbox{orange!15}{\color[HTML]{E07B39}\small\textbf{ADM}}}
-  \put(36,44){\parbox{8em}{\centering\scriptsize Density\\[-1pt]modulation}}
-  % GAP teal block
-  \put(55,55){\colorbox{teal!15}{\color[HTML]{3CA897}\small\textbf{GAP}}}
-  \put(54,44){\parbox{8em}{\centering\scriptsize Redundancy\\[-1pt]recovery}}
-  % Output
-  \put(83,55){\colorbox{white!80!gray}{\footnotesize\textbf{Output}}}
-  \put(82,34){\parbox{7em}{\centering\scriptsize Novel View\\[-1pt]Rendering}}
-  % Legend
-  \put(2,93){\colorbox[HTML]{7B5CA6}{\color{white}\scriptsize~Init~}}
-  \put(11,93){\colorbox[HTML]{3CA897}{\color{white}\scriptsize~Pruning~}}
-  \put(22,93){\colorbox[HTML]{E07B39}{\color{white}\scriptsize~Refinement~}}
-\end{overpic}%
-}{\fbox{\parbox[c][6cm][c]{0.95\textwidth}{\centering Placeholder: \texttt{assets/fig/method\_fig\_pipeline.png}}}}
-\caption{\textbf{Overall framework of \XRAGS.} Given sparse X-ray projections $\{(I_v,\pi_v)\}_{v=1}^{V}$ and a coarse FDK reconstruction $V_{\text{FDK}}$, \sps\ (purple) performs path-anchored initialization along the attenuation support outside the optimization loop. An iterative training loop then interleaves \adm\ (orange, position-aware density modulation) and \gap\ (teal, gradient-aware redundancy recovery), supervised end-to-end by the rendering loss. Solid arrows denote data flow; dashed arrows denote gradient flow. The output is a novel-view X-ray projection together with the recovered tomographic volume.}
+\includegraphics[width=0.98\textwidth]{assets/fig/method_fig_pipeline.png}%
+}{\fbox{\parbox[c][4cm][c]{0.95\textwidth}{\centering Placeholder: \texttt{assets/fig/method\_fig\_pipeline.png}}}}
+\caption{\textbf{Overall framework of \XRAGS.} Sparse X-ray projections together with a coarse FDK reconstruction enter a radiative Gaussian backbone whose Gaussian evolution is reorganized by \sps\ (seed), \gap\ (prune), and \adm\ (refine). The three modules act at initialization, inside the densification loop, and during later optimization, respectively, leaving inference unchanged.}
 \label{fig:pipeline}
 \end{figure*}
 
 \subsection{Support-Profile Seeding (\sps)}
+\label{sec:sps}
 
-\sps\ initializes Gaussians in anatomically relevant regions using support-profile cues from the coarse FDK reconstruction. Initialization strongly influences the downstream optimization trajectory, yet neither of the standard 3DGS initializers fits CT well: uniform sampling cannot distinguish the anatomical importance of air, soft tissue, and bone, while SfM-based point-cloud initialization is unstable under gray-value overlap and weak local texture in X-ray projection~\cite{cai2024xgaussian}. Crucially, we do not use a vague spatial prior. Instead, we draw on three concrete signals contained in the FDK reconstruction: foreground anatomical support, low-frequency attenuation layout, and a coarse intensity hierarchy that differentiates air, soft tissue, and bony structures. The sparse-view CT literature also widely treats FDK/FBP reconstruction as a coarse CT volume with streak artifacts whose main value lies in global structure layout and useful frequency content rather than reliable fine detail~\cite{wang2022rfinet,li2023gloredi,li2025threedgrct,hu2024r2}. Based on these structural properties of the FDK reconstruction, we use the coarse density volume $V_{\text{FDK}}$ produced by FDK and define a density-weighted sampling distribution over a discrete voxel grid $\Omega$:
+Initialization strongly conditions the optimization trajectory of radiative Gaussians, yet standard 3DGS initializers transfer poorly to X-ray tomography: uniform sampling ignores the strong contrast between air, soft tissue, and bone, while SfM point-cloud initialization is unstable under gray-value overlap and weak local texture in X-ray projection~\cite{cai2024xgaussian}. The sparse-view CT literature has consistently treated the coarse FDK volume $V_{\text{FDK}}$ as carrying reliable foreground support and low-frequency attenuation layout, even when its fine detail is corrupted by streak artifacts~\cite{wang2022rfinet,li2023gloredi,li2025threedgrct,hu2024r2}. We exploit this signal as a sampling prior rather than as a target volume. Concretely, over the voxel grid $\Omega$ underlying $V_{\text{FDK}}$ we sample seed positions from a density-weighted mixture distribution
 \begin{equation}
-p(\mathbf{x})=\frac{\left(\max(V_{\text{FDK}}(\mathbf{x}),\epsilon)\right)^\gamma}{\sum_{\mathbf{x}'\in\Omega}\left(\max(V_{\text{FDK}}(\mathbf{x}'),\epsilon)\right)^\gamma},
-\label{eq:sps-profile}
+q(\mathbf{x})=\alpha\,\frac{1}{|\Omega|}+(1-\alpha)\,\frac{V_{\text{FDK}}(\mathbf{x})^{\gamma}}{Z},\qquad Z=\!\sum_{\mathbf{x}'\in\Omega}V_{\text{FDK}}(\mathbf{x}')^{\gamma},
+\label{eq:sps}
 \end{equation}
-where $\epsilon$ avoids zero probability in background regions and $\gamma$ controls sampling concentration.
-
-Density weighting alone would over-concentrate Gaussians near the brightest bony structures and could mistake the strongest sparse-view FDK responses for precise geometry. We therefore mix uniform sampling with the support-profile distribution:
-\begin{equation}
-q(\mathbf{x})=\alpha\frac{1}{|\Omega|}+(1-\alpha)p(\mathbf{x}),\quad \mathbf{x}\in\Omega,
-\label{eq:sps-mixture}
-\end{equation}
-and independently sample $M$ initial centers $\{\mathbf{x}_m\}_{m=1}^{M}$ from $q(\mathbf{x})$, where $M$ is the number of initial Gaussians. This design preserves global coverage while allocating more Gaussians to anatomical regions with meaningful attenuation support, without collapsing entirely onto dense bony boundaries. After sampling the locations, we initialize Gaussian densities from the FDK values and set scale parameters according to the local sampling density, yielding $50$K initial Gaussians. In all experiments, $\alpha$ and $\gamma$ are selected by a small local search and then fixed to avoid scene-specific manual tuning.
+that linearly interpolates between a uniform prior and a power-shaped attenuation profile. Per-Gaussian densities are then queried from $V_{\text{FDK}}$ at the sampled locations and per-Gaussian scales are set by nearest-neighbor spacing. The mixture form is critical: density weighting alone would collapse capacity onto the brightest bony structures, while the uniform term retains global coverage so that under-attenuating but anatomically relevant regions remain populated.
 
 \begin{figure}[t]
 \centering
 \IfFileExists{assets/fig/method_fig_sps.png}{%
-\begin{overpic}[width=\linewidth]{assets/fig/method_fig_sps.png}
-  \put(1,92){\colorbox{white}{\footnotesize\textbf{(a)}}}
-  \put(34,92){\colorbox{white}{\footnotesize\textbf{(b)}}}
-  \put(67,92){\colorbox{white}{\footnotesize\textbf{(c)}}}
-  % Equation overlay at bottom-right of panel (b)
-  \put(40,5){\parbox{22em}{\centering\scriptsize$p(\mathbf{x})\!\propto\!V_{\text{FDK}}(\mathbf{x})^{\gamma},\quad q\!=\!\alpha/|\Omega|\!+\!(1\!-\!\alpha)p$}}
-\end{overpic}%
-}{\fbox{\parbox[c][5cm][c]{0.95\linewidth}{\centering Placeholder: \texttt{assets/fig/method\_fig\_sps.png}}}}
-\caption{\textbf{Support-Profile Seeding (\sps).} (a) From the sparse projections, a coarse FDK volume is reconstructed; the horizontal attenuation profile along an anatomical scan line exposes the support-profile cue (purple curve). (b) \sps\ converts the attenuation magnitude into a density-weighted sampling map (viridis) and mixes it with a uniform prior, so capacity concentrates on anatomically relevant support while a small uniform term retains global coverage. (c) Compared with random initialization (gray dots), \sps\ produces an initial Gaussian set (purple dots) already aligned with the attenuation support before any optimization step.}
+\includegraphics[width=\linewidth]{assets/fig/method_fig_sps.png}%
+}{\fbox{\parbox[c][3.5cm][c]{0.95\linewidth}{\centering Placeholder: \texttt{assets/fig/method\_fig\_sps.png}}}}
+\caption{\textbf{Support-Profile Seeding (\sps).} From the coarse FDK volume, \sps\ builds a density-weighted mixture distribution that interpolates between a uniform prior and the attenuation profile. Sampling from this mixture seeds Gaussians along the anatomical support before any optimization step.}
 \label{fig:sps}
 \end{figure}
 
 \subsection{Geometry-aware Pruning (\gap)}
+\label{sec:gap}
 
-\gap\ periodically removes locally redundant Gaussians based on spatial proximity and gradient activity. In CT, gradient-driven densification often keeps duplicating Gaussians around bone-soft tissue boundaries because these regions produce larger projection-error gradients. However, high gradient does not always imply missing coverage; it may also indicate that the same anatomical boundary is being represented repeatedly by neighboring Gaussians. Instead of following the FSGS logic of adding support points in sparse regions~\cite{zhu2024fsgs}, \gap\ explicitly measures local crowding in world coordinates and uses it for redundancy recovery in over-densified regions.
+Inside the radiative backbone, projection-error gradients are systematically larger near bone--soft-tissue boundaries, so standard gradient-driven densification keeps duplicating Gaussians around the same high-contrast surfaces. Large gradients in this regime do not always imply missing coverage: they can also reflect that an already-saturated boundary is being represented redundantly by neighboring Gaussians. Rather than adding more support points in sparse regions in the spirit of FSGS~\cite{zhu2024fsgs}, \gap\ acts in the opposite direction and reclaims locally crowded Gaussians during densification.
 
-Specifically, for each Gaussian $G_i$, let $\mathcal{N}_K(i)$ denote the index set of its $K$ nearest neighbors excluding itself. We compute the mean Euclidean distance to these neighbors as a proximity score:
+For each Gaussian $G_i$ we define a proximity score from its $K$ nearest neighbors $\mathcal{N}_K(i)$,
 \begin{equation}
-s_i=\frac{1}{K}\sum_{j\in\mathcal{N}_K(i)}\|\mathbf{p}_i-\mathbf{p}_j\|_2.
+s_i=\frac{1}{K}\sum_{j\in\mathcal{N}_K(i)}\|\mathbf{p}_i-\mathbf{p}_j\|_2,
 \label{eq:gap-proximity}
 \end{equation}
-When $s_i$ falls below a threshold $\tau$, the Gaussian lies in an overly crowded region. To avoid deleting Gaussians that are still learning useful structure, we further introduce a gradient-activity filter. Let $\bar{g}_i$ denote the accumulated $L_1$ statistic of the positional gradient of this Gaussian over the current densification cycle. We define a retention mask $m_i\in\{0,1\}$ as
+and combine it with $\bar{g}_i$, the accumulated positional-gradient magnitude of $G_i$ over the current densification cycle. A Gaussian is flagged as a redundancy candidate only when it is simultaneously locally crowded and recently inactive:
 \begin{equation}
-m_i=
-\begin{cases}
-1, & s_i\ge\tau \ \lor\ \bar{g}_i\ge\delta,\\
-0, & \text{otherwise}.
-\end{cases}
+m_i=\mathbf{1}\!\left[s_i\ge\tau\ \lor\ \bar{g}_i\ge\delta\right],
 \label{eq:gap-mask}
 \end{equation}
-where $m_i=0$ means that the Gaussian is treated as a redundancy candidate in the current cycle. In implementation, \gap\ does not replace the original 3DGS densification; it is a periodic recovery step applied afterwards. We first generate candidate Gaussians through the standard duplication/splitting rule and then use $m_i$ to filter redundant ones. In each cycle, we prune at most a fraction $\beta_{\text{prune}}$ of the total Gaussians, and the module is triggered periodically from 2K to 20K iterations. To avoid suddenly making local support too sparse after pruning, we only shrink the covariance of newly retained Gaussians:
-\begin{equation}
-\Sigma_i^{\text{new}}=\eta\Sigma_i,\quad 0<\eta<1.
-\end{equation}
-\gap\ therefore regularizes the densification process by suppressing locally redundant Gaussians, preventing high-gradient boundaries from continuously monopolizing representation capacity.
+i.e.\ $m_i\!=\!0$ marks a prune candidate. \gap\ then removes a bounded fraction of the flagged Gaussians per cycle and slightly contracts the covariance of their retained neighbors to avoid creating local support holes. The dual criterion is what distinguishes \gap\ from purely density-based pruning: gradient-activity prevents deleting Gaussians that are still learning a boundary, while proximity prevents over-densified regions from continuously monopolizing capacity.
 
 \begin{figure}[t]
 \centering
 \IfFileExists{assets/fig/method_fig_gap.png}{%
-\begin{overpic}[width=\linewidth]{assets/fig/method_fig_gap.png}
-  \put(1,92){\colorbox{white}{\footnotesize\textbf{(a)}}}
-  \put(34,92){\colorbox{white}{\footnotesize\textbf{(b)}}}
-  \put(67,92){\colorbox{white}{\footnotesize\textbf{(c)}}}
-  % Pruning criterion overlay
-  \put(36,5){\parbox{22em}{\centering\scriptsize prune if $(s_i<\tau)\wedge(\bar{g}_i<\delta)$;\enspace remove $\leq\beta_{\text{prune}}\!\cdot\!N$}}
-\end{overpic}%
-}{\fbox{\parbox[c][5cm][c]{0.95\linewidth}{\centering Placeholder: \texttt{assets/fig/method\_fig\_gap.png}}}}
-\caption{\textbf{Geometry-aware Pruning (\gap).} (a) After standard gradient-driven densification, Gaussians accumulate around high-attenuation boundaries, producing visible over-densification clusters. (b) For each Gaussian, \gap\ measures local crowding by the mean Euclidean distance to its $K$ nearest neighbors and combines it with the accumulated gradient activity over the current densification cycle: a Gaussian is flagged as a redundancy candidate (red $\times$) only if both KNN distance is below $\tau$ and gradient activity is below $\delta$; otherwise it is retained (green $\circ$). (c) After removing at most a fraction $\beta_{\text{prune}}$ of the redundant candidates, the cleaned distribution preserves the attenuation support while freeing capacity for under-served interior regions.}
+\includegraphics[width=\linewidth]{assets/fig/method_fig_gap.png}%
+}{\fbox{\parbox[c][3.5cm][c]{0.95\linewidth}{\centering Placeholder: \texttt{assets/fig/method\_fig\_gap.png}}}}
+\caption{\textbf{Geometry-aware Pruning (\gap).} After gradient-driven densification, Gaussians cluster around high-contrast boundaries. \gap\ flags a Gaussian as a redundancy candidate only when it is both locally crowded ($s_i<\tau$) and recently inactive ($\bar{g}_i<\delta$), so that capacity is reclaimed from saturated boundaries without removing Gaussians that are still learning structure.}
 \label{fig:gap}
 \end{figure}
 
 \subsection{Adaptive Density Modulation (\adm)}
+\label{sec:adm}
 
-\adm\ predicts position-dependent density offsets to refine the density distribution of retained Gaussians. Even after better initialization and redundancy control, density updates remain highly heterogeneous across anatomy: bone usually corresponds to higher attenuation, air regions in the lung should remain low-density, and soft tissue often requires smoother transitions. If all Gaussians share the same point-wise gradient update rule, the model struggles to express this spatial heterogeneity. We therefore encode Gaussian centers with K-Planes and use a lightweight decoder that predicts only density-related offsets and confidence gates, without rewriting Gaussian centers, covariances, or other attributes. The role of \adm\ is local density refinement rather than serving as the sole source of performance.
+Even after path-anchored initialization and redundancy control, density values across anatomy remain heterogeneous: bone exhibits higher attenuation, air-filled regions should stay near zero, and soft tissue requires smoother transitions. A single per-Gaussian gradient step has difficulty expressing this spatial heterogeneity without overshooting one regime while undershooting another. \adm\ therefore encodes position-dependent spatial context through K-Planes~\cite{fridovich2022kplanes} and uses it to predict a relative density correction, without touching Gaussian centers or covariances.
 
-It is important to emphasize that, although \adm\ contains an MLP, it is not an offline pre-trained prediction head and does not rely on extra density supervision. Both the K-Planes features and the dual-head MLP parameters are updated only during optimization on the current case, and they are trained end-to-end through the main rendering loss. In this sense, \adm\ is an online joint-optimization branch that adaptively amplifies or suppresses density responses in different regions while the main radiative Gaussian backbone is being trained.
-
-Given a position $\mathbf{x}$, we first project it onto normalized 2D coordinates $\Pi_{uv}(\mathbf{x})$ on three orthogonal planes and then bilinearly sample the corresponding feature maps:
+Given a position $\mathbf{x}$, we bilinearly sample three orthogonal feature planes $\{P_{uv}\}_{uv\in\{xy,xz,yz\}}$ at the corresponding 2D projections $\Pi_{uv}(\mathbf{x})$ and concatenate the results,
 \begin{equation}
-f_{uv}(\mathbf{x})=\mathcal{B}\!\left(P_{uv},\Pi_{uv}(\mathbf{x})\right),\quad uv\in\{xy,xz,yz\},
+F(\mathbf{x})=\operatorname{concat}\!\big(\mathcal{B}(P_{xy},\Pi_{xy}(\mathbf{x})),\,\mathcal{B}(P_{xz},\Pi_{xz}(\mathbf{x})),\,\mathcal{B}(P_{yz},\Pi_{yz}(\mathbf{x}))\big),
+\label{eq:adm-feature}
 \end{equation}
+where $\mathcal{B}(\cdot)$ denotes bilinear sampling. A lightweight dual-head MLP $h$ decodes $F(\mathbf{x})$ into a density offset $\Delta\sigma(\mathbf{x})$ and a confidence gate $g(\mathbf{x})\in[0,1]$. We center the offset by its batch mean $\overline{\Delta\sigma}$ and modulate the base density multiplicatively:
 \begin{equation}
-F(\mathbf{x})=\operatorname{concat}\!\big(f_{xy}(\mathbf{x}),f_{xz}(\mathbf{x}),f_{yz}(\mathbf{x})\big),
-\end{equation}
-where $\mathcal{B}(\cdot)$ denotes bilinear sampling, $P_{xy}$, $P_{xz}$, and $P_{yz}$ are the three orthogonal feature planes, and $\operatorname{concat}(\cdot)$ denotes channel-wise concatenation. K-Planes encoding was originally introduced for explicit spatiotemporal radiance fields and provides continuous spatial context at low cost~\cite{fridovich2022kplanes}. Based on this encoding, a dual-head MLP predicts a density offset $\Delta\sigma(\mathbf{x})$ and a confidence gate $g(\mathbf{x})$:
-\begin{equation}
-\big(\Delta\sigma(\mathbf{x}),g(\mathbf{x})\big)=h(F(\mathbf{x})).
-\end{equation}
-We then center the offsets by the batch mean and apply a view-dependent scaling:
-\begin{equation}
-\tilde{o}(\mathbf{x})=\beta(t)\,s_{\text{view}}\,r_{\max}\,g(\mathbf{x})\cdot\big(\Delta\sigma(\mathbf{x})-\overline{\Delta\sigma}\big),
-\end{equation}
-where $\overline{\Delta\sigma}$ is the mean density offset of the current batch, $r_{\max}$ is the maximum modulation amplitude, and $s_{\text{view}}$ is a view-count scaling factor (concretely, $s_{\text{view}}\!=\!0.5,\,0.7,\,1.0$ for 2, 3, and 4 input views, respectively). To prevent modulation from disrupting basic geometric convergence early in training, we use a warm-up/hold/decay schedule for $\beta(t)$:
-\begin{equation}
-\beta(t)=
-\begin{cases}
-\frac{t}{t_w}, & 0\le t<t_w,\\
-1, & t_w\le t<t_h,\\
-\exp\!\big(-\frac{t-t_h}{\kappa}\big), & t\ge t_h.
-\end{cases}
-\end{equation}
-where $t_w$ marks the end of the warm-up phase, $t_h$ marks the end of the hold phase, and $\kappa$ is the exponential decay time constant. The final density is
-\begin{equation}
-\rho_{\text{final}}(\mathbf{x})=\rho_{\text{base}}(\mathbf{x})\cdot\big(1+\tilde{o}(\mathbf{x})\big).
+\rho_{\text{final}}(\mathbf{x})=\rho_{\text{base}}(\mathbf{x})\cdot\Big(1+g(\mathbf{x})\cdot\big(\Delta\sigma(\mathbf{x})-\overline{\Delta\sigma}\big)\Big).
 \label{eq:adm-density}
 \end{equation}
-Therefore, \adm\ learns not a global density boost, but a spatial-context-aware relative correction that better matches the locally continuous yet regionally heterogeneous structure of CT data.
+The plane features and the MLP parameters are trained end-to-end on the current case under the rendering loss alone, with no extra density supervision; the modulation amplitude is attenuated when fewer input views are available and is ramped in only after the backbone has reached a stable geometric estimate. Batch centering turns $\Delta\sigma$ into a relative correction rather than a global density boost, so \adm\ amplifies density where the attenuation support warrants finer detail and damps modulation where the evidence is weak.
 
 \begin{figure}[t]
 \centering
 \IfFileExists{assets/fig/method_fig_adm.png}{%
-\begin{overpic}[width=\linewidth]{assets/fig/method_fig_adm.png}
-  \put(1,92){\colorbox{white}{\footnotesize\textbf{(a)}}}
-  \put(34,92){\colorbox{white}{\footnotesize\textbf{(b)}}}
-  \put(67,92){\colorbox{white}{\footnotesize\textbf{(c)}}}
-  % Core formula overlay
-  \put(36,4){\parbox{22em}{\centering\scriptsize$\rho_{\text{final}}\!=\!\rho_{\text{base}}\!\cdot\!(1\!+\!\tilde{o}),\quad\tilde{o}\!=\!\beta(t)\,g(\mathbf{x})\,(\Delta\sigma(\mathbf{x})\!-\!\overline{\Delta\sigma})$}}
-\end{overpic}%
-}{\fbox{\parbox[c][5cm][c]{0.95\linewidth}{\centering Placeholder: \texttt{assets/fig/method\_fig\_adm.png}}}}
-\caption{\textbf{Adaptive Density Modulation (\adm).} (a) Three orthogonal K-Planes feature maps (viridis) encode position-dependent spatial context for every Gaussian center. (b) The concatenated K-Planes feature is decoded by a lightweight dual-head MLP that predicts a density offset $\Delta\sigma(\mathbf{x})$ (orange) and a confidence gate $g(\mathbf{x})\in[0,1]$ (slate); the modulated density combines them through $\rho_{\text{final}}=\rho_{\text{base}}\cdot(1+\tilde{o})$. (c) The resulting density difference map (inferno) shows that \adm\ amplifies density in regions where the attenuation support requires fine detail and damps modulation where evidence is uncertain.}
+\includegraphics[width=\linewidth]{assets/fig/method_fig_adm.png}%
+}{\fbox{\parbox[c][3.5cm][c]{0.95\linewidth}{\centering Placeholder: \texttt{assets/fig/method\_fig\_adm.png}}}}
+\caption{\textbf{Adaptive Density Modulation (\adm).} For each Gaussian center, three orthogonal K-Planes feature planes are bilinearly sampled and concatenated; a dual-head MLP outputs a density offset and a confidence gate, which together apply a batch-centered relative correction $\rho_{\text{final}}=\rho_{\text{base}}(1+g(\Delta\sigma-\overline{\Delta\sigma}))$.}
 \label{fig:adm}
 \end{figure}
 
 \subsection{Training Loss}
+\label{sec:loss}
 
-The three modules of \XRAGS\ and the radiative rendering backbone of \rtwo\ form a single end-to-end training pipeline. During training, we supervise reprojection results on the observed views with the following overall loss:
+\XRAGS\ is supervised end-to-end on the observed views by a single objective combining projection-domain reconstruction with regularization on the volumetric density and the K-Planes features:
 \begin{equation}
-\mathcal{L}=\mathcal{L}_{1}+\lambda_{\text{dssim}}\mathcal{L}_{\text{dssim}}+\lambda_{\text{3DTV}}\mathcal{L}_{\text{3DTV}}+\lambda_{\text{pTV}}\mathcal{L}_{\text{pTV}},
+\mathcal{L}=\mathcal{L}_{1}+\lambda_{\text{d}}\mathcal{L}_{\text{dssim}}+\lambda_{\text{v}}\mathcal{L}_{\text{3DTV}}+\lambda_{\text{p}}\mathcal{L}_{\text{pTV}}.
 \label{eq:training-loss}
 \end{equation}
-where
-\begin{align}
-\mathcal{L}_{1} &= \frac{1}{V}\sum_{v=1}^{V}\|I_v-\hat{I}_v\|_1, \\
-\mathcal{L}_{\text{dssim}} &= \frac{1}{V}\sum_{v=1}^{V}\operatorname{DSSIM}(I_v,\hat{I}_v), \\
-\mathcal{L}_{\text{3DTV}} &= \sum_{i=1}^{N}\sum_{d\in\{x,y,z\}}\left|\nabla_d \rho_i\right|, \\
-\mathcal{L}_{\text{pTV}} &= \sum_{p\in\{xy,xz,yz\}}\omega_p(t)\operatorname{TV}(P_p).
-\end{align}
-Here, $\omega_p(t)$ is the time-varying regularization weight for the $p$-th feature plane; it follows the same warm-up/hold/decay schedule as $\beta(t)$, ramping linearly from $0$ to $\omega_0$ over the first $t_w$ iterations, holding at $\omega_0$ until $t_h$, then decaying exponentially with time constant $\kappa$. $\mathcal{L}_{1}$ and $\mathcal{L}_{\text{dssim}}$ jointly constrain projection reconstruction quality, $\mathcal{L}_{\text{3DTV}}$ encourages spatial smoothness in volumetric density, and $\mathcal{L}_{\text{pTV}}$ imposes planar total-variation regularization on the K-Planes features. During training, the plane features and MLP parameters of \adm\ are jointly updated with the backbone Gaussian parameters under the same loss, so density modulation is learned online rather than fixed in advance. Since \sps\ only changes initialization, \gap\ is triggered periodically during training, and \adm\ applies lightweight density modulation, the basic X-ray rendering process at inference remains unchanged and the extra cost is concentrated in training.
+The first two terms are the standard $L_1$ and $D$-SSIM losses between rendered and observed projections; $\mathcal{L}_{\text{3DTV}}$ is a total-variation prior on the volumetric density retrieved by the differentiable voxelizer of \rtwo, and $\mathcal{L}_{\text{pTV}}$ is a planar total-variation prior on the K-Planes features used by \adm. The K-Planes features and the MLP parameters of \adm\ are jointly updated with the backbone Gaussian parameters under $\mathcal{L}$, so density modulation is learned online rather than fixed in advance.
 
 \section{Experiments}
 \label{sec:experiments}
