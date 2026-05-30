@@ -1,10 +1,10 @@
 \begin{table*}[t]
 \centering
-\caption{Quantitative results on the novel view synthesis task. PSNR2D (upper) and SSIM2D (lower) are reported in each cell. All methods are evaluated under the unified five-organ, 2/3/4-view protocol. \best{Bold}: best; \second{underline}: second-best.}
+\caption{Quantitative results on the novel view synthesis task. We colorize the \colorbox[HTML]{FF9396}{best}, \colorbox[HTML]{FFC991}{second-best}, and \colorbox[HTML]{FFF6A9}{third-best} numbers. PSNR (upper) and SSIM (lower) are reported in each cell. All methods are evaluated under the unified five-organ protocol.}
 \label{tab:quantitative_nvs}
 \scriptsize
 \renewcommand{\arraystretch}{1.05}
-\setlength{\tabcolsep}{3.2pt}
+\setlength{\tabcolsep}{2.8pt}
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{@{}l*{18}{c}@{}}
 \toprule
@@ -23,37 +23,41 @@
   & \textbf{2v} & \textbf{3v} & \textbf{4v}
   & \textbf{2v} & \textbf{3v} & \textbf{4v} \\
 \midrule
-\multirow{2}{*}{CoR-GS~\cite{zhang2024cor}}
+\multicolumn{19}{c}{\emph{Natural-scene sparse-view 3DGS methods}} \\
+\midrule
+\multirow{2}{*}{CoR-GS~\cite{zhang2024cor} {\tiny[ECCV'24]}}
   & -- & -- & -- & -- & -- & -- & -- & -- & --
   & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
   & -- & -- & -- & -- & -- & -- & -- & -- & --
   & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
 \addlinespace[1pt]
-\multirow{2}{*}{DNGaussian~\cite{li2024dn}}
+\multirow{2}{*}{DNGaussian~\cite{li2024dn} {\tiny[CVPR'24]}}
   & -- & -- & -- & -- & -- & -- & -- & -- & --
   & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
   & -- & -- & -- & -- & -- & -- & -- & -- & --
   & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
 \addlinespace[1pt]
-\multirow{2}{*}{FSGS~\cite{zhu2024fsgs}}
+\multirow{2}{*}{FSGS~\cite{zhu2024fsgs} {\tiny[ECCV'24]}}
   & -- & -- & -- & -- & -- & -- & -- & -- & --
   & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
   & -- & -- & -- & -- & -- & -- & -- & -- & --
   & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
 \midrule
-\multirow{2}{*}{X-Gaussian~\cite{cai2024xgaussian}}
+\multicolumn{19}{c}{\emph{X-ray/CT reconstruction methods}} \\
+\midrule
+\multirow{2}{*}{X-Gaussian~\cite{cai2024xgaussian} {\tiny[ECCV'24]}}
   & -- & -- & -- & -- & -- & -- & -- & -- & --
   & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
   & -- & -- & -- & -- & -- & -- & -- & -- & --
   & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
 \addlinespace[1pt]
-\multirow{2}{*}{\rtwo~\cite{hu2024r2}}
+\multirow{2}{*}{\rtwo~\cite{hu2024r2} {\tiny[NeurIPS'24]}}
   & -- & -- & -- & -- & -- & -- & -- & -- & --
   & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
   & -- & -- & -- & -- & -- & -- & -- & -- & --
   & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
 \addlinespace[1pt]
-\multirow{2}{*}{X-Field~\cite{xfield2025}}
+\multirow{2}{*}{X-Field~\cite{xfield2025} {\tiny[NeurIPS'25]}}
   & -- & -- & -- & -- & -- & -- & -- & -- & --
   & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
   & -- & -- & -- & -- & -- & -- & -- & -- & --

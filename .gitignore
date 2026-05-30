@@ -27,3 +27,6 @@ latex/__pycache__/
 
 # Local secrets (never commit)
 .env
+
+# Local Claude Code skills (symlinks, not shared)
+.claude/skills/

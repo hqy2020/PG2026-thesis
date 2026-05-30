@@ -1,28 +1,44 @@
 \begin{table}[t]
 \centering
-\caption{Ablation on components. Modules are added incrementally on top of the \rtwo\ backbone (five-organ average). \best{Bold}: best per column.}
+\caption{Ablation results with our choices in \textbf{bold}. We colorize the \colorbox[HTML]{FF9396}{best}, \colorbox[HTML]{FFC991}{second-best}, and \colorbox[HTML]{FFF6A9}{third-best} numbers.}
 \label{tab:ablation_component}
-\resizebox{\linewidth}{!}{%
-\begin{tabular}{@{}lcccccc@{}}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lcccc@{}}
 \toprule
-\multirow{2}{*}{\textbf{Configuration}}
-  & \multicolumn{3}{c}{\textbf{PSNR2D}$\uparrow$}
-  & \multicolumn{3}{c}{\textbf{SSIM2D}$\uparrow$} \\
-\cmidrule(lr){2-4}\cmidrule(lr){5-7}
-  & \textbf{2v} & \textbf{3v} & \textbf{4v}
-  & \textbf{2v} & \textbf{3v} & \textbf{4v} \\
+Configuration & PSNR$\uparrow$ & SSIM$\uparrow$ & Time$\downarrow$ & \#Gauss. \\
 \midrule
-Baseline (\rtwo)
-  & -- & -- & -- & -- & -- & -- \\
-\quad +\,\sps
-  & -- & -- & -- & -- & -- & -- \\
-\quad +\,\gap
-  & -- & -- & -- & -- & -- & -- \\
-\quad +\,\adm
-  & -- & -- & -- & -- & -- & -- \\
-\textbf{\XRAGS}\ (\sps\,+\,\gap\,+\,\adm)
-  & -- & -- & -- & -- & -- & -- \\
+\multicolumn{5}{c}{\emph{Component analysis (5-organ avg, 3-view)}} \\
+\midrule
+Baseline (\rtwo) & -- & -- & -- & -- \\
+B\,+\,\sps & -- & -- & -- & -- \\
+B\,+\,\gap & -- & -- & -- & -- \\
+B\,+\,\adm & -- & -- & -- & -- \\
+\textbf{Full \XRAGS} & -- & -- & -- & -- \\
+\midrule
+\multicolumn{5}{c}{\emph{\sps\ mixture coefficient $\alpha$}} \\
+\midrule
+$\alpha$\,=\,0.0 & -- & -- & -- & -- \\
+$\alpha$\,=\,0.1 & -- & -- & -- & -- \\
+$\boldsymbol{\alpha}$\textbf{\,=\,0.2} & -- & -- & -- & -- \\
+$\alpha$\,=\,0.5 & -- & -- & -- & -- \\
+$\alpha$\,=\,1.0 & -- & -- & -- & -- \\
+\midrule
+\multicolumn{5}{c}{\emph{\gap\ proximity threshold $\tau$}} \\
+\midrule
+$\tau$\,=\,0.005 & -- & -- & -- & -- \\
+$\tau$\,=\,0.010 & -- & -- & -- & -- \\
+$\boldsymbol{\tau}$\textbf{\,=\,0.015} & -- & -- & -- & -- \\
+$\tau$\,=\,0.020 & -- & -- & -- & -- \\
+$\tau$\,=\,0.030 & -- & -- & -- & -- \\
+\midrule
+\multicolumn{5}{c}{\emph{\adm\ activation iteration}} \\
+\midrule
+Iter\,=\,5K & -- & -- & -- & -- \\
+Iter\,=\,10K & -- & -- & -- & -- \\
+\textbf{Iter\,=\,15K} & -- & -- & -- & -- \\
+Iter\,=\,20K & -- & -- & -- & -- \\
+Iter\,=\,25K & -- & -- & -- & -- \\
 \bottomrule
-\end{tabular}%
-}
+\end{tabular}
 \end{table}
