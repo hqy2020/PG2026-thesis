@@ -4,41 +4,41 @@
 \label{tab:ablation_component}
 \footnotesize
 \setlength{\tabcolsep}{4pt}
-\begin{tabular}{@{}lcccc@{}}
+\begin{tabular}{@{}lccc@{}}
 \toprule
-Configuration & PSNR$\uparrow$ & SSIM$\uparrow$ & Time$\downarrow$ & \#Gauss. \\
+Configuration & PSNR$\uparrow$ & SSIM$\uparrow$ & \#Gauss. \\
 \midrule
-\multicolumn{5}{c}{\emph{Component analysis (5-organ avg, 3-view)}} \\
+\multicolumn{4}{c}{\emph{Component analysis (5-organ avg, 3-view)}} \\
 \midrule
-Baseline (\rtwo) & -- & -- & -- & -- \\
-B\,+\,\sps & -- & -- & -- & -- \\
-B\,+\,\gap & -- & -- & -- & -- \\
-B\,+\,\adm & -- & -- & -- & -- \\
-\textbf{Full \XRAGS} & -- & -- & -- & -- \\
+Baseline (\rtwo) & -- & -- & -- \\
+B\,+\,\sps & -- & -- & -- \\
+B\,+\,\gap & -- & -- & -- \\
+B\,+\,\adm & -- & -- & -- \\
+\textbf{Full \XRAGS} & -- & -- & -- \\
 \midrule
-\multicolumn{5}{c}{\emph{\sps\ mixture coefficient $\alpha$}} \\
+\multicolumn{4}{c}{\emph{\sps\ mixture coefficient $\alpha$}} \\
 \midrule
-$\alpha$\,=\,0.0 & -- & -- & -- & -- \\
-$\alpha$\,=\,0.1 & -- & -- & -- & -- \\
-$\boldsymbol{\alpha}$\textbf{\,=\,0.2} & -- & -- & -- & -- \\
-$\alpha$\,=\,0.5 & -- & -- & -- & -- \\
-$\alpha$\,=\,1.0 & -- & -- & -- & -- \\
+$\alpha$\,=\,0.0 & -- & -- & -- \\
+$\alpha$\,=\,0.1 & -- & -- & -- \\
+$\boldsymbol{\alpha}$\textbf{\,=\,0.2} & -- & -- & -- \\
+$\alpha$\,=\,0.5 & -- & -- & -- \\
+$\alpha$\,=\,1.0 & -- & -- & -- \\
 \midrule
-\multicolumn{5}{c}{\emph{\gap\ proximity threshold $\tau$}} \\
+\multicolumn{4}{c}{\emph{\gap\ proximity threshold $\tau$}} \\
 \midrule
-$\tau$\,=\,0.005 & -- & -- & -- & -- \\
-$\tau$\,=\,0.010 & -- & -- & -- & -- \\
-$\boldsymbol{\tau}$\textbf{\,=\,0.015} & -- & -- & -- & -- \\
-$\tau$\,=\,0.020 & -- & -- & -- & -- \\
-$\tau$\,=\,0.030 & -- & -- & -- & -- \\
+$\tau$\,=\,0.005 & -- & -- & -- \\
+$\tau$\,=\,0.010 & -- & -- & -- \\
+$\boldsymbol{\tau}$\textbf{\,=\,0.015} & -- & -- & -- \\
+$\tau$\,=\,0.020 & -- & -- & -- \\
+$\tau$\,=\,0.030 & -- & -- & -- \\
 \midrule
-\multicolumn{5}{c}{\emph{\adm\ activation iteration}} \\
+\multicolumn{4}{c}{\emph{\adm\ activation iteration}} \\
 \midrule
-Iter\,=\,5K & -- & -- & -- & -- \\
-Iter\,=\,10K & -- & -- & -- & -- \\
-\textbf{Iter\,=\,15K} & -- & -- & -- & -- \\
-Iter\,=\,20K & -- & -- & -- & -- \\
-Iter\,=\,25K & -- & -- & -- & -- \\
+Iter\,=\,5K & -- & -- & -- \\
+Iter\,=\,10K & -- & -- & -- \\
+\textbf{Iter\,=\,15K} & -- & -- & -- \\
+Iter\,=\,20K & -- & -- & -- \\
+Iter\,=\,25K & -- & -- & -- \\
 \bottomrule
 \end{tabular}
 \end{table}
