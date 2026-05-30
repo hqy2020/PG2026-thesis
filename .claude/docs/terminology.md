@@ -9,11 +9,32 @@
 - `primitive` 作定语（如 `primitive count`, `primitive position`）→ `Gaussian`（`Gaussian count`, `Gaussian position`）
 - `per-primitive` → `per-Gaussian`
 
+## framework vs pipeline
+
+- **framework** = XRA-GS 方法本身。描述 XRA-GS 时一律用 `framework`
+- **pipeline** = 3DGS / R2-GS 等外部 NVS 处理流程。如 `3DGS pipeline`、`adaptive density control pipeline`
+- 验证：`grep -n "pipeline" main.tex` 出现时，主语不应是 XRA-GS
+
+## adaptive density control（3DGS 原文术语）
+
+- 指代 3DGS 的整套密度控制策略时用 `adaptive density control`（**不用** `gradient-driven densification rules`、`evolution rule`）
+- 描述具体机制（split/clone 动作）时可保留 `gradient-driven densification`
+- 验证：`grep -n "evolution rule\|densification rules" main.tex` 应清零
+
+## 可见光 vs X-ray 物理对比
+
+- 可见光：`reflection and scattering`
+- X-ray：`penetration and attenuation`
+- 不用 `surface rendering` 作为可见光的物理描述
+
+## 基于 R2-GS
+
+- Method 中明确 XRA-GS 构建在 R2-Gaussian framework 之上（renderer + voxelizer 不动，仅改 density control）
+
 ## 兼容词组（继续使用，不需要改）
 
 - `radiative Gaussians`
 - `Gaussian set`
-- `Gaussian evolution rule`
 - `per-Gaussian density`
 - `Gaussian count`
 - `anisotropic Gaussians`
