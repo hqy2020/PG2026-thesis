@@ -80,7 +80,7 @@ X-ray Gaussian / 隐式神经场同类工作在 Related Work 中按 implicit / e
 |---|---|---|
 | Preliminary | Beer–Lambert / Gaussian kernel / 密度场 / 渲染算子 共 3 式 | 视觉光 α-compositing（已在 intro 提到名字） |
 | SPS | 单式 `q(x)=α/\|Ω\|+(1−α)V_FDK(x)^γ/Z` | α、γ 数值 / 50K 初值 / "small local search" 描述 |
-| GAP | `s_i=⟨‖p_i−p_j‖⟩_{j∈N_K(i)}` + `m_i={1 if s_i≥τ ∨ ḡ_i≥δ, 0 else}` | τ、δ、K、β_prune 数值 / Σ shrink 公式 / [2K,20K] 区间 |
+| GAP | `d_i=⟨‖p_i−p_j‖⟩_{j∈N_K(i)}` + `c_i={1 if d_i<τ ∧ ḡ_i<δ}` | τ、δ、K、β_prune 数值 / Σ shrink 公式 / [2K,20K] 区间 |
 | ADM | `F(x)=concat(bilinear)` + `ρ_final=ρ_base(1+g(Δσ−Δσ̄))` | β(t) 三段调度 / s_view 数值 / r_max / warm-up·hold·decay 描述 |
 | Loss | 单 L 公式 | 4 个子损失的 align 块 |
 

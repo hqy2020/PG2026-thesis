@@ -143,12 +143,21 @@ As illustrated in Figure~\ref{fig:pipeline}, \XRAGS\ instantiates the attenuatio
 \subsection{Support-Profile Seeding (\sps)}
 \label{sec:sps}
 
-Initialization strongly conditions the optimization trajectory of radiative Gaussians, yet standard 3DGS initializers transfer poorly to X-ray tomography: uniform sampling ignores the strong contrast between air, soft tissue, and bone, while SfM point-cloud initialization is unstable under gray-value overlap and weak local texture in X-ray projection~\cite{cai2024xgaussian}. The sparse-view CT literature has consistently treated the coarse FDK volume $V_{\text{FDK}}$ as carrying reliable foreground support and low-frequency attenuation layout, even when its fine detail is corrupted by streak artifacts~\cite{wang2022rfinet,li2023gloredi,li2025threedgrct,hu2024r2}. We exploit this signal as a sampling prior rather than as a target volume. Concretely, over the voxel grid $\Omega$ underlying $V_{\text{FDK}}$ we sample seed positions from a density-weighted mixture distribution
+Initialization strongly conditions the optimization trajectory of radiative Gaussians, yet standard 3DGS initializers transfer poorly to X-ray tomography: uniform random sampling ignores the strong contrast between air, soft tissue, and bone, while SfM point-cloud initialization is unstable under gray-value overlap and weak local texture in X-ray projections~\cite{cai2024xgaussian}. X-Field~\cite{xfield2025} addresses this by progressively refining a coarse CT estimate through a CGLS--SART--TV pipeline before initializing ellipsoids at the reconstructed voxel centers with random covariance and attenuation attributes. While effective, this multi-stage iterative reconstruction adds considerable overhead. We observe that a single-pass FDK volume $V_{\text{FDK}}$, despite streak artifacts in fine detail, already provides reliable foreground support and low-frequency attenuation layout~\cite{wang2022rfinet,li2023gloredi,li2025threedgrct,hu2024r2}, which suffices as a sampling prior for the subsequent density control stages (\gap, \adm) to refine.
+
+Concretely, over the voxel grid $\Omega$ underlying $V_{\text{FDK}}$ we draw $N$ seed positions $\{\mathbf{x}_i\}_{i=1}^{N}$ from a density-weighted mixture distribution
 \begin{equation}
 q(\mathbf{x})=\alpha\,\frac{1}{|\Omega|}+(1-\alpha)\,\frac{V_{\text{FDK}}(\mathbf{x})^{\gamma}}{Z},\qquad Z=\!\sum_{\mathbf{x}'\in\Omega}V_{\text{FDK}}(\mathbf{x}')^{\gamma},
 \label{eq:sps}
 \end{equation}
-that linearly interpolates between a uniform prior and a power-shaped attenuation profile. Per-Gaussian densities are then queried from $V_{\text{FDK}}$ at the sampled locations and per-Gaussian scales are set by nearest-neighbor spacing. The mixture form is critical: density weighting alone would collapse capacity onto the brightest bony structures, while the uniform term retains global coverage so that under-attenuating but anatomically relevant regions remain populated.
+that interpolates between a uniform prior (weight $\alpha$) and a power-shaped attenuation profile (exponent $\gamma$). Each sampled position $\mathbf{x}_i$ then defines a Gaussian $G_i$ with attributes initialized as:
+\begin{equation}
+\boldsymbol{\mu}_i = \mathbf{x}_i,\qquad
+\sigma_i = V_{\text{FDK}}(\mathbf{x}_i),\qquad
+s_i = \frac{1}{K}\!\sum_{j\in\mathcal{N}_K(i)}\|\mathbf{x}_i-\mathbf{x}_j\|_2,
+\label{eq:sps-attr}
+\end{equation}
+where $\boldsymbol{\mu}_i$ is the center position, $\sigma_i$ the initial attenuation coefficient queried directly from the FDK volume, and $s_i$ the isotropic scale set by the mean distance to the $K$-nearest seed neighbors $\mathcal{N}_K(i)$. The mixture form is critical: density weighting alone would collapse capacity onto the brightest bony structures, while the uniform term retains global coverage so that under-attenuating but anatomically relevant soft-tissue regions remain populated.
 
 \begin{figure}[t]
 \centering
@@ -162,46 +171,50 @@ that linearly interpolates between a uniform prior and a power-shaped attenuatio
 \subsection{Geometry-aware Pruning (\gap)}
 \label{sec:gap}
 
-Inside the radiative backbone, projection-error gradients are systematically larger near bone--soft-tissue boundaries, so standard gradient-driven densification keeps duplicating Gaussians around the same high-contrast surfaces. Large gradients in this regime do not always imply missing coverage: they can also reflect that an already-saturated boundary is being represented redundantly by neighboring Gaussians. Rather than adding more support points in sparse regions in the spirit of FSGS~\cite{zhu2024fsgs}, \gap\ acts in the opposite direction and reclaims locally crowded Gaussians during densification.
+Inside the radiative backbone, projection-error gradients are systematically larger near bone--soft-tissue boundaries, so standard gradient-driven densification keeps duplicating Gaussians around the same high-contrast surfaces. Large gradients in this regime do not always imply missing coverage: they can also reflect that an already-saturated boundary is being represented redundantly by neighboring Gaussians. Rather than adding more Gaussians in sparse regions in the spirit of FSGS~\cite{zhu2024fsgs}, \gap\ acts in the opposite direction and reclaims locally crowded Gaussians during densification.
 
-For each Gaussian $G_i$ we define a proximity score from its $K$ nearest neighbors $\mathcal{N}_K(i)$,
+Following the proximity-graph construction of FSGS~\cite{zhu2024fsgs}, we connect each Gaussian $G_i$ to its $K$ nearest neighbors $\mathcal{N}_K(i)$ in position space and compute a proximity score as the mean neighbor distance:
 \begin{equation}
-s_i=\frac{1}{K}\sum_{j\in\mathcal{N}_K(i)}\|\mathbf{p}_i-\mathbf{p}_j\|_2,
+d_i=\frac{1}{K}\sum_{j\in\mathcal{N}_K(i)}\|\mathbf{p}_i-\mathbf{p}_j\|_2.
 \label{eq:gap-proximity}
 \end{equation}
-and combine it with $\bar{g}_i$, the accumulated positional-gradient magnitude of $G_i$ over the current densification cycle. A Gaussian is flagged as a redundancy candidate only when it is simultaneously locally crowded and recently inactive:
+A small $d_i$ indicates that $G_i$ sits in a locally crowded region. We combine the proximity score with $\bar{g}_i$, the accumulated positional-gradient magnitude of $G_i$ over the current densification cycle, and flag a Gaussian as a redundancy candidate only when it is simultaneously locally crowded and recently inactive:
 \begin{equation}
-m_i=\mathbf{1}\!\left[s_i\ge\tau\ \lor\ \bar{g}_i\ge\delta\right],
+c_i=\mathbf{1}\!\left[d_i<\tau\ \land\ \bar{g}_i<\delta\right],
 \label{eq:gap-mask}
 \end{equation}
-i.e.\ $m_i\!=\!0$ marks a prune candidate. \gap\ then removes a bounded fraction of the flagged Gaussians per cycle and slightly contracts the covariance of their retained neighbors to avoid creating local support holes. The dual criterion is what distinguishes \gap\ from purely density-based pruning: gradient-activity prevents deleting Gaussians that are still learning a boundary, while proximity prevents over-densified regions from continuously monopolizing capacity.
+where $c_i\!=\!1$ marks a prune candidate. \gap\ removes a bounded fraction of the flagged Gaussians per cycle and slightly contracts the covariance of their retained neighbors to avoid creating local support holes. The dual criterion distinguishes \gap\ from purely density-based pruning: gradient activity prevents deleting Gaussians that are still learning a boundary, while proximity prevents over-densified regions from continuously monopolizing capacity.
 
 \begin{figure}[t]
 \centering
 \IfFileExists{assets/fig/method_fig_gap.png}{%
 \includegraphics[width=\linewidth]{assets/fig/method_fig_gap.png}%
 }{\fbox{\parbox[c][3.5cm][c]{0.95\linewidth}{\centering Placeholder: \texttt{assets/fig/method\_fig\_gap.png}}}}
-\caption{\textbf{Geometry-aware Pruning (\gap).} After gradient-driven densification, Gaussians cluster around high-contrast boundaries. \gap\ flags a Gaussian as a redundancy candidate only when it is both locally crowded ($s_i<\tau$) and recently inactive ($\bar{g}_i<\delta$), so that capacity is reclaimed from saturated boundaries without removing Gaussians that are still learning structure.}
+\caption{\textbf{Geometry-aware Pruning (\gap).} After gradient-driven densification, Gaussians cluster around high-contrast boundaries. \gap\ flags a Gaussian as a redundancy candidate only when it is both locally crowded ($d_i<\tau$) and recently inactive ($\bar{g}_i<\delta$), so that capacity is reclaimed from saturated boundaries without removing Gaussians that are still learning structure.}
 \label{fig:gap}
 \end{figure}
 
 \subsection{Adaptive Density Modulation (\adm)}
 \label{sec:adm}
 
-Even after path-anchored initialization and redundancy control, density values across anatomy remain heterogeneous: bone exhibits higher attenuation, air-filled regions should stay near zero, and soft tissue requires smoother transitions. A single per-Gaussian gradient step has difficulty expressing this spatial heterogeneity without overshooting one regime while undershooting another. \adm\ therefore encodes position-dependent spatial context through K-Planes~\cite{fridovich2022kplanes} and uses it to predict a relative density correction, without touching Gaussian centers or covariances.
+Even after path-anchored initialization and redundancy control, density values across anatomy remain heterogeneous: bone exhibits higher attenuation, air-filled regions should stay near zero, and soft tissue requires smoother transitions. A per-Gaussian gradient step updates each density value independently, making it difficult to capture the spatial neighborhood context needed to coordinate density allocation across these distinct tissue regimes. A straightforward remedy would be to employ a coordinate MLP to directly parameterize position-dependent density corrections, but such a network is prone to overfitting under sparse views where only a handful of projections constrain the entire volume. A dense 3D feature grid avoids this issue yet incurs memory that scales cubically with resolution. Inspired by the factorized plane representation of K-Planes~\cite{fridovich2022kplanes}, \adm\ decomposes the 3D volume into three orthogonal 2D feature planes, reducing memory to quadratic growth while preserving effective spatial neighborhood encoding. From these plane features, \adm\ decodes a position-dependent density correction for each Gaussian without modifying its center or covariance.
 
-Given a position $\mathbf{x}$, we bilinearly sample three orthogonal feature planes $\{P_{uv}\}_{uv\in\{xy,xz,yz\}}$ at the corresponding 2D projections $\Pi_{uv}(\mathbf{x})$ and concatenate the results:
+\paragraph{Spatial feature encoding.}
+Given a Gaussian center $\mathbf{x}$, \adm\ projects it onto three orthogonal planes $\{P_{uv}\}_{uv\in\{xy,xz,yz\}}$, extracts per-plane features via bilinear interpolation at the corresponding 2D projections $\Pi_{uv}(\mathbf{x})$, and concatenates them into a joint spatial descriptor:
 \begin{align}
 f_{uv}(\mathbf{x}) &= \mathcal{B}\!\big(P_{uv},\,\Pi_{uv}(\mathbf{x})\big), \quad uv\in\{xy,xz,yz\}, \label{eq:adm-plane}\\
 F(\mathbf{x}) &= \big[f_{xy}(\mathbf{x});\; f_{xz}(\mathbf{x});\; f_{yz}(\mathbf{x})\big],
 \label{eq:adm-feature}
 \end{align}
-where $\mathcal{B}(\cdot)$ denotes bilinear sampling. A lightweight dual-head MLP $h$ decodes $F(\mathbf{x})$ into a density offset $\Delta\sigma(\mathbf{x})$ and a confidence gate $g(\mathbf{x})\in[0,1]$. We center the offset by its batch mean $\overline{\Delta\sigma}$ and modulate the base density multiplicatively:
+where $\mathcal{B}(\cdot)$ denotes bilinear sampling. The three-plane factorization implicitly encodes 3D spatial context: each sampled feature captures a 2D slice of the neighborhood, and their concatenation provides cross-plane spatial constraints that a single plane cannot express alone.
+
+\paragraph{Density modulation.}
+The concatenated feature $F(\mathbf{x})$ is fed into a lightweight dual-head MLP $h$ that outputs a density offset $\Delta\sigma(\mathbf{x})\!\in\![-1,1]$ and a confidence gate $g(\mathbf{x})\!\in\![0,1]$. To prevent \adm\ from degenerating into a global density scaling factor, we subtract the batch mean $\overline{\Delta\sigma}$ before applying a multiplicative modulation to the base density:
 \begin{equation}
 \rho_{\text{final}}(\mathbf{x})=\rho_{\text{base}}(\mathbf{x})\cdot\Big(1+g(\mathbf{x})\cdot\big(\Delta\sigma(\mathbf{x})-\overline{\Delta\sigma}\big)\Big).
 \label{eq:adm-density}
 \end{equation}
-The plane features and the MLP parameters are trained end-to-end on the current case under the rendering loss alone, with no extra density supervision; the modulation amplitude is attenuated when fewer input views are available and is ramped in only after the backbone has reached a stable geometric estimate. Batch centering turns $\Delta\sigma$ into a relative correction rather than a global density boost, so \adm\ amplifies density where the attenuation support warrants finer detail and damps modulation where the evidence is weak.
+The plane features and the MLP parameters are trained end-to-end under the rendering loss alone, with no extra density supervision. \adm\ is activated only after the backbone has converged to a stable geometric estimate, so that density modulation refines an already reasonable layout rather than interfering with early-stage optimization. Batch centering ensures that $\Delta\sigma$ acts as a relative correction: \adm\ amplifies density where the local attenuation evidence warrants finer detail and suppresses modulation where evidence is insufficient.
 
 \begin{figure}[t]
 \centering
