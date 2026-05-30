@@ -1,0 +1,71 @@
+\begin{table*}[t]
+\centering
+\caption{Quantitative results on the novel view synthesis task. PSNR2D (upper) and SSIM2D (lower) are reported in each cell. All methods are evaluated under the unified five-organ, 2/3/4-view protocol. \best{Bold}: best; \second{underline}: second-best.}
+\label{tab:quantitative_nvs}
+\scriptsize
+\renewcommand{\arraystretch}{1.05}
+\setlength{\tabcolsep}{3.2pt}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}l*{18}{c}@{}}
+\toprule
+\multirow{2}{*}{\textbf{Method}}
+  & \multicolumn{3}{c}{\textbf{Chest}}
+  & \multicolumn{3}{c}{\textbf{Head}}
+  & \multicolumn{3}{c}{\textbf{Abdomen}}
+  & \multicolumn{3}{c}{\textbf{Foot}}
+  & \multicolumn{3}{c}{\textbf{Pancreas}}
+  & \multicolumn{3}{c}{\textbf{Average}} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(lr){8-10}\cmidrule(lr){11-13}\cmidrule(lr){14-16}\cmidrule(lr){17-19}
+  & \textbf{2v} & \textbf{3v} & \textbf{4v}
+  & \textbf{2v} & \textbf{3v} & \textbf{4v}
+  & \textbf{2v} & \textbf{3v} & \textbf{4v}
+  & \textbf{2v} & \textbf{3v} & \textbf{4v}
+  & \textbf{2v} & \textbf{3v} & \textbf{4v}
+  & \textbf{2v} & \textbf{3v} & \textbf{4v} \\
+\midrule
+\multirow{2}{*}{CoR-GS~\cite{zhang2024cor}}
+  & -- & -- & -- & -- & -- & -- & -- & -- & --
+  & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+  & -- & -- & -- & -- & -- & -- & -- & -- & --
+  & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+\addlinespace[1pt]
+\multirow{2}{*}{DNGaussian~\cite{li2024dn}}
+  & -- & -- & -- & -- & -- & -- & -- & -- & --
+  & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+  & -- & -- & -- & -- & -- & -- & -- & -- & --
+  & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+\addlinespace[1pt]
+\multirow{2}{*}{FSGS~\cite{zhu2024fsgs}}
+  & -- & -- & -- & -- & -- & -- & -- & -- & --
+  & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+  & -- & -- & -- & -- & -- & -- & -- & -- & --
+  & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+\midrule
+\multirow{2}{*}{X-Gaussian~\cite{cai2024xgaussian}}
+  & -- & -- & -- & -- & -- & -- & -- & -- & --
+  & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+  & -- & -- & -- & -- & -- & -- & -- & -- & --
+  & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+\addlinespace[1pt]
+\multirow{2}{*}{\rtwo~\cite{hu2024r2}}
+  & -- & -- & -- & -- & -- & -- & -- & -- & --
+  & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+  & -- & -- & -- & -- & -- & -- & -- & -- & --
+  & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+\addlinespace[1pt]
+\multirow{2}{*}{X-Field~\cite{xfield2025}}
+  & -- & -- & -- & -- & -- & -- & -- & -- & --
+  & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+  & -- & -- & -- & -- & -- & -- & -- & -- & --
+  & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+\midrule
+\multirow{2}{*}{\textbf{\XRAGS}\ (Ours)}
+  & -- & -- & -- & -- & -- & -- & -- & -- & --
+  & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+  & -- & -- & -- & -- & -- & -- & -- & -- & --
+  & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+\bottomrule
+\end{tabular}%
+}
+\renewcommand{\arraystretch}{1.0}
+\end{table*}

@@ -1,0 +1,79 @@
+\begin{table}[t]
+\centering
+\caption{Hyperparameter sensitivity of \gap\ and \adm\ on the Chest scene, 3-view setting. Default values are marked in \textbf{bold}. All other hyperparameters are held at the default when sweeping one variable.}
+\label{tab:hparam_gap}
+\setlength{\tabcolsep}{4pt}
+
+\begin{minipage}[t]{0.48\linewidth}
+\centering
+\vspace{0pt}
+\scriptsize
+\textbf{(a) Proximity threshold $\tau$}\\[3pt]
+\begin{tabular}{@{}lcc@{}}
+\toprule
+$\tau$ & PSNR$\uparrow$ & SSIM$\uparrow$ \\
+\midrule
+0.005 & -- & -- \\
+0.010 & -- & -- \\
+\textbf{0.015} & -- & -- \\
+0.020 & -- & -- \\
+0.030 & -- & -- \\
+\bottomrule
+\end{tabular}
+\end{minipage}%
+\hfill%
+\begin{minipage}[t]{0.48\linewidth}
+\centering
+\vspace{0pt}
+\scriptsize
+\textbf{(b) Pruning ratio $\beta_{\text{prune}}$}\\[3pt]
+\begin{tabular}{@{}lcc@{}}
+\toprule
+$\beta_{\text{prune}}$ & PSNR$\uparrow$ & SSIM$\uparrow$ \\
+\midrule
+0\% & -- & -- \\
+1\% & -- & -- \\
+\textbf{2\%} & -- & -- \\
+5\% & -- & -- \\
+10\% & -- & -- \\
+\bottomrule
+\end{tabular}
+\end{minipage}
+
+\vspace{6pt}
+
+\begin{minipage}[t]{0.48\linewidth}
+\centering
+\vspace{0pt}
+\scriptsize
+\textbf{(c) Neighbor count $K$}\\[3pt]
+\begin{tabular}{@{}lcc@{}}
+\toprule
+$K$ & PSNR$\uparrow$ & SSIM$\uparrow$ \\
+\midrule
+3 & -- & -- \\
+\textbf{5} & -- & -- \\
+7 & -- & -- \\
+10 & -- & -- \\
+\bottomrule
+\end{tabular}
+\end{minipage}%
+\hfill%
+\begin{minipage}[t]{0.48\linewidth}
+\centering
+\vspace{0pt}
+\scriptsize
+\textbf{(d) \adm\ activation iteration}\\[3pt]
+\begin{tabular}{@{}lcc@{}}
+\toprule
+Iter & PSNR$\uparrow$ & SSIM$\uparrow$ \\
+\midrule
+5K & -- & -- \\
+10K & -- & -- \\
+\textbf{15K} & -- & -- \\
+20K & -- & -- \\
+25K & -- & -- \\
+\bottomrule
+\end{tabular}
+\end{minipage}
+\end{table}

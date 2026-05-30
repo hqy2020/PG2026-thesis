@@ -1,0 +1,28 @@
+\begin{table}[t]
+\centering
+\caption{Ablation on components. Modules are added incrementally on top of the \rtwo\ backbone (five-organ average). \best{Bold}: best per column.}
+\label{tab:ablation_component}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+\multirow{2}{*}{\textbf{Configuration}}
+  & \multicolumn{3}{c}{\textbf{PSNR2D}$\uparrow$}
+  & \multicolumn{3}{c}{\textbf{SSIM2D}$\uparrow$} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}
+  & \textbf{2v} & \textbf{3v} & \textbf{4v}
+  & \textbf{2v} & \textbf{3v} & \textbf{4v} \\
+\midrule
+Baseline (\rtwo)
+  & -- & -- & -- & -- & -- & -- \\
+\quad +\,\sps
+  & -- & -- & -- & -- & -- & -- \\
+\quad +\,\gap
+  & -- & -- & -- & -- & -- & -- \\
+\quad +\,\adm
+  & -- & -- & -- & -- & -- & -- \\
+\textbf{\XRAGS}\ (\sps\,+\,\gap\,+\,\adm)
+  & -- & -- & -- & -- & -- & -- \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}

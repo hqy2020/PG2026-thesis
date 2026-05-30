@@ -1,0 +1,28 @@
+\begin{table}[t]
+\centering
+\caption{Effect of input view number on reconstruction quality (five-organ average PSNR2D / SSIM2D). Performance improves steadily as the number of input views increases from 2 to 4. \best{Bold}: best; \second{underline}: second-best.}
+\label{tab:input_views}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+\multirow{2}{*}{\textbf{Method}}
+  & \multicolumn{2}{c}{\textbf{2-view}}
+  & \multicolumn{2}{c}{\textbf{3-view}}
+  & \multicolumn{2}{c}{\textbf{4-view}} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}
+  & PSNR$\uparrow$ & SSIM$\uparrow$
+  & PSNR$\uparrow$ & SSIM$\uparrow$
+  & PSNR$\uparrow$ & SSIM$\uparrow$ \\
+\midrule
+X-Gaussian~\cite{cai2024xgaussian}
+  & -- & -- & -- & -- & -- & -- \\
+\rtwo~\cite{hu2024r2}
+  & -- & -- & -- & -- & -- & -- \\
+X-Field~\cite{xfield2025}
+  & -- & -- & -- & -- & -- & -- \\
+\textbf{\XRAGS}\ (Ours)
+  & -- & -- & -- & -- & -- & -- \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}

@@ -190,11 +190,12 @@ i.e.\ $m_i\!=\!0$ marks a prune candidate. \gap\ then removes a bounded fraction
 
 Even after path-anchored initialization and redundancy control, density values across anatomy remain heterogeneous: bone exhibits higher attenuation, air-filled regions should stay near zero, and soft tissue requires smoother transitions. A single per-Gaussian gradient step has difficulty expressing this spatial heterogeneity without overshooting one regime while undershooting another. \adm\ therefore encodes position-dependent spatial context through K-Planes~\cite{fridovich2022kplanes} and uses it to predict a relative density correction, without touching Gaussian centers or covariances.
 
-Given a position $\mathbf{x}$, we bilinearly sample three orthogonal feature planes $\{P_{uv}\}_{uv\in\{xy,xz,yz\}}$ at the corresponding 2D projections $\Pi_{uv}(\mathbf{x})$ and concatenate the results,
-\begin{equation}
-F(\mathbf{x})=\operatorname{concat}\!\big(\mathcal{B}(P_{xy},\Pi_{xy}(\mathbf{x})),\,\mathcal{B}(P_{xz},\Pi_{xz}(\mathbf{x})),\,\mathcal{B}(P_{yz},\Pi_{yz}(\mathbf{x}))\big),
+Given a position $\mathbf{x}$, we bilinearly sample three orthogonal feature planes $\{P_{uv}\}_{uv\in\{xy,xz,yz\}}$ at the corresponding 2D projections $\Pi_{uv}(\mathbf{x})$ and concatenate the results:
+\begin{align}
+f_{uv}(\mathbf{x}) &= \mathcal{B}\!\big(P_{uv},\,\Pi_{uv}(\mathbf{x})\big), \quad uv\in\{xy,xz,yz\}, \label{eq:adm-plane}\\
+F(\mathbf{x}) &= \big[f_{xy}(\mathbf{x});\; f_{xz}(\mathbf{x});\; f_{yz}(\mathbf{x})\big],
 \label{eq:adm-feature}
-\end{equation}
+\end{align}
 where $\mathcal{B}(\cdot)$ denotes bilinear sampling. A lightweight dual-head MLP $h$ decodes $F(\mathbf{x})$ into a density offset $\Delta\sigma(\mathbf{x})$ and a confidence gate $g(\mathbf{x})\in[0,1]$. We center the offset by its batch mean $\overline{\Delta\sigma}$ and modulate the base density multiplicatively:
 \begin{equation}
 \rho_{\text{final}}(\mathbf{x})=\rho_{\text{base}}(\mathbf{x})\cdot\Big(1+g(\mathbf{x})\cdot\big(\Delta\sigma(\mathbf{x})-\overline{\Delta\sigma}\big)\Big).
@@ -224,259 +225,57 @@ The first two terms are the standard $L_1$ and $D$-SSIM losses between rendered 
 \section{Experiments}
 \label{sec:experiments}
 
-\subsection{Experimental Setup}
+\subsection{Experimental Settings}
+\label{sec:exp_settings}
 
-\textbf{Data and task setting.} We evaluate on the five-organ dataset from the X-Gaussian
-repository~\cite{cai2024xgaussian}: Chest (LIDC-IDRI) and Head, Abdomen, Foot, and Pancreas
-(open scientific visualization dataset). Following the NAF/X-Gaussian preprocessing and projection
-protocol, we construct sparse-view settings by retaining only 2, 3, or 4 input projections per
-scene. Models are trained exclusively on observed projections and evaluated on held-out novel
-angles.
+\textbf{Dataset.} Following NAF~\cite{guan2024naf} and X-Gaussian~\cite{cai2024xgaussian}, we adopt the public datasets of human organ CTs, \emph{i.e.}, LIDC-IDRI and the open scientific visualization dataset, to evaluate our method. The test scenes include Chest, Foot, Head, Abdomen, and Pancreas. We adopt the open-source tomographic toolbox TIGRE to capture 100 projections with 3\% noise in the range of $0 \sim 180^{\circ}$. In the sparse-view NVS task, we retain only 2, 3, or 4 projections for training, and the remaining projections are used for testing. The CT volumes are used for testing in the sparse-view CT reconstruction task.
 
-\textbf{Baselines.} We compare against six methods in two groups. \emph{Direct X-ray/CT
-baselines:} X-Gaussian~\cite{cai2024xgaussian} (radiative Gaussian splatting),
-\rtwo~\cite{hu2024r2} (reconstruction-consistency regularization), and
-X-Field~\cite{xfield2025} (material-aware implicit modeling) represent the state of the art for
-X-ray novel view synthesis. \emph{Natural-scene sparse-view 3DGS references:}
-CoR-GS~\cite{zhang2024cor}, DNGaussian~\cite{li2024dn}, and FSGS~\cite{zhu2024fsgs} characterize
-how gradient-driven densification degrades under tomographic projection. X-Field is re-evaluated
-under our identical protocol and denoted as X-Field$^*$ in the result tables and figures.
+\textbf{Baselines.} We compare \XRAGS\ with six state-of-the-art methods from two categories. \emph{X-ray/CT reconstruction methods:} X-Gaussian~\cite{cai2024xgaussian} introduces radiative Gaussian splatting for X-ray NVS; \rtwo~\cite{hu2024r2} rectifies the integration bias in 3DGS and develops a differentiable voxelizer for tomographic reconstruction; and X-Field~\cite{xfield2025} employs physically informed ellipsoids with material-aware optimization. \emph{Natural-scene sparse-view 3DGS methods:} CoR-GS~\cite{zhang2024cor} introduces co-regularization to stabilize sparse-view training; DNGaussian~\cite{li2024dn} injects depth normalization for geometric guidance; and FSGS~\cite{zhu2024fsgs} augments densification with proximity-guided unpooling. All methods are evaluated under the same sparse-view protocol on the same dataset.
 
-\textbf{Metrics.} Following the official X-Gaussian evaluation script, PSNR2D and SSIM2D are
-computed on $[0,1]$-normalized projections averaged over all held-out views of each scene and then
-over the five organs. PSNR2D is $20\log_{10}(1/\sqrt{\text{MSE}})$; SSIM2D uses an
-$11\!\times\!11$ Gaussian window ($\sigma\!=\!1.5$, $C_1\!=\!0.01^2$, $C_2\!=\!0.03^2$).
+\textbf{Metrics.} We adopt peak signal-to-noise ratio (PSNR) and structural similarity index measure (SSIM) to evaluate the performance. Both metrics are computed on $[0,1]$-normalized projections, averaged over all held-out views of each scene and then over the five organs.
 
-\textbf{Implementation details.} \sps\ uses $\alpha\!=\!0.2$, $\gamma\!=\!1.0$, and 50K initial
-Gaussians. \gap\ uses $K\!=\!5$ neighbors, threshold $\tau\!=\!0.015$, maximum pruning ratio
-$\beta_{\text{prune}}\!=\!0.02$, and gradient threshold $\delta\!=\!0.0002$. \adm\ uses
-K-Planes at resolution $64\!\times\!32$ and activates after 15K iterations. All models are
-trained for 30K iterations.
+\textbf{Implementation Details.} Our \XRAGS\ is implemented in PyTorch and CUDA. The model is trained with the Adam optimizer for $3\!\times\!10^{4}$ iterations. \sps\ uses mixture coefficient $\alpha\!=\!0.2$, power exponent $\gamma\!=\!1.0$, and 50K initial Gaussians. \gap\ uses $K\!=\!5$ nearest neighbors, proximity threshold $\tau\!=\!0.015$, maximum pruning ratio $\beta_{\text{prune}}\!=\!2\%$, and gradient threshold $\delta\!=\!0.0002$. \adm\ uses K-Planes at resolution $64\!\times\!32$ and activates after 15K iterations. All experiments are conducted on a single NVIDIA RTX A6000 GPU.
 
-\subsection{Main Results}
+\subsection{Comparison with State-of-the-Art Methods}
+\label{sec:comparison}
 
-Table~\ref{tab:comparison} reports PSNR2D across all five organs and three sparsity levels.
-\XRAGS\ achieves the best five-organ average at every sparsity level. Gains over \rtwo\ are
-$+0.11/+0.39/+0.07$\,dB under 2/3/4-view settings; gains over X-Field$^*$ are
-$+0.87/+3.25/+2.79$\,dB. The most pronounced margin occurs at 3 views, consistent with our
-central argument: capacity misallocation is most directly addressable when projection evidence is
-sufficient to guide redistribution yet too limited for standard densification to converge to a
-spatially consistent solution.
+\input{assets/tables/tab_experiment_quantitative_nvs.tex}
 
-\input{assets/tables/tab_experiment_comparison.tex}
-
-Table~\ref{tab:comparison-ssim} reports SSIM2D averages for the three methods with accessible
-logs under our unified protocol. \XRAGS\ leads at 2- and 3-view settings and ties \rtwo\ at the
-third decimal place in 4-view, confirming the same trend as PSNR2D.
-
-\input{assets/tables/tab_experiment_comparison_ssim.tex}
-
-Figure~\ref{fig:qual-main} provides qualitative comparisons across all five organs under the
-2-view setting. The natural-scene sparse-view baselines (CoR-GS, DNGaussian, FSGS) produce
-characteristic boundary leakage and streak artifacts under tomographic projection; the direct
-X-ray baselines (X-Gaussian, \rtwo, X-Field$^*$) preserve global attenuation structure more
-faithfully. \XRAGS\ further reduces background diffusion and local over-accumulation near
-high-contrast anatomical boundaries, consistent with the quantitative gains in
-Table~\ref{tab:comparison}.
+\textbf{Discussion on NVS Quantitative Results.} Table~\ref{tab:quantitative_nvs} reports the quantitative comparisons between our \XRAGS\ and six state-of-the-art methods on the NVS task. We report PSNR (upper entry in each cell) and SSIM (lower entry) of all methods on all scenes under the 2/3/4-view sparse settings. The natural-scene sparse-view 3DGS methods (CoR-GS, DNGaussian, FSGS) struggle under the X-ray imaging regime, since their densification strategies and geometric priors are designed for visible-light surface rendering rather than line-integral attenuation. Among the X-ray-specific methods, X-Gaussian achieves reasonable performance but remains limited by the lack of integration bias correction. \rtwo\ provides strong baseline results through its rectified rasterization and differentiable voxelizer. Our \XRAGS\ achieves the best average performance across all sparsity levels. The most pronounced margin occurs at the 3-view setting, consistent with our central argument: capacity misallocation is most directly addressable when projection evidence is sufficient to guide redistribution yet too limited for standard densification to converge to a spatially consistent solution. X-Field shows competitive results in the human organ reconstruction setting, but its material-based optimization faces challenges under extremely sparse views where material boundaries are ambiguous.
 
 \begin{figure*}[t]
 \centering
-\IfFileExists{assets/fig/experiment_fig_qual_main.png}{%
-  \includegraphics[width=\textwidth]{assets/fig/experiment_fig_qual_main.png}%
-}{\fbox{\parbox[c][7cm][c]{0.95\textwidth}{\centering\small
-  Placeholder: \texttt{assets/fig/experiment\_fig\_qual\_main.png}\\[4pt]
-  5 organs (rows) $\times$ 8 cols (GT / CoR-GS / DNGaussian / FSGS / X-Field$^*$ / X-Gaussian /
-  \rtwo / \XRAGS) + error map col, 2-view setting
+\IfFileExists{assets/fig/experiment_fig_qual_nvs.png}{%
+  \includegraphics[width=\textwidth]{assets/fig/experiment_fig_qual_nvs.png}%
+}{\fbox{\parbox[c][10cm][c]{0.95\textwidth}{\centering\small
+  Placeholder: \texttt{assets/fig/experiment\_fig\_qual\_nvs.png}\\[6pt]
+  \textbf{Layout:} 3 blocks (2-view / 3-view / 4-view), each block contains:\\
+  4 rows (Chest / Head / Foot / Pancreas) $\times$ 5 columns (GT / DNGaussian / \rtwo / X-Field / \XRAGS)\\[4pt]
+  Each image with zoomed-in patch; PSNR annotated below each image.\\
+  Total: $3 \times 4 \times 5 = 60$ image cells.
 }}}
-\caption{\textbf{Qualitative comparison on five organs, 2-view setting.} Rows: Chest, Head,
-Abdomen, Foot, Pancreas (top to bottom). Columns: GT, CoR-GS, DNGaussian, FSGS, X-Field$^*$,
-X-Gaussian, \rtwo, and \XRAGS\ (Ours, last column). Natural-scene references produce streak
-artifacts and boundary leakage; direct X-ray baselines preserve global attenuation structure;
-\XRAGS\ further suppresses local over-accumulation and background diffusion. Rightmost column:
-error maps (inferno, shared vmax). Red boxes mark regions enlarged in
-Figure~\ref{fig:qual-detail-consistency}.}
-\label{fig:qual-main}
+\caption{\textbf{Qualitative comparison of NVS.} We present visual examples of rendered X-ray projections across four organs (Chest, Head, Foot, Pancreas) under three sparse-view settings (2, 3, and 4 input views). Columns: GT, DNGaussian, \rtwo, X-Field, and \XRAGS\ (Ours). Our method produces clearer structural details, smoother textures in homogeneous regions, and fewer artifacts near anatomical boundaries. Red boxes highlight regions of interest for detailed comparison.}
+\label{fig:qual_nvs}
 \end{figure*}
 
-Figure~\ref{fig:qual-detail-consistency} provides two complementary analyses. The upper portion
-enlarges the Chest and Foot regions marked in Figure~\ref{fig:qual-main}, isolating boundary and
-structure recovery at the local scale. The lower portion evaluates a Chest 2-view case at three
-novel angles ($0^\circ$, $45^\circ$, $90^\circ$), confirming that the advantage of \XRAGS\ over
-\rtwo\ is stable across viewing directions rather than concentrated at a single angle.
+\textbf{Discussion on NVS Qualitative Results.} Figure~\ref{fig:qual_nvs} depicts the qualitative comparisons of NVS on four representative organs (Chest, Head, Foot, and Pancreas) under the 2-view, 3-view, and 4-view settings. Under highly sparse view settings, all methods face challenges from limited input information. DNGaussian produces noticeable blurry artifacts due to its depth-normalization scheme being misaligned with the X-ray transmission model. \rtwo\ reconstructs the overall anatomical structure better than the natural-scene baselines, but still exhibits boundary over-accumulation artifacts, particularly visible as streak patterns near high-contrast bone--soft-tissue interfaces. X-Field produces competitive results with reduced artifacts in organ interiors, though under the 2-view setting it introduces wave-pattern artifacts in the head scene. Our \XRAGS\ effectively mitigates these artifacts by reallocating Gaussian capacity from over-densified boundaries to interior attenuation-relevant structures. In particular, \XRAGS\ recovers smoother soft-tissue regions in the Chest, sharper bone details in the Foot, and cleaner background in the Head, while maintaining structural consistency across all three view budgets.
 
-\begin{figure*}[t]
-\centering
-\IfFileExists{assets/fig/experiment_fig_qual_detail_consistency.png}{%
-  \includegraphics[width=\textwidth]{assets/fig/experiment_fig_qual_detail_consistency.png}%
-}{\fbox{\parbox[c][7cm][c]{0.95\textwidth}{\centering\small
-  Placeholder: \texttt{assets/fig/experiment\_fig\_qual\_detail\_consistency.png}\\[4pt]
-  Upper: zoom-in Chest + Foot (4 cols: GT / \rtwo / X-Gaussian / \XRAGS)\\
-  Lower: Chest 2-view at $0^\circ$/$45^\circ$/$90^\circ$ (3 rows $\times$ 4 cols)
-}}}
-\caption{\textbf{Local detail and cross-view consistency.} \emph{Upper half:} Zoom-ins from the
-red boxes in Figure~\ref{fig:qual-main} for Chest (left) and Foot (right), comparing GT,
-\rtwo, X-Gaussian, and \XRAGS. \XRAGS\ reduces streak spread and boundary diffusion in both
-regions. \emph{Lower half:} A Chest 2-view case rendered at $0^\circ$, $45^\circ$, and
-$90^\circ$. The quality advantage of \XRAGS\ persists across all three angles, indicating
-consistent global attenuation reconstruction rather than angle-specific improvement.}
-\label{fig:qual-detail-consistency}
-\end{figure*}
+\subsection{Ablation Study}
+\label{sec:ablation}
 
-\noindent\textbf{Same-protocol comparison with X-Field.} The X-Field$^*$ row in
-Table~\ref{tab:comparison} confirms that the gains of \XRAGS\ are not an artifact of protocol
-asymmetry. Re-evaluated under our identical 2/3/4-view setting, X-Field$^*$ trails \XRAGS\ by a
-consistent average margin across all sparsity levels.
+\textbf{Component Analysis.} We conduct a break-down ablation experiment to study the effect of each proposed module. We adopt the \rtwo\ backbone as the baseline model. The results are listed in Table~\ref{tab:ablation_component}. We can observe from the table: \textbf{(i)} When adding \sps\ for initialization, the performance yields improvement especially under the most under-determined 2-view regime, establishing that path-anchored initialization from the coarse FDK attenuation support provides a meaningful head start for optimization. \textbf{(ii)} Adding \gap\ delivers the largest PSNR increment by reclaiming capacity from over-densified boundary regions, confirming that geometry-aware pruning is the primary mechanism for correcting the capacity misallocation inherited from visible-light densification. \textbf{(iii)} Adding \adm\ provides further refinement through position-dependent density correction, particularly benefiting scenes with heterogeneous attenuation profiles. The full \XRAGS\ pipeline, combining all three modules, achieves the best performance across all view counts.
 
-\subsection{Module and Initialization Analysis}
+\input{assets/tables/tab_experiment_ablation_component.tex}
 
-Table~\ref{tab:component_ablation} reports a progressive ablation starting from the \rtwo\
-backbone. \sps\ raises the 2-view average PSNR2D from 21.27 to 21.44\,dB, establishing that
-path-anchored initialization provides a meaningful head start in the most under-determined regime.
-\gap\ delivers the largest PSNR2D increment, improving the 3-view average from 28.01 to
-28.22\,dB by reclaiming capacity from over-densified boundary regions. The final \XRAGS\ row
-matches or improves the available PSNR2D measurements across all view counts, while intermediate
-SSIM2D values are pending from the experiment logs.
+\textbf{Parameter Analysis.} We perform parameter analysis on the key hyperparameters of \gap\ and \adm, since \gap\ directly controls the pruning behavior and its thresholds are the most critical design choices that affect the capacity reallocation. The results are shown in Table~\ref{tab:hparam_gap}. \textbf{(a)} When increasing the proximity threshold $\tau$, a larger $\tau$ retains more crowded Gaussians and reduces the pruning effect, while a smaller $\tau$ prunes more aggressively and risks removing useful Gaussians near legitimate boundary structures. \textbf{(b)} The pruning ratio $\beta_{\text{prune}}$ controls the fraction of flagged Gaussians removed per densification cycle; too aggressive pruning destabilizes training while too conservative pruning fails to reclaim sufficient boundary redundancy. \textbf{(c)} The neighbor count $K$ affects the locality of the proximity score computation; smaller $K$ is sensitive to local density fluctuations while larger $K$ smooths the proximity signal. \textbf{(d)} The \adm\ activation iteration determines when the density modulation module is introduced; activating too early interferes with the backbone's geometric convergence, while activating too late limits the modulation's contribution. The default configuration ($\tau\!=\!0.015$, $\beta_{\text{prune}}\!=\!2\%$, $K\!=\!5$, \adm\ activation at 15K) achieves robust performance across the swept range, demonstrating that \XRAGS\ is not sensitive to individual hyperparameter choices.
 
-\input{assets/tables/tab_experiment_component.tex}
+\input{assets/tables/tab_experiment_hparam_gap.tex}
 
-Figure~\ref{fig:ablation-visual} translates the progressive ablation into local visual evidence.
-Residual maps $|\hat{I} - I_\text{gt}|$ are shown below each prediction. This visual analysis is
-used to inspect where the progressive modules change the reconstruction, while the corresponding
-intermediate SSIM2D values remain pending from the experiment logs.
+\textbf{Input View Number Analysis.} To further demonstrate the scalability of \XRAGS, we assess the effect of the input view number on reconstruction performance. As shown in Table~\ref{tab:input_views}, as the number of input views increases, the performance is consistently enhanced for all methods. \XRAGS\ achieves the best average PSNR and SSIM at every sparsity level, with the relative advantage over \rtwo\ being largest at 3 views, where capacity misallocation is most directly observable. At 4 views, the reconstruction-consistency regularization in \rtwo\ partially closes the gap, consistent with the observation that denser sampling reduces the misallocation effect.
 
-\begin{figure*}[t]
-\centering
-\IfFileExists{assets/fig/experiment_fig_ablation_visual.png}{%
-  \includegraphics[width=\textwidth]{assets/fig/experiment_fig_ablation_visual.png}%
-}{\fbox{\parbox[c][6cm][c]{0.95\textwidth}{\centering\small
-  Placeholder: \texttt{assets/fig/experiment\_fig\_ablation\_visual.png}\\[4pt]
-  Chest 3-view --- top: GT / Baseline / +\sps\ / +\sps+\gap\ / Full \XRAGS\\
-  bottom: residual maps $|\hat{I}-I_\text{gt}|$ (inferno); $\Delta$SSIM2D annotated under each col
-}}}
-\caption{\textbf{Progressive module ablation, Chest 3-view.} Top row: rendered projections for
-GT, Baseline (\rtwo), +\sps, +\sps+\gap, and full \XRAGS. Bottom row: residual maps
-$|\hat{I}-I_\text{gt}|$ (inferno, shared vmax with Figure~\ref{fig:qual-main}). Quantitative
-intermediate SSIM2D values are pending from experiment logs and are therefore not used for module-level claims here.}
-\label{fig:ablation-visual}
-\end{figure*}
-
-Figure~\ref{fig:spatial-distribution} is reserved for visualizing the cumulative effect of the
-three modules on Gaussian spatial distribution once the corresponding Gaussian-center and count
-logs are available. Until those logs are confirmed, the mechanism is evaluated through the
-available quantitative ablation in Table~\ref{tab:component_ablation}.
-
-\begin{figure*}[t]
-\centering
-\IfFileExists{assets/fig/experiment_fig_spatial_distribution.png}{%
-  \includegraphics[width=\textwidth]{assets/fig/experiment_fig_spatial_distribution.png}%
-}{\fbox{\parbox[c][5cm][c]{0.95\textwidth}{\centering\small
-  Placeholder: \texttt{assets/fig/experiment\_fig\_spatial\_distribution.png}\\[4pt]
-  4 panels: Uniform Init ($\approx$50K) $\to$ +\sps\ ($\approx$42K) $\to$
-  +\sps+\gap\ ($\approx$38K) $\to$ Full \XRAGS\ ($\approx$35K); attenuation profile strip above
-}}}
-\caption{\textbf{Gaussian spatial distribution evolution.} Four panels (left to right): uniform
-initialization, after \sps, after \gap\ pruning, and full \XRAGS, for a representative Chest
-organ. Top strip: FDK attenuation profile (magma shading). The final figure will use logged
-Gaussian centers and counts rather than schematic estimates.}
-\label{fig:spatial-distribution}
-\end{figure*}
-
-Table~\ref{tab:init_viewcount} (left) isolates the initialization strategy. SPS-guided seeding
-outperforms random initialization at all sparsity levels; the full \XRAGS\ further improves upon
-SPS-only through \gap\ and \adm, confirming that path-anchored initialization and capacity
-recovery are complementary operations.
-
-\input{assets/tables/tab_experiment_init_viewcount.tex}
-
-\subsection{View-count Analysis}
-
-Table~\ref{tab:init_viewcount} (right) reports the view-count trend for four representative
-methods. \XRAGS\ achieves the highest five-organ average PSNR2D at every sparsity level. The
-relative gain over \rtwo\ is largest at 3 views, where capacity misallocation is most directly
-observable; at 4 views the reconstruction-consistency regularization in \rtwo\ partially closes
-the gap, consistent with the applicability boundary discussed in
-Section~\ref{sec:discussion}.
-
-\subsection{Computational Cost}
-
-Table~\ref{tab:efficiency} is reserved for training and inference cost under the 3-view setting.
-The current manuscript keeps the table structure in place, but Time, final Gaussian count, GPU
-memory, and FPS must be filled from experiment logs before making quantitative efficiency claims.
-
-\input{assets/tables/tab_experiment_efficiency.tex}
-
-\subsection{Hyperparameter Sensitivity}
-\label{sec:hparam}
-
-Figure~\ref{fig:hparam} is reserved for local sweeps of four key hyperparameters in the Chest
-3-view setting: the \sps\ mixture coefficient $\alpha$, the \gap\ proximity threshold $\tau$, the
-\gap\ pruning ratio $\beta_\text{prune}$, and the \adm\ activation iteration. The default
-configuration ($\alpha\!=\!0.2$, $\tau\!=\!0.015$, $\beta_\text{prune}\!=\!2\%$, \adm\ activation
-at 15K) will be assessed once the sweep metrics are available from the experiment logs.
-
-\begin{figure}[t]
-\centering
-\IfFileExists{assets/fig/experiment_fig_hparam.png}{%
-  \includegraphics[width=\linewidth]{assets/fig/experiment_fig_hparam.png}%
-}{\fbox{\parbox[c][6cm][c]{0.95\linewidth}{\centering\small
-  Placeholder: \texttt{assets/fig/experiment\_fig\_hparam.png}\\[4pt]
-  $2\!\times\!2$ panels: (a)~\sps\ $\alpha$;\enspace (b)~\gap\ $\tau$;\enspace
-  (c)~\gap\ $\beta_\text{prune}$;\enspace (d)~\adm\ activation\\
-  Primary y-axis: SSIM2D (solid Crimson); secondary: PSNR2D (dashed); $\bullet$ = default
-}}}
-\caption{\textbf{Hyperparameter sensitivity, Chest 3-view.} Each panel sweeps one hyperparameter
-with all others fixed at the default (marked $\bullet$). Solid Crimson: SSIM2D$\uparrow$;
-dashed: PSNR2D$\uparrow$. (a)~\sps\ mixture coeff.\ $\alpha\!\in\!\{0.0,0.25,0.5,0.75,1.0\}$;
-(b)~\gap\ threshold $\tau$; (c)~\gap\ pruning ratio
-$\beta_\text{prune}\!\in\!\{0,1,2,5,10\}\%$; (d)~\adm\ activation iteration (fraction of 30K iters).
-The final sweep figure will be populated from experiment logs.}
-\label{fig:hparam}
-\end{figure}
+\input{assets/tables/tab_experiment_input_views.tex}
 
 \FloatBarrier
-
-\subsection{Discussion and Limitations}
-\label{sec:discussion}
-
-The experiments confirm that in the moderately sparse regime, the primary bottleneck is capacity
-allocation rather than Gaussian count. Gains are most pronounced at 3 views, where sufficient
-projection evidence exists for path-anchored initialization and boundary de-redundancy to take
-effect, yet too little evidence for standard densification to converge to a spatially consistent
-solution.
-
-Two boundaries constrain the current method. At 2 views the FDK reconstruction used by \sps\ is
-insufficiently reliable, so the initialization advantage partially erodes. At 4 views the
-reconstruction-consistency regularization in \rtwo\ is strong enough to compensate for
-boundary-chasing effects, reducing the relative advantage of \XRAGS. Figure~\ref{fig:failure-cases}
-illustrates both failure modes: in Foot 2-view and Pancreas 2-view, fine-grained high-frequency
-detail remains unrecoverable when projection evidence is fundamentally insufficient, regardless of
-initialization or capacity management.
-
-\begin{figure*}[t]
-\centering
-\IfFileExists{assets/fig/experiment_fig_failure_cases.png}{%
-  \includegraphics[width=\textwidth]{assets/fig/experiment_fig_failure_cases.png}%
-}{\fbox{\parbox[c][5.5cm][c]{0.95\textwidth}{\centering\small
-  Placeholder: \texttt{assets/fig/experiment\_fig\_failure\_cases.png}\\[4pt]
-  2 rows: Foot 2-view (top) / Pancreas 2-view (bottom)\\
-  4 cols: GT / \rtwo / \XRAGS\ / error map (inferno); failure desc.\ inset right ($\leq$25 words)
-}}}
-\caption{\textbf{Representative failure cases, 2-view setting.} Rows: Foot (top), Pancreas
-(bottom). Columns: GT, \rtwo, \XRAGS, and \XRAGS\ error map (inferno, shared vmax with
-Figure~\ref{fig:qual-main}). Zoom-in boxes mark the primary failure region. \XRAGS\ reduces
-overall error spread relative to \rtwo\ but cannot resolve fine structural detail when projection
-evidence is fundamentally absent. Failure descriptions ($\leq$25 words) are inset at the right of
-each row.}
-\label{fig:failure-cases}
-\end{figure*}
-
-Several directions remain open. First, \sps\ relies on FDK quality, which degrades sharply below
-two views; learned or uncertainty-aware initializers could relax this constraint. Second, the
-\gap\ threshold and pruning ratio are fixed organ-agnostically; organ-adaptive scheduling may
-improve per-organ performance. Third, all experiments assume parallel-beam geometry; extension to
-cone-beam and dynamic CT acquisition is left for future work. Additional per-organ SSIM2D
-breakdowns and single-module ablations will be included only after the corresponding same-protocol
-logs are confirmed.
 
 \section{Conclusion}
 \label{sec:conclusion}
