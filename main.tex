@@ -60,13 +60,13 @@
 \section{Introduction}
 \label{sec:intro}
 
-Computed tomography (CT) is an essential imaging technique for noninvasively examining the internal structure of an object, and is widely used in clinical diagnosis, image-guided intervention, and industrial inspection~\cite{feldkamp1984practical,andersen1984simultaneous,wang2008image}. During a CT acquisition, an X-ray source rotates around the object while a detector records multi-angle attenuation measurements, from which cross-sectional images or projections at unseen angles can be recovered through tomographic reconstruction. Reducing the number of acquired views is highly desirable, since it directly lowers radiation dose, shortens scan time, and broadens applicability to patients who cannot sustain long, stable acquisitions~\cite{li2023gloredi,wang2024reducing}. In this work, we study \emph{Sparse Tomographic View Synthesis}: from only a handful of X-ray projections, the model must predict the line-integrated attenuation observed at unseen acquisition angles, so that each synthesized projection remains consistent with the Beer--Lambert imaging geometry rather than merely visually similar to the inputs. A reliable solution supplies auxiliary views for anatomical localization, lesion-range inspection, and intraoperative planning under severely limited sampling, where conventional analytical reconstruction breaks down~\cite{willemink2019evolution}.
+Computed tomography (CT) acquires multi-angle X-ray attenuation measurements to reconstruct an object's internal structure, and is indispensable in clinical diagnosis, image-guided intervention, and industrial inspection~\cite{feldkamp1984practical,andersen1984simultaneous,wang2008image}. Reducing the number of acquired views directly lowers radiation dose, shortens scan time, and broadens applicability to patients who cannot sustain long acquisitions~\cite{li2023gloredi,wang2024reducing}. In this work, we study \emph{Sparse Tomographic View Synthesis}: from only a handful of X-ray projections, the model must predict the line-integrated attenuation at unseen acquisition angles, so that each synthesized projection remains consistent with the Beer--Lambert imaging geometry. A reliable solution supplies auxiliary views for anatomical localization and intraoperative planning where conventional analytical reconstruction breaks down~\cite{willemink2019evolution}.
 
-Visible-light imaging captures surfaces through reflection and scattering, whereas X-ray imaging reveals internal structures through penetration and attenuation---two fundamentally different physical processes that dictate where representation capacity should reside. In visible-light 3DGS, a pixel is formed by front-to-back $\alpha$-compositing of an emission--absorption volume rendering integral~\cite{kerbl20233d,max1995optical}: the accumulated transmittance decays multiplicatively along the ray, so for opaque scenes the integrand is dominated by Gaussians near the first-hit surface while contributions from deeper Gaussians are progressively masked. The surface-clustered Gaussian layout that emerges under $\alpha$-compositing is therefore a direct consequence of this transmittance-induced concentration, and is consistent with the surface-aligned geometry that surface-oriented 3DGS variants exploit explicitly~\cite{guedon2024sugar,huang20242dgs}. In X-ray imaging, however, the detector reading follows the Beer--Lambert law~\cite{kak2001principles}: after taking the logarithm, the recorded quantity becomes a linear, order-independent line integral of the attenuation coefficient along the ray, with no transmittance decay and no occlusion. Consequently, every Gaussian on the path contributes on equal footing, and capacity must be distributed \emph{along the entire ray path} rather than collapsed onto any single layer. Existing X-ray Gaussian methods such as X-Gaussian, \rtwo, X-Field, and DGR have correctly replaced $\alpha$-compositing with a radiative line-integral renderer~\cite{cai2024xgaussian,hu2024r2,xfield2025,dgr2025}, and sparse-view 3DGS pipelines such as FSGS, CoR-GS, and DNGaussian further compensate for missing observations through depth or co-regularization priors~\cite{zhu2024fsgs,zhang2024cor,li2024dn}. Yet all of them inherit an adaptive density control strategy that was originally designed for surface-centric $\alpha$-compositing~\cite{kerbl20233d,roessle2024densification}.
+Visible-light imaging captures surfaces through reflection and scattering, whereas X-ray imaging reveals internal structures through penetration and attenuation---two fundamentally different physical processes that dictate where representation capacity should reside. In visible-light 3DGS, a pixel is formed by front-to-back $\alpha$-compositing~\cite{kerbl20233d,max1995optical}: transmittance decays multiplicatively, so for opaque scenes the integrand is dominated by Gaussians near the first-hit surface---a transmittance-induced concentration consistent with surface-aligned 3DGS variants~\cite{guedon2024sugar,huang20242dgs}. In X-ray imaging, the detector reading follows the Beer--Lambert law~\cite{kak2001principles}: after taking the logarithm, the recorded quantity becomes a linear, order-independent line integral of the attenuation coefficient, with no transmittance decay and no occlusion. Every Gaussian on the path therefore contributes on equal footing, and capacity must be distributed \emph{along the entire ray path}. Existing X-ray Gaussian methods have correctly replaced $\alpha$-compositing with a radiative line-integral renderer~\cite{cai2024xgaussian,hu2024r2,xfield2025,dgr2025}, and sparse-view 3DGS pipelines further compensate for missing observations through depth or co-regularization priors~\cite{zhu2024fsgs,zhang2024cor,li2024dn}. Yet all of them inherit an adaptive density control strategy originally designed for surface-centric $\alpha$-compositing~\cite{kerbl20233d,roessle2024densification}.
 
-Crucially, the issue is not gradient-driven densification itself. Splitting or cloning Gaussians where the projection-error gradient is large is a sound idea, and our method retains exactly this mechanism. The issue is that under a line-integral renderer, the residual gradient is still concentrated at high-attenuation-contrast interfaces, such as bone--soft-tissue boundaries, which almost coincide with the high-color-contrast interfaces that drive visible-light densification. A na\"ive port therefore keeps spawning Gaussians at anatomical boundaries even though the rendering equation now asks for capacity \emph{along} the path. Under sparse views, this bias surfaces not as insufficient coverage but as a structural \emph{capacity misallocation}: a substantial fraction of Gaussians is spent on boundary-driven redundancy, while interior path segments that determine the attenuation integral remain under-represented. The top row of Fig.~\ref{fig:intro-compare} shows the natural fit between $\alpha$-compositing and surface-clustered Gaussians; the bottom row shows that when the same density control strategy is reused under line-integral rendering, capacity still collapses to boundaries and leaves the deep path empty. Fixing this requires \emph{augmenting}, not discarding, gradient-driven densification with attenuation-aligned decisions about where to seed, what to prune, and how to refine.
+Crucially, the issue is not gradient-driven densification itself---splitting or cloning Gaussians where the projection-error gradient is large is sound, and our method retains this mechanism. The issue is that under a line-integral renderer, the residual gradient is still concentrated at high-attenuation-contrast interfaces such as bone--soft-tissue boundaries. A na\"ive port therefore keeps spawning Gaussians at anatomical boundaries even though the rendering equation asks for capacity \emph{along} the path. Under sparse views, this bias manifests as a structural \emph{capacity misallocation}: Gaussians accumulate at boundaries while interior path segments that determine the attenuation integral remain under-represented, as illustrated in Fig.~\ref{fig:intro-compare}. Fixing this requires \emph{augmenting}, not discarding, gradient-driven densification with attenuation-aligned decisions about where to seed, what to prune, and how to refine.
 
-Motivated by this analysis, we propose \XRAGS, an \tracefull\ framework for Sparse Tomographic View Synthesis. Rather than appending auxiliary branches to a conventional densification backbone, \XRAGS\ keeps the gradient-driven backbone of standard 3DGS and adds three attenuation-aligned stages that act on \emph{where} Gaussians are seeded, retained, and refined, as illustrated in Fig.~\ref{fig:intro-compare}. Support-Profile Seeding (\sps) anchors initialization to a coarse FDK attenuation support~\cite{feldkamp1984practical}, so that Gaussians populate physically meaningful X-ray paths instead of starting from a contrast-biased prior; Geometry-aware Pruning (\gap) recycles Gaussians that accumulate near high-contrast anatomical interfaces during training, draining boundary-driven redundancy at its source; and Adaptive Density Modulation (\adm) applies position-dependent online refinement so that retained Gaussians carry interior attenuation rather than uniformly inflated density. Across diverse organs and view budgets, this attenuation-aligned framework reallocates representation capacity from boundary redundancy to attenuation-relevant interior structures.
+We propose \XRAGS, an \tracefull\ framework for Sparse Tomographic View Synthesis. \XRAGS\ keeps the gradient-driven backbone of standard 3DGS and adds three attenuation-aligned stages that act on \emph{where} Gaussians are seeded, retained, and refined. Support-Profile Seeding (\sps) initializes Gaussians from a coarse FDK attenuation support~\cite{feldkamp1984practical} so that they populate physically meaningful X-ray paths; Geometry-aware Pruning (\gap) recycles Gaussians that accumulate near high-contrast anatomical interfaces, draining boundary-driven redundancy at its source; and Adaptive Density Modulation (\adm) applies position-dependent online refinement so that retained Gaussians carry interior attenuation rather than uniformly inflated density.
 
 \begin{figure*}[t]
 \centering
@@ -77,9 +77,9 @@ Motivated by this analysis, we propose \XRAGS, an \tracefull\ framework for Spar
 
 Our main contributions are summarized as follows:
 \begin{itemize}[leftmargin=1.5em]
-  \item We identify \emph{capacity misallocation} as the failure mode when sparse-view X-ray Gaussian methods inherit a visible-light adaptive density control strategy under a line-integral renderer: gradient-driven densification keeps clustering Gaussians at attenuation boundaries while interior path segments that determine the line integral remain starved of capacity.
-  \item We propose \XRAGS, an \tracefull\ framework that augments standard gradient-driven densification with three coordinated attenuation-aligned stages---Support-Profile Seeding (\sps) for path-anchored initialization from coarse FDK support, Geometry-aware Pruning (\gap) for boundary-redundancy recovery, and Adaptive Density Modulation (\adm) for position-dependent online refinement---without modifying the X-ray renderer.
-  \item Extensive experiments on multi-organ sparse-view CT show that \XRAGS\ delivers consistent gains in projection fidelity over state-of-the-art X-ray Gaussian and sparse-view 3DGS baselines, while reducing the number of Gaussians and training cost; ablations confirm that \sps, \gap, and \adm\ each contribute complementary capacity reallocation.
+  \item We identify \emph{capacity misallocation} as the core failure mode when sparse-view X-ray Gaussian methods inherit visible-light adaptive density control under a line-integral renderer.
+  \item We propose \XRAGS, an \tracefull\ framework that augments gradient-driven densification with three attenuation-aligned stages---\sps\ for path-anchored initialization, \gap\ for boundary-redundancy recovery, and \adm\ for position-dependent density refinement---without modifying the X-ray renderer.
+  \item Experiments on multi-organ sparse-view CT show that \XRAGS\ delivers consistent gains over state-of-the-art baselines; ablations confirm that \sps, \gap, and \adm\ each contribute complementary capacity reallocation.
 \end{itemize}
 
 \section{Related Work}
@@ -216,14 +216,14 @@ The concatenated feature $F(\mathbf{x})$ is fed into a lightweight dual-head MLP
 \end{equation}
 The plane features and the MLP parameters are trained end-to-end under the rendering loss alone, with no extra density supervision. \adm\ is activated only after the backbone has converged to a stable geometric estimate, so that density modulation refines an already reasonable layout rather than interfering with early-stage optimization. Batch centering ensures that $\Delta\sigma$ acts as a relative correction: \adm\ amplifies density where the local attenuation evidence warrants finer detail and suppresses modulation where evidence is insufficient.
 
-\begin{figure}[t]
+\begin{figure*}[t]
 \centering
 \IfFileExists{assets/fig/method_fig_adm.png}{%
 \includegraphics[width=\linewidth]{assets/fig/method_fig_adm.png}%
 }{\fbox{\parbox[c][3.5cm][c]{0.95\linewidth}{\centering Placeholder: \texttt{assets/fig/method\_fig\_adm.png}}}}
 \caption{\textbf{Adaptive Density Modulation (\adm).} For each Gaussian center, three orthogonal K-Planes feature planes are bilinearly sampled and concatenated; a dual-head MLP outputs a density offset and a confidence gate, which together apply a batch-centered relative correction $\rho_{\text{final}}=\rho_{\text{base}}(1+g(\Delta\sigma-\overline{\Delta\sigma}))$.}
 \label{fig:adm}
-\end{figure}
+\end{figure*}
 
 \subsection{Training Loss}
 \label{sec:loss}
@@ -252,22 +252,44 @@ The first two terms are the standard $L_1$ and $D$-SSIM losses between rendered 
 \subsection{Comparison with State-of-the-Art Methods}
 \label{sec:comparison}
 
-\input{assets/tables/tab_experiment_quantitative_nvs.tex}
+\input{assets/tables/tab_experiment_quantitative_nvs_psnr.tex}
+\input{assets/tables/tab_experiment_quantitative_nvs_ssim.tex}
 
-\textbf{Discussion on NVS Quantitative Results.} Table~\ref{tab:quantitative_nvs} reports the quantitative comparisons between our \XRAGS\ and six state-of-the-art methods on the NVS task. We report PSNR (upper entry in each cell) and SSIM (lower entry) of all methods on all scenes under the 2/3/4-view sparse settings. The natural-scene sparse-view 3DGS methods (CoR-GS, DNGaussian, FSGS) struggle under the X-ray imaging regime, since their densification strategies and geometric priors are designed for visible-light reflection and scattering rather than X-ray penetration and attenuation. Among the X-ray-specific methods, X-Gaussian achieves reasonable performance but remains limited by the lack of integration bias correction. \rtwo\ provides strong baseline results through its rectified rasterization and differentiable voxelizer. Our \XRAGS\ achieves the best average PSNR and SSIM across all three sparsity levels, ranking first in 12 out of 15 per-organ PSNR cells and 9 out of 15 SSIM cells. The margin over \rtwo\ is most pronounced under the 2-view setting (+1.55\,dB PSNR), indicating that attenuation-aligned density control is especially effective in the most severely under-determined regime where capacity misallocation is most damaging; the advantage persists at 3-view (+0.34\,dB) and 4-view (+0.38\,dB). X-Field shows competitive results in the human organ reconstruction setting, but its material-based optimization faces challenges under extremely sparse views where material boundaries are ambiguous.
+\textbf{Discussion on NVS Quantitative Results.} Tables~\ref{tab:psnr_nvs} and~\ref{tab:ssim_nvs} report the PSNR and SSIM comparisons between our \XRAGS\ and six state-of-the-art methods on the NVS task under the 2-view, 3-view, and 4-view sparse settings. The natural-scene sparse-view 3DGS methods (CoR-GS, DNGaussian, FSGS) struggle under the X-ray imaging regime, since their densification strategies and geometric priors are designed for visible-light reflection and scattering rather than X-ray penetration and attenuation. Among the X-ray-specific methods, X-Gaussian achieves reasonable performance but remains limited by the lack of integration bias correction. \rtwo\ provides strong baseline results through its rectified rasterization and differentiable voxelizer. Our \XRAGS\ achieves the best average PSNR and SSIM across all three sparsity levels, ranking first in 12 out of 15 per-organ PSNR cells and 9 out of 15 SSIM cells. The margin over \rtwo\ is most pronounced under the 2-view setting (+1.55\,dB PSNR), indicating that attenuation-aligned density control is especially effective in the most severely under-determined regime where capacity misallocation is most damaging; the advantage persists at 3-view (+0.34\,dB) and 4-view (+0.38\,dB). X-Field shows competitive results in the human organ reconstruction setting, but its material-based optimization faces challenges under extremely sparse views where material boundaries are ambiguous.
 
 \begin{figure*}[t]
 \centering
-\IfFileExists{assets/fig/experiment_fig_qual_nvs.png}{%
-  \includegraphics[width=\textwidth]{assets/fig/experiment_fig_qual_nvs.png}%
-}{\fbox{\parbox[c][10cm][c]{0.95\textwidth}{\centering\small
-  Placeholder: \texttt{assets/fig/experiment\_fig\_qual\_nvs.png}\\[6pt]
-  \textbf{Layout:} 3 blocks (2-view / 3-view / 4-view), each block contains:\\
-  4 rows (Chest / Head / Foot / Pancreas) $\times$ 5 columns (GT / DNGaussian / \rtwo / X-Field / \XRAGS)\\[4pt]
-  Each image with zoomed-in patch; PSNR annotated below each image.\\
-  Total: $3 \times 4 \times 5 = 60$ image cells.
-}}}
-\caption{\textbf{Qualitative comparison of NVS.} We present visual examples of rendered X-ray projections across four organs (Chest, Head, Foot, Pancreas) under three sparse-view settings (2, 3, and 4 input views). Columns: GT, DNGaussian, \rtwo, X-Field, and \XRAGS\ (Ours). Our method produces clearer structural details, smoother textures in homogeneous regions, and fewer artifacts near anatomical boundaries. Red boxes highlight regions of interest for detailed comparison.}
+\setlength{\tabcolsep}{1pt}
+\renewcommand{\arraystretch}{0.6}
+\begin{tabular}{@{}c ccccc@{}}
+  & \footnotesize\textbf{GT} & \footnotesize\textbf{DNGaussian} & \footnotesize\textbf{\rtwo} & \footnotesize\textbf{X-Field} & \footnotesize\textbf{\XRAGS\ (Ours)} \\[2pt]
+\rotatebox{90}{\footnotesize\textbf{~Chest~}}
+  & \includegraphics[width=0.18\textwidth]{assets/data/cell_chest_01_gt.png}
+  & \includegraphics[width=0.18\textwidth]{assets/data/cell_chest_01_dngs.png}
+  & \includegraphics[width=0.18\textwidth]{assets/data/cell_chest_01_r2gs.png}
+  & \includegraphics[width=0.18\textwidth]{assets/data/cell_chest_01_xfield.png}
+  & \includegraphics[width=0.18\textwidth]{assets/data/cell_chest_01_xrags.png} \\
+\rotatebox{90}{\footnotesize\textbf{~~Foot~~}}
+  & \includegraphics[width=0.18\textwidth]{assets/data/cell_foot_00_gt.png}
+  & \includegraphics[width=0.18\textwidth]{assets/data/cell_foot_00_dngs.png}
+  & \includegraphics[width=0.18\textwidth]{assets/data/cell_foot_00_r2gs.png}
+  & \includegraphics[width=0.18\textwidth]{assets/data/cell_foot_00_xfield.png}
+  & \includegraphics[width=0.18\textwidth]{assets/data/cell_foot_00_xrags.png} \\
+\rotatebox{90}{\footnotesize\textbf{~~Head~~}}
+  & \includegraphics[width=0.18\textwidth]{assets/data/cell_head_46_gt.png}
+  & \includegraphics[width=0.18\textwidth]{assets/data/cell_head_46_dngs.png}
+  & \includegraphics[width=0.18\textwidth]{assets/data/cell_head_46_r2gs.png}
+  & \includegraphics[width=0.18\textwidth]{assets/data/cell_head_46_xfield.png}
+  & \includegraphics[width=0.18\textwidth]{assets/data/cell_head_46_xrags.png} \\
+\rotatebox{90}{\footnotesize\textbf{Pancreas}}
+  & \includegraphics[width=0.18\textwidth]{assets/data/cell_pancreas_00_gt.png}
+  & \includegraphics[width=0.18\textwidth]{assets/data/cell_pancreas_00_dngs.png}
+  & \includegraphics[width=0.18\textwidth]{assets/data/cell_pancreas_00_r2gs.png}
+  & \includegraphics[width=0.18\textwidth]{assets/data/cell_pancreas_00_xfield.png}
+  & \includegraphics[width=0.18\textwidth]{assets/data/cell_pancreas_00_xrags.png} \\
+\end{tabular}
+\renewcommand{\arraystretch}{1.0}
+\caption{\textbf{Qualitative comparison of NVS.} We present visual examples of rendered X-ray projections across four organs (Chest, Foot, Head, Pancreas). Columns: GT, DNGaussian, \rtwo, X-Field, and \XRAGS\ (Ours). Our method produces clearer structural details, smoother textures in homogeneous regions, and fewer artifacts near anatomical boundaries. Red and blue boxes highlight zoomed-in regions of interest.}
 \label{fig:qual_nvs}
 \end{figure*}
 

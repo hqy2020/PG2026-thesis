@@ -1,68 +1,76 @@
-# method_fig_gap — image2 绘图提示词（顶会风格单行三段式）
+# method_fig_gap — image2 绘图提示词（GAP 模块机制图）
 
 ## 用途
 
 - 论文：`XRA-GS: X-ray Attenuation-Aligned Gaussian Splatting for Sparse Tomographic View Synthesis`（PG2026 投稿）
-- §3.4 Geometry-aware Pruning 配图。展示 GAP 如何在密化后用 KNN 近邻 + 梯度活动双条件回收边界冗余高斯，并把容量释放给内部欠表征区域。
-- 与 pipeline / SPS / ADM 三图视觉完全统一：同一调色板、同一无衬线字体、同一头骨几何风格、同一箭头粗细、同一椭球比例。GAP 主色橙 `#FF7F0E`。
+- §3.4 Geometry-aware Pruning 配图。展示 GAP 如何通过 KNN proximity + gradient 双判据回收边界冗余 Gaussians。
+- 与 pipeline / SPS / ADM 三图视觉统一。GAP 主色琥珀 `#F57F17`。
 - 输出文件名：`method_fig_gap.png`，落地 `assets/fig/`。
-- backup 规则：之前不存在同名图 → **不创建** backup，直接首次生成。
 
-## 总版式
+## 设计决策
 
-- 整体布局：**单行 1 行 × 3 列**，等宽等高，列间用浅灰右向箭头连接。
-- 图幅宽高比约 **16:5**（约 1600 × 500 px，dpi ≥ 300），白底。
-- 顶部居中加粗无衬线小标题（8–9pt）从左到右依次：`After Densification`、`Joint Criterion`、`After Pruning`。
-- 全图主色橙 `#FF7F0E`（区别于 SPS 蓝、ADM 绿、naïve baseline 红）。
-
-## 每列内容
-
-| 列 | 视觉构成 |
-|---|---|
-| Col-1 *After Densification* | 同源头骨灰色线稿轮廓。轮廓内部沿颅骨/软组织高对比度**边界**密集堆积约 60 个橙色实心椭球 `#FF7F0E`，明显"挤在一圈"；轮廓**内部深部** path interior 区域几乎空白，仅有 3–5 个椭球零散。整列底部一行 7pt 灰色小字 `boundary over-densification by gradient-driven growth`。 |
-| Col-2 *Joint Criterion* | 同源头骨灰色线稿轮廓的**局部放大**（轮廓只画一小段边界区段），里面只剩约 20 个椭球的局部 patch。其中：① 用**红色实心 ×** 标 6–8 个 Gaussians（表示双条件同时命中的 redundancy candidate）；② 用**绿色空心 ○** 标其余椭球（表示 retained）。底部居中烘焙判据短式 `prune if s_i < τ ∧ ḡ_i < δ`（8pt LaTeX 风格，深灰）。判据左右两侧各画一个小图例：左侧灰色背景方块加一个迷你 KNN 示意（一个中心点 + 5 条短线连到 5 个邻居），右侧灰色背景方块加一个向下的梯度箭头加 `ḡ_i`。整列底部一行 7pt 灰色小字 `low proximity ∧ low gradient activity`。 |
-| Col-3 *After Pruning* | 同源头骨灰色线稿轮廓（与 Col-1 同尺寸同几何）。轮廓内部仍保留橙色实心椭球，但**边界处椭球数量明显减少**（约剩 30 个，原来红 × 标的位置改为空白），同时**内部 path interior 出现 8–10 个新增椭球**（暗示密化在下一轮把容量分配给欠表征区域，但此处仅画"释放出空间"即可）。整列底部一行 7pt 灰色小字 `capacity reclaimed from saturated boundaries`。 |
-
-## 列间连接
-
-- Col-1 → Col-2：一条灰色实线右向箭头，箭头中段标极小字 `KNN + gradient`。
-- Col-2 → Col-3：一条灰色实线右向箭头，箭头中段标极小字 `prune & shrink`。
-
-## 配色规范
-
-- 橙 `#FF7F0E`：所有 Gaussians 椭球（GAP 主色）
-- 红 `#D62728`：Col-2 redundancy candidate `×` 标记（失败/淘汰）
-- 绿 `#2CA02C`：Col-2 retained `○` 标记（保留）
-- 中性灰 `#888888` / `#BFBFBF`：解剖轮廓线稿、箭头、列标题、底部说明、判据公式、KNN/gradient 图例
-- **不使用**：蓝（属于 SPS）、viridis 热图、霓虹、3D 阴影
-
-## 字体规范
-
-- 全图无衬线（Helvetica/Arial 风），列标题 8–9pt 加粗；底部说明 7pt 灰色；烘焙判据 8pt LaTeX 风格；箭头中段标注 6pt 灰色
-- **严禁** 在图内出现 `(a)(b)(c)` panel 编号
-
-## 文字烘焙白名单
-
-- 可烘焙：`After Densification` / `Joint Criterion` / `After Pruning` / `prune if s_i < τ ∧ ḡ_i < δ` / `ḡ_i` / `KNN + gradient` / `prune & shrink` / 三行底部说明
-- 严禁烘焙：dataset 名、view 数、PSNR、SSIM、K 邻居数（如 5）、τ / δ / β_prune 的数值、[2K, 20K] 迭代区间、任何完整句子、caption 文字
-
-## 反例
-
-- 严禁把 Col-2 画成全切片（必须是边界小 patch 放大）
-- 严禁 Col-3 把所有椭球清空（必须保留大部分橙色椭球 + 边界变稀疏 + 内部新增）
-- 严禁 redundancy candidate 用其他颜色（必须红 ×）
-- 严禁出现 SPS·GAP·ADM 三 badge 排列（badge 只在 pipeline 图出现）
+- **结构模式**：Pattern II 分步可视化（参考 method-fsgs.png 极简机制图范式）
+- **每面板 ≤5-8 个 Gaussian**，用少量元素以小见大
+- **视觉元素**：GT 虚线轮廓 + Gaussian 状态色（蓝=retained, 灰=prune candidate）+ KNN proximity 连接边（橙红线）+ zoom-in 放大
 
 ## image2 PROMPT (中文，浓缩版，可直接喂给生图模型)
 
-一张顶会论文用的科学示意图，干净纯白底，宽高比约 16:5。整图严格采用单行 1 行 × 3 列网格，三列等宽等高，列与列之间用浅灰色实线右向箭头连接。顶部居中加粗无衬线小标题，从左到右依次为 `After Densification`、`Joint Criterion`、`After Pruning`。整体风格参考 X-Gaussian (ECCV 2024) Figure 1 与 R²-Gaussian (NeurIPS 2024) Figure 3 的顶会简洁示意图风。全图主色为橙色 `#FF7F0E`（区别于 SPS 蓝、ADM 绿）。
+绘制一张学术论文模块细节示意图，白色背景(#FFFFFF)，现代扁平矢量风格，Apple 式圆润美感，CVPR/NeurIPS 顶会论文级别质量。
 
-**Col-1 After Densification**：画一张轴向头骨切片的灰色 0.8pt 线稿轮廓（与 SPS 图同源几何）。轮廓内部沿颅骨与软组织的高对比度边界**密集**堆积约 60 个橙色 `#FF7F0E` 实心椭球，每个椭球 6–10 像素，明显"挤在一圈"形成可见的过密化簇；轮廓内部深部 path interior 区域几乎空白，仅有 3 到 5 个椭球零散分布。整列底部一行 7pt 灰色字 `boundary over-densification by gradient-driven growth`。
+模块名: Geometry-aware Pruning (GAP)
 
-**Col-2 Joint Criterion**：画同一头骨灰色 0.8pt 线稿轮廓的**局部放大**——只画一小段边界区段，里面只显示约 20 个椭球的局部 patch。其中 6 到 8 个椭球用**红色 `#D62728` 实心 × 号**覆盖标记（表示双条件同时命中的冗余候选），其余椭球用**绿色 `#2CA02C` 空心 ○ 号**覆盖标记（表示保留）。在 patch 正下方居中烘焙判据短公式 `prune if s_i < τ ∧ ḡ_i < δ`，使用 8pt LaTeX 风格深灰字。判据左侧画一个极小的浅灰色背景方块作为 KNN 示意——一个中心点连出 5 条短线到 5 个邻居小点；判据右侧画一个极小的浅灰色背景方块作为梯度活动示意——一个向下的灰色箭头旁边标小字 `ḡ_i`。整列底部一行 7pt 灰色字 `low proximity ∧ low gradient activity`。
+整体布局: 水平三列并排，宽高比约 16:6（约 1600×375 px），白色背景。三列从左到右用黑色实线圆润箭头（2px 线宽，圆润三角箭头头部）连接。每列上方有加粗 sans-serif 标题。
 
-**Col-3 After Pruning**：画同一头骨灰色 0.8pt 线稿轮廓（与 Col-1 同尺寸同几何）。轮廓内部仍保留橙色 `#FF7F0E` 实心椭球，但**边界处椭球数量明显减少**到约 30 个，原来在 Col-2 被红 × 标记的对应位置现在改为空白；同时**轮廓内部 path interior 区域出现 8 到 10 个新增椭球**，暗示密化在下一轮把释放出来的容量分配给欠表征的深部区域。整列底部一行 7pt 灰色字 `capacity reclaimed from saturated boundaries`。
+面板 (a) After Densification（左侧）:
+- 底层放一个简洁的黑色虚线轮廓形状，代表解剖结构边界（画一个简化的 L 形或弧形组织轮廓，不画真实器官细节）
+- 约 8-10 个蓝色(#1976D2)扁平 2D 半透明椭圆密集聚集在轮廓边缘/边界处，互相紧挨、有重叠
+- 仅 1-2 个蓝色小椭圆孤零零地散布在内部区域（远离边界）
+- 视觉效果：边界处拥挤堆叠 vs 内部空旷稀疏，传达"容量被边界垄断"
+- 左上角放 (a) 标记，加粗黑色
 
-**箭头与连接**：Col-1 与 Col-2 之间画一条 1.5pt 灰色 `#888888` 实线右向箭头，箭头中段上方标 6pt 灰色字 `KNN + gradient`；Col-2 与 Col-3 之间画一条同样 1.5pt 灰色实线右向箭头，箭头中段上方标 6pt 灰色字 `prune & shrink`。
+面板 (b) Joint Criterion（中间）:
+- 与 (a) 完全相同的虚线轮廓和 Gaussian 位置布局
+- 新增：橙色细线(1px, #FF7F0E)连接相邻 Gaussian 椭圆的中心点，形成 KNN 连接图（约 8-12 条连接线）
+- 边界处 3-4 个最拥挤的椭圆变为灰色(#BDBDBD)，旁边各标一个小 × 号（表示 prune candidates：拥挤且不活跃）
+- 保留的蓝色椭圆保持不变（活跃或不拥挤的）
+- 底部居中放一个公式框（8px 圆角，#F5F5F5 浅灰背景，1px #E0E0E0 边框），内写斜体公式: c_i = 1[d_i < τ ∧ ḡ_i < δ]
+- 左上角放 (b) 标记
 
-**风格强约束**：白底干净，仅使用以下有限调色板——橙色 `#FF7F0E`（所有 Gaussians 椭球，GAP 主色）、红色 `#D62728`（Col-2 redundancy candidate `×` 标记）、绿色 `#2CA02C`（Col-2 retained `○` 标记）、中性灰 `#888888`/`#BFBFBF`（解剖轮廓线稿、箭头、列标题、底部说明、烘焙判据、KNN 与 gradient 图例）。**严禁** 使用蓝色（属于 SPS）、viridis 热图、彩虹渐变、霓虹、3D 软阴影、玻璃质感、UI 卡片背景、技术博客封面、解释漫画。全图统一无衬线字体（Helvetica/Arial）。严禁出现 `(a)(b)(c)` 这种独立 panel 编号；标号系统只有顶部列标题一层。严禁在图中出现 dataset 名、view 数、PSNR、SSIM、baseline 方法名、K 邻居数、τ / δ / β_prune 等超参数值、训练迭代区间、任何完整句子；严禁烘焙 caption 文字。最终目标：不读正文的人 30 秒内能复述——左列在密化后高斯都挤在边界一圈，内部空白；中列对每个高斯算 KNN 近邻距离和梯度活动，两者都低的红 × 是冗余，其它绿 ○ 保留；右列裁剪后边界稀疏了一些，深部内部多出新的高斯落点。
+面板 (c) After Pruning（右侧）:
+- 相同虚线轮廓
+- 灰色 candidates 已消失（被移除）
+- 保留的蓝色 Gaussians 分布更均匀：边界处数量减少（约 4-5 个）但仍有覆盖，内部 1-2 个保留
+- 从边界区域用橙色(#F57F17)细线矩形框标注一个小区域，用折线引出 zoom-in 放大视图
+- Zoom-in 放大面板（橙色边框）内部展示 2-3 个蓝色椭圆的细节：
+  - 虚线椭圆表示原来的较大协方差
+  - 实线椭圆表示收缩后的较小协方差
+  - 小箭头从虚线椭圆指向实线椭圆，表示"收缩"
+  - 文字标注 "contract σ"
+- 左上角放 (c) 标记
+
+底部图例（紧凑融入面板 (c) 的下方空白处，不独占一整行）:
+- 蓝色椭圆图标 + "Retained"
+- 灰色椭圆图标 + × + "Prune Candidate"  
+- 橙色细线图标 + "KNN Edge"
+- 虚线椭圆图标 + "Original σ"
+
+**全局字体规范（5 张图统一）**:
+- 全图仅使用 2 种字体样式：①标题=加粗无衬线（Helvetica Bold / Arial Bold 风格），②描述性文字=常规无衬线（Helvetica Regular / Arial Regular 风格）
+- 面板标题（After Densification / Joint Criterion / After Pruning）: 加粗无衬线，8-9pt
+- 图例文字（Retained / Prune Candidate / KNN Edge）: 常规无衬线，7pt，灰色 #757575
+- 公式: 8pt LaTeX 风格深灰斜体
+- Zoom-in 标注（contract σ）: 常规无衬线，7pt
+- 严禁出现衬线体（Times/Serif）、手写体、装饰体
+- 所有文字字号与本系列其他 4 张图（intro/pipeline/SPS/ADM）保持一致
+
+设计规范（必须严格遵守）：
+- 白色背景(#FFFFFF)，现代扁平矢量风格，Apple 式圆润美感
+- 所有元素扁平 2D，不使用 3D 光影/高光/立体渲染
+- Gaussian 必须画成扁平纯色 2D 椭圆，绝对禁止画成 3D 球体/有高光的球/有光影的椭球
+- 公式框：8px 圆角，浅灰背景
+- 箭头：2px 圆润箭头，实线黑色=操作流，转折处圆角过渡
+- 文字尽量精简，强调视觉元素表达
+- 图例融入面板空白区域
+- 不使用 emoji、卡通元素
+- 不使用橘色以外的红色（避免和 SPS 蓝/ADM 绿混淆）
+- 质量对标 CVPR/NeurIPS 顶会论文配图

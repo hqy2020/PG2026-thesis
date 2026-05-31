@@ -1,123 +1,73 @@
-# intro_fig_compare — image2 绘图提示词（融合版 v4：2×2 布局）
-
-## 用途
-
-- 论文：`XRA-GS: X-ray Attenuation-Aligned Gaussian Splatting for Sparse Tomographic View Synthesis`（PG2026 投稿）
-- Introduction 首图（teaser），融合 X-Field (NeurIPS 2025) Fig.1 的物理过程对比 + X-Gaussian (ECCV 2024) Fig.4 的 Gaussian 模型对比
-- 与 intro Para 2（imaging-physics gap）和 Para 3（capacity misallocation）严格绑定
-- 风格基准：X-Gaussian Fig.1 + X-Field Fig.1 的顶会示意图风格——简洁、几何化、白底、有限色彩
-- 默认出图通道：`gpt-image-2` skill
-- 输出文件名保持 `intro_fig_compare.png`，直接覆盖现图
-
-## 设计理念（v4 vs v3 的核心变化）
-
-v3 是 2×3 网格，文字过载（公式+图例+badge+说明文字 15+ 处），image2 无法精确渲染。
-
-v4 改为 **2×2 网格**：
-- 左列合并「物理过程 + Gaussian 模型差异」，用 **视觉对比**（彩色球 vs 灰色球）替代文字解释
-- 右列聚焦「density control 对比」，(b) 行右列内部再分左/右对比 Existing vs XRA-GS
-- 图内文字减至 **仅 7 个短词**：`SH`, `RIRF`, `Existing`, `XRA-GS`, `SPS`, `GAP`, `ADM`
-- 公式、句子级说明、图例文字全部移到 LaTeX caption
-
-## 总版式
-
-- 2 行 × 2 列网格，等宽等高对齐
-- 宽高比约 **16 : 8**（约 1600 × 800 px，dpi ≥ 300），白底
-- 左侧行标签柱（rotated 90°）：上行 `(a) Visible Light`，下行 `(b) X-ray`
-- 两列共享顶部小标题（居中加粗）：左列 `Imaging & Representation`，右列 `Density Control`
-- 上下行之间用一条极细浅灰虚线分隔
-
-## 各 panel 设计
-
-### (a) 左上 — Visible Light: Imaging & Representation
-
-左半区域（约占 panel 宽 50%）：
-- 一个小三角形相机图标在左侧
-- 从相机发出 3 条不同颜色的射线（红、橙、绿），射向一个简洁的灰色物体轮廓（椭圆或圆形，不要照片）
-- 射线碰到物体表面即反弹/停止，用小圆点标记反射点
-- 表面反射方向散射出更淡的彩色线
-
-右半区域（约占 panel 宽 50%）：
-- 中央一个蓝绿渐变球体（约占高度 40%），球体表面有微妙的颜色变化
-- 球体左上方一个小三角相机图标，从球体到该相机画一条线，箭头终点放一个蓝色小方块
-- 球体右上方一个小三角相机图标，从球体到该相机画一条线，箭头终点放一个绿色小方块
-- 两个方块颜色不同 → 传达 view-dependent
-- 球体正下方居中标注 `SH`（粗体，8pt，深灰色）
-
-### (a) 右上 — Visible Light: Density Control
-
-- 中央一个灰色物体轮廓（与左 panel 同形的椭圆/圆形，用 0.8pt 灰色线描）
-- 约 15 个橙色 `#FF7F0E` 实心小椭球，密集排列在物体轮廓外表面一圈
-- 物体内部完全为空白——不放任何椭球
-- 右下角一个浅灰色对勾 ✓（约 16pt）
-
-### (b) 左下 — X-ray: Imaging & Representation
-
-左半区域（约占 panel 宽 50%）：
-- 左侧一个蓝色 `#1F77B4` 实心小圆点（X-ray source）
-- 从 source 发出一条蓝色实线射线，整条射线贯穿一个半透明灰色头骨侧影轮廓（简洁线稿，不要照片），在物体表面不停止
-- 射线穿透物体后抵达右侧一个灰色小方块（detector pixel）
-- 射线颜色从头到尾保持均匀蓝色，不渐变
-
-右半区域（约占 panel 宽 50%）：
-- 中央一个均匀灰色球体（与上行的彩色球大小相同，但颜色是纯灰 `#888888`，无渐变）
-- 球体左上方一个小三角 source 图标，从 source 画一条线穿过球体，箭头终点放一个灰色小方块
-- 球体右上方一个小三角 source 图标，从 source 画一条线穿过球体，箭头终点放一个灰色小方块
-- 两个方块颜色完全相同（都是灰色）→ 传达 view-independent
-- 球体正下方居中标注 `RIRF`（粗体，8pt，深灰色）
-
-### (b) 右下 — X-ray: Density Control（内部左右对比）
-
-用一条细灰竖线将 panel 分为左右两半，竖线中段标 `vs`：
-
-**左半 "Existing"**：
-- 顶部居中红色 `#D62728` 粗体小字 `Existing`
-- 中央一个灰色头骨轮廓（与 (b) 左 panel 同形）
-- 约 12 个红色 `#D62728` 实心小椭球聚集在头骨轮廓边界（外缘/骨面）
-- 头骨内部用一条蓝色虚线贯穿，提示深部射线路径，但该路径上没有椭球
-- 右下角一个红色小叉 ✗
-
-**右半 "XRA-GS"**：
-- 顶部居中绿色 `#2CA02C` 粗体小字 `XRA-GS`
-- 同样的灰色头骨轮廓
-- 约 12 个绿色 `#2CA02C` 实心小椭球沿一条贯穿头骨的蓝色射线均匀分布在内部（从入射到出射连续覆盖）
-- 边界处只有极少椭球
-- 底部居中水平排列三个小 badge：蓝描边 `SPS`、橙描边 `GAP`、绿描边 `ADM`
-- 右下角一个绿色对勾 ✓
-
-## 配色
-
-- 橙 `#FF7F0E`：可见光相关、surface Gaussians、GAP badge
-- 蓝 `#1F77B4`：X-ray 射线、X-ray source、SPS badge
-- 红 `#D62728`：boundary-clustered Gaussians（问题标注）
-- 绿 `#2CA02C`：path-anchored Gaussians（XRA-GS）、ADM badge
-- 灰 `#888888`/`#BFBFBF`：物体轮廓、RIRF 球体、行列标签
-- 禁用：彩虹渐变、霓虹、3D 阴影、热力图、UI 卡片
-
-## 禁止事项
-
-- 严禁图内出现公式、dataset 名、view 数、baseline 名、PSNR/SSIM
-- 严禁出现 (a)(b)(c) panel 编号
-- 严禁使用照片级实物（全部用简洁几何轮廓/线稿）
-- 严禁把 caption 文字烘焙进图
-- 严禁彩虹渐变、UI 卡片、博客封面风
-
-## 30 秒可读性目标
-
-不读正文的人看 30 秒应能复述：
-> 上行可见光：射线在表面反射，Gaussian 模型输出因观看方向而变（彩色球），所以 Gaussians 自然贴在表面（橙色椭球包围物体）。
-> 下行 X-ray：射线贯穿整个物体，Gaussian 模型输出与方向无关（灰色球），但现有方法的 Gaussians 仍聚在边界（红色椭球，✗），XRA-GS 把 Gaussians 重新分布到整条路径（绿色椭球，✓）。
+---
+figure: intro_fig_compare
+section: intro
+type: intro / physics contrast
+output: assets/fig/intro_fig_compare.png
+---
 
 ## image2 PROMPT (中文，浓缩版，可直接喂给生图模型)
 
-一张顶会论文用的科学示意图，干净纯白底，宽高比约 16:8（约 1600×800 像素）。整图为严格的 2 行 × 2 列网格布局，上下行等宽等高对齐。左侧有一道旋转 90 度的行标签柱：上行写 `(a) Visible Light`（深灰加粗），下行写 `(b) X-ray`（深蓝加粗）。两列顶部有共享小标题，居中加粗无衬线字体：左列 `Imaging & Representation`，右列 `Density Control`。上下行之间一条极细浅灰虚线分隔。整图风格参考顶会论文 teaser：极简、几何化、白底、有限色彩，所有物体用简洁几何轮廓而非照片。
+绘制一张学术论文 intro 概念对比图，白色背景，CVPR/NeurIPS 顶会论文 Figure 1 级别质量。
 
-第 (a) 行 Visible Light，左 panel「Imaging & Representation」：左半画一个小三角相机图标，从相机射出 3 条不同颜色的射线（红、橙、绿）射向一个灰色椭圆物体轮廓，射线在物体表面反弹停止，表面处有反射散射的淡色线条。右半画一个蓝绿渐变球体（表示 Gaussian 点），球体左上方和右上方各有一个小三角相机，从球体分别射出线条到达相机旁边的小色块——左侧相机旁是蓝色小方块、右侧相机旁是绿色小方块（颜色不同，表示 view-dependent），球体正下方标注粗体灰色文字 `SH`。
+**参考素材（image-to-image）**:
+- 可见光场景物体: `assets/data/3dgs_truck_gt.png`（3DGS Tanks & Temples 经典青绿色美式平板卡车）
+- X-ray 投影图像: `assets/data/head_46_gt.png`（XRA-GS 实验数据 head X-ray 投影）
 
-第 (a) 行 Visible Light，右 panel「Density Control」：中央画一个灰色细实线描的椭圆物体轮廓（与左 panel 同形）。然后在这个灰色轮廓线的外侧，紧挨着轮廓，画大约 15 个橙色 #FF7F0E 的小实心圆点（直径约 6-8px），这些圆点沿轮廓外缘均匀排列成一圈，彼此之间有小间隙，视觉效果类似 3D Gaussian Splatting 论文中常见的彩色点云渲染效果。灰色轮廓线内部完全空白。右下角一个浅灰色对勾 ✓。重要：这些橙色圆点是独立的实心填充圆形，不要画成虚线边框或虚线轮廓。
+**论文标题**: XRA-GS: X-ray Attenuation-Aligned Gaussian Splatting for Sparse Tomographic View Synthesis
 
-第 (b) 行 X-ray，左 panel「Imaging & Representation」：左半画一个蓝色 #1F77B4 实心小圆点（X-ray source），从 source 发出一条蓝色实线射线，整条射线贯穿一个半透明灰色头骨侧影轮廓（简洁线稿），射线不在表面停止，穿透后抵达右侧一个灰色小方块 detector。右半画一个均匀灰色 #888888 球体（与上行蓝绿球同大，但纯灰无渐变），球体左上方和右上方各有一个小三角 source，从 source 射出线条穿过球体到达另一侧的灰色小方块——两个方块颜色完全相同（都是灰色，表示 view-independent），球体正下方标注粗体灰色文字 `RIRF`。
+**图类型**: 物理对比 — 可见光反射/折射 vs X-ray 穿透/衰减
 
-第 (b) 行 X-ray，右 panel「Density Control」分为左右两个子区域，中间一条细灰竖线隔开，竖线中段标 `vs`。两侧必须使用完全相同形状的灰色头骨侧影轮廓（与 (b) 左 panel 头骨同形）。左子区域顶部居中红色 #D62728 粗体小字 `Existing`，中央画灰色头骨轮廓，约 10 个红色 #D62728 实心圆点（直径约 6-8px）全部紧贴在头骨轮廓线外侧边缘（沿骨面排列），头骨内部有一条蓝色虚线从左到右贯穿但该虚线上没有任何圆点（留白，暗示内部路径缺少覆盖），右下角一个红色小叉 ✗。右子区域顶部居中绿色 #2CA02C 粗体小字 `XRA-GS`，中央同样的灰色头骨轮廓，约 10 个绿色 #2CA02C 实心圆点（直径约 6-8px）沿一条从左到右贯穿头骨内部的蓝色实线等间距排列（圆点在蓝线上均匀分布，覆盖从入射到出射的整条路径），头骨边界上最多 1-2 个圆点。底部居中水平排列三个等高白底圆角矩形小 badge——蓝色 #1F77B4 描边写 `SPS`、橙色 #FF7F0E 描边写 `GAP`、绿色 #2CA02C 描边写 `ADM`，右下角一个绿色对勾 ✓。重要：红色和绿色圆点都是独立的实心填充圆形，不要画成虚线边框或虚线轮廓。
+**整体布局**: 上下两行，宽高比约 16:7。每行从左到右三个区域：成像物理过程 → 成像结果 → Gaussian 分布。上下行之间用灰色细虚线水平分隔。
 
-风格硬约束：白底干净，仅使用橙 #FF7F0E、蓝 #1F77B4、红 #D62728、绿 #2CA02C、灰 #888888 五色。图中仅允许出现以下 7 个短词文字：`SH`、`RIRF`、`Existing`、`XRA-GS`、`SPS`、`GAP`、`ADM`，加上行标签和列标题。绝不出现公式、句子、dataset 名、数值、panel 编号。所有物体用简洁几何线稿轮廓，不使用照片。无衬线字体。无彩虹渐变、无霓虹、无 3D 阴影、无 UI 卡片背景。
+**内容结构**:
+
+行(a) Visible Light（白色背景，左侧竖排标注 "(a) Visible Light"）:
+- 左区「Imaging Process」: 一个太阳形光源图标在左上方发出多条彩色光线（红/绿/蓝/黄表示不同波长），光线射向一辆**来自 3DGS Tanks & Temples 数据集的经典青绿色美式平板卡车**（与参考图 3dgs_truck_gt.png 一致的车型外观），光线到达卡车表面后折回/散射（箭头方向从物体表面反弹回来），一个小型扁平 camera 图标在右侧接收反射光。在物体表面附近标注 "Reflection" 和 "Scattering"，在光源旁标注 "Source"，在 camera 旁标注 "Pixel"。
+- 中区「Image」: 直接使用 3DGS 卡车的真实照片（与参考图同款卡车，正常摄影视角），带浅灰边框圆角。
+- 右区「Gaussian Distribution」: 卡车的简洁虚线轮廓（黑色虚线，不填充），12-15 个扁平 2D 半透明粉色/品红色椭圆紧贴在卡车虚线轮廓表面外侧排列，形成表面聚集的分布。底部标注 "Surface-clustered"。
+
+行(b) X-ray（白色背景，左侧竖排标注 "(b) X-ray"）:
+- 左区「Imaging Process」: 一个 X-ray source 倒三角形在左侧，发出数条浅灰色射线直线，射线完全穿透一个**3D 渲染的人体头骨模型**（灰白色解剖学头骨，侧面视角），到达右侧的一个窄长矩形 detector。射线是直线贯穿不折回。在射线路径上标注 "Penetration"，在 source 旁标注 "Source"，在 detector 旁标注 "Attenuation" 和 "Pixel"。
+- 中区「Image」: 使用真实 X-ray 头部投影图（与参考图 head_46_gt.png 风格一致，深色背景灰度骨骼），带浅灰边框圆角。
+- 右区「Gaussian Distribution」: 头骨的简洁虚线轮廓（黑色虚线，不填充），12-15 个扁平 2D 半透明多色椭圆（绿色、蓝色、橙色，代表不同材料/密度）沿一条射线路径均匀分布在头骨内部。所有椭圆大小相同、透明度相同，体现 equal contribution / no occlusion 效果。底部标注 "Path-distributed"。
+
+**视觉元素**:
+- 卡车: 3DGS Tanks & Temples 经典青绿色美式平板卡车（真实照片风格）
+- 头骨: 灰白色解剖学头骨模型，侧面视角
+- X-ray 图像: 真实 X-ray 投影风格（深色背景灰度骨骼）
+- 光源: 太阳形图标（可见光）/ 倒三角形（X-ray source）
+- 射线: 彩色细线带箭头（可见光，反射折回）/ 灰色直线贯穿（X-ray，不折回）
+- Gaussians: 扁平 2D 半透明纯色椭圆，绝对不画成 3D 球体或有高光的球
+- GT 轮廓: 黑色虚线勾勒物体形状，不填充
+
+**颜色方案**:
+- 白色背景
+- 可见光射线: 红/绿/蓝/黄多色
+- X-ray 射线: 灰色细线
+- 可见光 Gaussians: 粉色/品红 半透明
+- X-ray Gaussians: 多色（浅青绿/蓝/橙）半透明，代表不同材料
+
+**标注要求**:
+- (a) 左侧竖排 "(a) Visible Light"
+- (b) 左侧竖排 "(b) X-ray"
+- 列标题: "Imaging Process", "Image", "Gaussian Distribution"（或 "3D Representation"）
+- 物理过程标注: "Source", "Reflection", "Scattering", "Penetration", "Attenuation", "Pixel"
+- 分布标注: "Surface-clustered", "Path-distributed"
+- 所有文字水平排列（竖排标注除外），sans-serif
+
+**全局字体规范（5 张图统一）**:
+- 全图仅使用 2 种字体样式：①标题=加粗无衬线（Helvetica Bold / Arial Bold 风格），②描述性文字=常规无衬线（Helvetica Regular / Arial Regular 风格）
+- 列标题 / 行标题: 加粗无衬线，8-9pt
+- 物理过程标注（Source, Reflection 等）: 常规无衬线，7pt，灰色 #757575
+- 分布标注（Surface-clustered, Path-distributed）: 常规无衬线，7pt，灰色 #555555
+- 严禁出现衬线体（Times/Serif）、手写体、装饰体
+- 所有文字字号与本系列其他 4 张图（pipeline/SPS/GAP/ADM）保持一致
+
+设计规范（必须严格遵守）：
+- 白色背景(#FFFFFF)
+- 卡车使用 3DGS 数据集的真实照片风格，头骨使用真实感 3D 渲染
+- Gaussian 必须画成扁平纯色 2D 椭圆，绝对禁止画成 3D 球体/有高光的球/有光影的椭球
+- 不同颜色代表不同材料/密度
+- 文字尽量精简，强调视觉元素表达
+- 不使用 emoji、卡通元素
+- 质量对标 CVPR/NeurIPS 顶会论文配图
