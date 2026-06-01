@@ -159,14 +159,14 @@ s_i = \frac{1}{K}\!\sum_{j\in\mathcal{N}_K(i)}\|\mathbf{x}_i-\mathbf{x}_j\|_2,
 \end{equation}
 where $\boldsymbol{\mu}_i$ is the center position, $\sigma_i$ the initial attenuation coefficient queried directly from the FDK volume, and $s_i$ the isotropic scale set by the mean distance to the $K$-nearest seed neighbors $\mathcal{N}_K(i)$. The mixture form is critical: density weighting alone would collapse capacity onto the brightest bony structures, while the uniform term retains global coverage so that under-attenuating but anatomically relevant soft-tissue regions remain populated.
 
-\begin{figure}[t]
+\begin{figure*}[t]
 \centering
 \IfFileExists{assets/fig/method_fig_sps.png}{%
 \includegraphics[width=\linewidth]{assets/fig/method_fig_sps.png}%
 }{\fbox{\parbox[c][3.5cm][c]{0.95\linewidth}{\centering Placeholder: \texttt{assets/fig/method\_fig\_sps.png}}}}
 \caption{\textbf{Support-Profile Seeding (\sps).} From the coarse FDK volume, \sps\ builds a density-weighted mixture distribution that interpolates between a uniform prior and the attenuation profile. Sampling from this mixture seeds Gaussians along the anatomical support before any optimization step.}
 \label{fig:sps}
-\end{figure}
+\end{figure*}
 
 \subsection{Geometry-aware Pruning (\gap)}
 \label{sec:gap}
@@ -185,14 +185,14 @@ c_i=\mathbf{1}\!\left[d_i<\tau\ \land\ \bar{g}_i<\delta\right],
 \end{equation}
 where $c_i\!=\!1$ marks a prune candidate. \gap\ removes a bounded fraction of the flagged Gaussians per cycle and slightly contracts the covariance of their retained neighbors to avoid creating local support holes. The dual criterion distinguishes \gap\ from purely density-based pruning: gradient activity prevents deleting Gaussians that are still learning a boundary, while proximity prevents over-densified regions from continuously monopolizing capacity.
 
-\begin{figure}[t]
+\begin{figure*}[t]
 \centering
 \IfFileExists{assets/fig/method_fig_gap.png}{%
 \includegraphics[width=\linewidth]{assets/fig/method_fig_gap.png}%
 }{\fbox{\parbox[c][3.5cm][c]{0.95\linewidth}{\centering Placeholder: \texttt{assets/fig/method\_fig\_gap.png}}}}
 \caption{\textbf{Geometry-aware Pruning (\gap).} After gradient-driven densification, Gaussians cluster around high-contrast boundaries. \gap\ flags a Gaussian as a redundancy candidate only when it is both locally crowded ($d_i<\tau$) and recently inactive ($\bar{g}_i<\delta$), so that capacity is reclaimed from saturated boundaries without removing Gaussians that are still learning structure.}
 \label{fig:gap}
-\end{figure}
+\end{figure*}
 
 \subsection{Adaptive Density Modulation (\adm)}
 \label{sec:adm}
