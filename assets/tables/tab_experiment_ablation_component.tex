@@ -10,16 +10,16 @@ Configuration & PSNR$\uparrow$ & SSIM$\uparrow$ \\
 \midrule
 \multicolumn{3}{c}{\emph{Component analysis (5-organ avg, 3-view)}} \\
 \midrule
-Baseline (\rtwo) & 27.83 & 0.9026 \\
+Baseline (\rtwo) & 27.93 & 0.9036 \\
 B\,+\,\sps & \cellcolor[HTML]{FFC991}28.14 & 0.9032 \\
-B\,+\,\gap & 28.01 & \cellcolor[HTML]{FFC991}0.9037 \\
+B\,+\,\gap & 27.90 & \cellcolor[HTML]{FFF6A9}0.9037 \\
 B\,+\,\adm & \cellcolor[HTML]{FFF6A9}28.06 & \cellcolor[HTML]{FF9396}0.9041 \\
-\textbf{Full \XRAGS} & \cellcolor[HTML]{FF9396}28.17 & \cellcolor[HTML]{FFF6A9}0.9036 \\
+\textbf{Full \XRAGS} & \cellcolor[HTML]{FF9396}28.19 & \cellcolor[HTML]{FFC991}0.9041 \\
 \midrule
 \multicolumn{3}{c}{\emph{\sps\ mixture coefficient $\alpha$ (5-organ avg, 3-view)}} \\
 \midrule
 $\alpha$\,=\,0.0 & 28.09 & \cellcolor[HTML]{FFF6A9}0.9036 \\
-$\alpha$\,=\,0.1 & \cellcolor[HTML]{FFC991}28.13 & 0.9035 \\
+$\alpha$\,=\,0.1 & \cellcolor[HTML]{FFC991}28.13 & 0.9034 \\
 $\boldsymbol{\alpha}$\textbf{\,=\,0.2} & \cellcolor[HTML]{FF9396}28.14 & 0.9032 \\
 $\alpha$\,=\,0.5 & \cellcolor[HTML]{FFF6A9}28.11 & \cellcolor[HTML]{FFC991}0.9043 \\
 $\alpha$\,=\,1.0 & 28.06 & \cellcolor[HTML]{FF9396}0.9044 \\
@@ -27,19 +27,19 @@ $\alpha$\,=\,1.0 & 28.06 & \cellcolor[HTML]{FF9396}0.9044 \\
 \multicolumn{3}{c}{\emph{\gap\ proximity threshold $\tau$ (5-organ avg, 3-view)}} \\
 \midrule
 $\tau$\,=\,0.005 & 27.86 & 0.9030 \\
-$\tau$\,=\,0.010 & \cellcolor[HTML]{FF9396}28.28 & \cellcolor[HTML]{FFC991}0.9041 \\
-$\boldsymbol{\tau}$\textbf{\,=\,0.015} & \cellcolor[HTML]{FFF6A9}28.17 & 0.9036 \\
-$\tau$\,=\,0.020 & \cellcolor[HTML]{FFC991}28.22 & \cellcolor[HTML]{FFC991}0.9041 \\
+$\tau$\,=\,0.010 & \cellcolor[HTML]{FFC991}28.28 & \cellcolor[HTML]{FFF6A9}0.9041 \\
+$\boldsymbol{\tau}$\textbf{\,=\,0.015} & \cellcolor[HTML]{FF9396}28.33 & \cellcolor[HTML]{FFC991}0.9042 \\
+$\tau$\,=\,0.020 & \cellcolor[HTML]{FFF6A9}28.22 & 0.9041 \\
 $\tau$\,=\,0.030 & 28.15 & \cellcolor[HTML]{FF9396}0.9050 \\
 \midrule
 \multicolumn{3}{c}{\emph{\adm\ activation iteration (5-organ avg, 3-view)}} \\
 \midrule
-Iter\,=\,0 & \cellcolor[HTML]{FF9396}27.17 & \cellcolor[HTML]{FF9396}0.8422 \\
-Iter\,=\,5K & 26.82 & 0.8394 \\
-Iter\,=\,10K & \cellcolor[HTML]{FFF6A9}26.93 & \cellcolor[HTML]{FFF6A9}0.8400 \\
-\textbf{Iter\,=\,15K} & \cellcolor[HTML]{FFC991}26.95 & \cellcolor[HTML]{FFF6A9}0.8400 \\
-Iter\,=\,20K & 26.91 & \cellcolor[HTML]{FFC991}0.8403 \\
-Iter\,=\,25K & 26.46 & 0.8390 \\
+Iter\,=\,0 & \cellcolor[HTML]{FF9396}28.30 & \cellcolor[HTML]{FF9396}0.9052 \\
+Iter\,=\,5K & 28.09 & 0.9043 \\
+Iter\,=\,10K & 28.11 & 0.9042 \\
+\textbf{Iter\,=\,15K} & \cellcolor[HTML]{FFF6A9}28.13 & \cellcolor[HTML]{FFF6A9}0.9044 \\
+Iter\,=\,20K & \cellcolor[HTML]{FFC991}28.16 & \cellcolor[HTML]{FFC991}0.9045 \\
+Iter\,=\,25K & 28.04 & 0.9041 \\
 \bottomrule
 \end{tabular}
 \end{table}
