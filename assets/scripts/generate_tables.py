@@ -66,21 +66,21 @@ main_comparison,r2_gaussian,r2_gaussian,head,4,28.6644,0.955,
 main_comparison,r2_gaussian,r2_gaussian,pancreas,2,17.8274,0.8122,
 main_comparison,r2_gaussian,r2_gaussian,pancreas,3,28.6079,0.9199,
 main_comparison,r2_gaussian,r2_gaussian,pancreas,4,30.9011,0.936,
-main_comparison,xrags,xrags,abdomen,2,25.2557,0.9068,
-main_comparison,xrags,xrags,abdomen,3,29.546,0.9374,
-main_comparison,xrags,xrags,abdomen,4,30.9046,0.9627,
-main_comparison,xrags,xrags,chest,2,21.216,0.7065,
-main_comparison,xrags,xrags,chest,3,26.6337,0.839,
-main_comparison,xrags,xrags,chest,4,26.0341,0.8586,
-main_comparison,xrags,xrags,foot,2,19.9211,0.6798,
-main_comparison,xrags,xrags,foot,3,28.6395,0.8993,
-main_comparison,xrags,xrags,foot,4,29.9532,0.9149,
-main_comparison,xrags,xrags,head,2,24.258,0.8694,
-main_comparison,xrags,xrags,head,3,26.6472,0.9176,
-main_comparison,xrags,xrags,head,4,29.6833,0.9518,
-main_comparison,xrags,xrags,pancreas,2,19.0944,0.8241,
-main_comparison,xrags,xrags,pancreas,3,29.3678,0.9247,
-main_comparison,xrags,xrags,pancreas,4,30.9536,0.9361,
+main_comparison,rattags,rattags,abdomen,2,25.2557,0.9068,
+main_comparison,rattags,rattags,abdomen,3,29.546,0.9374,
+main_comparison,rattags,rattags,abdomen,4,30.9046,0.9627,
+main_comparison,rattags,rattags,chest,2,21.216,0.7065,
+main_comparison,rattags,rattags,chest,3,26.6337,0.839,
+main_comparison,rattags,rattags,chest,4,26.0341,0.8586,
+main_comparison,rattags,rattags,foot,2,19.9211,0.6798,
+main_comparison,rattags,rattags,foot,3,28.6395,0.8993,
+main_comparison,rattags,rattags,foot,4,29.9532,0.9149,
+main_comparison,rattags,rattags,head,2,24.258,0.8694,
+main_comparison,rattags,rattags,head,3,26.6472,0.9176,
+main_comparison,rattags,rattags,head,4,29.6833,0.9518,
+main_comparison,rattags,rattags,pancreas,2,19.0944,0.8241,
+main_comparison,rattags,rattags,pancreas,3,29.3678,0.9247,
+main_comparison,rattags,rattags,pancreas,4,30.9536,0.9361,
 main_comparison,xgaussian,xgaussian,abdomen,2,18.9287,0.8595,
 main_comparison,xgaussian,xgaussian,abdomen,3,23.5399,0.9077,
 main_comparison,xgaussian,xgaussian,abdomen,4,23.8482,0.9257,
@@ -116,110 +116,110 @@ component_ablation,r2_gaussian,Baseline (R²-Gaussian),head,3,26.7799,0.9242,499
 component_ablation,r2_gaussian,Baseline (R²-Gaussian),abdomen,3,29.1994,0.936,50487
 component_ablation,r2_gaussian,Baseline (R²-Gaussian),foot,3,28.5968,0.8979,50019
 component_ablation,r2_gaussian,Baseline (R²-Gaussian),pancreas,3,28.6867,0.9204,53696
-component_ablation,xrags+SPS,B + SPS,chest,3,26.934,0.8422,55568
-component_ablation,xrags+SPS,B + SPS,head,3,26.582,0.916,49606
-component_ablation,xrags+SPS,B + SPS,abdomen,3,29.4769,0.9352,50464
-component_ablation,xrags+SPS,B + SPS,foot,3,28.5697,0.9008,49938
-component_ablation,xrags+SPS,B + SPS,pancreas,3,29.1172,0.9218,52843
-component_ablation,xrags+ADM,B + ADM,chest,3,26.4846,0.8396,
-component_ablation,xrags+ADM,B + ADM,head,3,26.9209,0.9245,
-component_ablation,xrags+ADM,B + ADM,abdomen,3,29.3289,0.937,
-component_ablation,xrags+ADM,B + ADM,foot,3,28.7218,0.8985,
-component_ablation,xrags+ADM,B + ADM,pancreas,3,28.8388,0.9211,
-component_ablation,xrags+GAP,B + GAP,chest,3,26.1096,0.837,113829
-component_ablation,xrags+GAP,B + GAP,head,3,26.7288,0.9243,105504
-component_ablation,xrags+GAP,B + GAP,abdomen,3,29.2309,0.9376,105269
-component_ablation,xrags+GAP,B + GAP,foot,3,28.5987,0.8961,103944
-component_ablation,xrags+GAP,B + GAP,pancreas,3,28.8341,0.9235,106413
-component_ablation,xrags,Full XRA-GS,chest,3,26.9478,0.8409,
-component_ablation,xrags,Full XRA-GS,head,3,26.7267,0.9181,
-component_ablation,xrags,Full XRA-GS,abdomen,3,29.4578,0.9368,
-component_ablation,xrags,Full XRA-GS,foot,3,28.517,0.9003,
-component_ablation,xrags,Full XRA-GS,pancreas,3,29.3247,0.9245,
-sps_alpha_sweep,xrags+SPS,SPS α=0.0,chest,3,26.8378,0.843,
-sps_alpha_sweep,xrags+SPS,SPS α=0.1,chest,3,26.9256,0.8444,
-sps_alpha_sweep,xrags+SPS,SPS α=0.2,chest,3,26.934,0.8422,
-sps_alpha_sweep,xrags+SPS,SPS α=0.5,chest,3,26.6699,0.847,
-sps_alpha_sweep,xrags+SPS,SPS α=1.0,chest,3,27.0674,0.848,
-sps_alpha_sweep,xrags+SPS,SPS α=0.0,head,3,26.5703,0.9145,
-sps_alpha_sweep,xrags+SPS,SPS α=0.1,head,3,26.7325,0.9148,
-sps_alpha_sweep,xrags+SPS,SPS α=0.2,head,3,26.582,0.916,
-sps_alpha_sweep,xrags+SPS,SPS α=0.5,head,3,26.6554,0.9162,
-sps_alpha_sweep,xrags+SPS,SPS α=1.0,head,3,26.6648,0.9167,
-sps_alpha_sweep,xrags+SPS,SPS α=0.0,abdomen,3,29.3444,0.9352,
-sps_alpha_sweep,xrags+SPS,SPS α=0.1,abdomen,3,29.4457,0.9341,
-sps_alpha_sweep,xrags+SPS,SPS α=0.2,abdomen,3,29.4769,0.9352,
-sps_alpha_sweep,xrags+SPS,SPS α=0.5,abdomen,3,29.4095,0.9354,
-sps_alpha_sweep,xrags+SPS,SPS α=1.0,abdomen,3,29.1595,0.9357,
-sps_alpha_sweep,xrags+SPS,SPS α=0.0,foot,3,28.6261,0.9026,
-sps_alpha_sweep,xrags+SPS,SPS α=0.1,foot,3,28.5996,0.9031,
-sps_alpha_sweep,xrags+SPS,SPS α=0.2,foot,3,28.5697,0.9008,
-sps_alpha_sweep,xrags+SPS,SPS α=0.5,foot,3,28.6858,0.9015,
-sps_alpha_sweep,xrags+SPS,SPS α=1.0,foot,3,28.3805,0.8999,
-sps_alpha_sweep,xrags+SPS,SPS α=0.0,pancreas,3,29.0755,0.9227,
-sps_alpha_sweep,xrags+SPS,SPS α=0.1,pancreas,3,28.9517,0.9208,
-sps_alpha_sweep,xrags+SPS,SPS α=0.2,pancreas,3,29.1172,0.9218,
-sps_alpha_sweep,xrags+SPS,SPS α=0.5,pancreas,3,29.1174,0.9214,
-sps_alpha_sweep,xrags+SPS,SPS α=1.0,pancreas,3,29.0313,0.9215,
-gap_tau_sweep,xrags+GAP,GAP τ=0.005,chest,3,26.2193,0.8342,
-gap_tau_sweep,xrags+GAP,GAP τ=0.010,chest,3,27.1131,0.8426,
-gap_tau_sweep,xrags+GAP,GAP τ=0.015,chest,3,27.1985,0.8437,
-gap_tau_sweep,xrags+GAP,GAP τ=0.020,chest,3,27.2365,0.8453,
-gap_tau_sweep,xrags+GAP,GAP τ=0.030,chest,3,26.8585,0.8432,
-gap_tau_sweep,xrags+GAP,GAP τ=0.005,head,3,26.7425,0.9248,
-gap_tau_sweep,xrags+GAP,GAP τ=0.010,head,3,26.6944,0.9166,
-gap_tau_sweep,xrags+GAP,GAP τ=0.015,head,3,26.629,0.9149,
-gap_tau_sweep,xrags+GAP,GAP τ=0.020,head,3,26.4372,0.9146,
-gap_tau_sweep,xrags+GAP,GAP τ=0.030,head,3,26.741,0.9237,
-gap_tau_sweep,xrags+GAP,GAP τ=0.005,abdomen,3,29.0724,0.9355,
-gap_tau_sweep,xrags+GAP,GAP τ=0.010,abdomen,3,29.6883,0.9362,
-gap_tau_sweep,xrags+GAP,GAP τ=0.015,abdomen,3,29.725,0.9362,
-gap_tau_sweep,xrags+GAP,GAP τ=0.020,abdomen,3,29.6459,0.936,
-gap_tau_sweep,xrags+GAP,GAP τ=0.030,abdomen,3,29.5295,0.9369,
-gap_tau_sweep,xrags+GAP,GAP τ=0.005,foot,3,28.4955,0.8972,
-gap_tau_sweep,xrags+GAP,GAP τ=0.010,foot,3,28.5332,0.9023,
-gap_tau_sweep,xrags+GAP,GAP τ=0.015,foot,3,28.6665,0.9026,
-gap_tau_sweep,xrags+GAP,GAP τ=0.020,foot,3,28.356,0.9014,
-gap_tau_sweep,xrags+GAP,GAP τ=0.030,foot,3,28.5878,0.8953,
-gap_tau_sweep,xrags+GAP,GAP τ=0.005,pancreas,3,28.7668,0.9235,
-gap_tau_sweep,xrags+GAP,GAP τ=0.010,pancreas,3,29.3917,0.9227,
-gap_tau_sweep,xrags+GAP,GAP τ=0.015,pancreas,3,29.435,0.9234,
-gap_tau_sweep,xrags+GAP,GAP τ=0.020,pancreas,3,29.4023,0.9231,
-gap_tau_sweep,xrags+GAP,GAP τ=0.030,pancreas,3,29.0392,0.9261,
-adm_iter_sweep,xrags,ADM warmup=0,chest,3,27.165,0.8422,
-adm_iter_sweep,xrags,ADM warmup=5000,chest,3,26.8177,0.8394,
-adm_iter_sweep,xrags,ADM warmup=10000,chest,3,26.9313,0.84,
-adm_iter_sweep,xrags,ADM warmup=15000,chest,3,26.9464,0.84,
-adm_iter_sweep,xrags,ADM warmup=20000,chest,3,26.906,0.8403,
-adm_iter_sweep,xrags,ADM warmup=25000,chest,3,26.4585,0.839,
-adm_iter_sweep,xrags,ADM warmup=0,head,3,26.852,0.9248,
-adm_iter_sweep,xrags,ADM warmup=5000,head,3,26.7846,0.9244,
-adm_iter_sweep,xrags,ADM warmup=10000,head,3,26.9138,0.924,
-adm_iter_sweep,xrags,ADM warmup=15000,head,3,26.8039,0.9244,
-adm_iter_sweep,xrags,ADM warmup=20000,head,3,26.832,0.9245,
-adm_iter_sweep,xrags,ADM warmup=25000,head,3,26.862,0.9239,
-adm_iter_sweep,xrags,ADM warmup=0,abdomen,3,29.3961,0.9378,
-adm_iter_sweep,xrags,ADM warmup=5000,abdomen,3,29.2456,0.9373,
-adm_iter_sweep,xrags,ADM warmup=10000,abdomen,3,29.1792,0.9368,
-adm_iter_sweep,xrags,ADM warmup=15000,abdomen,3,29.2934,0.9368,
-adm_iter_sweep,xrags,ADM warmup=20000,abdomen,3,29.3358,0.9369,
-adm_iter_sweep,xrags,ADM warmup=25000,abdomen,3,29.263,0.9368,
-adm_iter_sweep,xrags,ADM warmup=0,foot,3,29.0228,0.8993,
-adm_iter_sweep,xrags,ADM warmup=5000,foot,3,28.6958,0.8993,
-adm_iter_sweep,xrags,ADM warmup=10000,foot,3,28.604,0.899,
-adm_iter_sweep,xrags,ADM warmup=15000,foot,3,28.6798,0.8994,
-adm_iter_sweep,xrags,ADM warmup=20000,foot,3,28.7293,0.8992,
-adm_iter_sweep,xrags,ADM warmup=25000,foot,3,28.6779,0.8992,
-adm_iter_sweep,xrags,ADM warmup=0,pancreas,3,29.057,0.9221,
-adm_iter_sweep,xrags,ADM warmup=5000,pancreas,3,28.8919,0.921,
-adm_iter_sweep,xrags,ADM warmup=10000,pancreas,3,28.9076,0.9213,
-adm_iter_sweep,xrags,ADM warmup=15000,pancreas,3,28.9458,0.9214,
-adm_iter_sweep,xrags,ADM warmup=20000,pancreas,3,29.0118,0.9217,
-adm_iter_sweep,xrags,ADM warmup=25000,pancreas,3,28.9533,0.9214,"""
+component_ablation,rattags+SPS,B + SPS,chest,3,26.934,0.8422,55568
+component_ablation,rattags+SPS,B + SPS,head,3,26.582,0.916,49606
+component_ablation,rattags+SPS,B + SPS,abdomen,3,29.4769,0.9352,50464
+component_ablation,rattags+SPS,B + SPS,foot,3,28.5697,0.9008,49938
+component_ablation,rattags+SPS,B + SPS,pancreas,3,29.1172,0.9218,52843
+component_ablation,rattags+ADM,B + ADM,chest,3,26.4846,0.8396,
+component_ablation,rattags+ADM,B + ADM,head,3,26.9209,0.9245,
+component_ablation,rattags+ADM,B + ADM,abdomen,3,29.3289,0.937,
+component_ablation,rattags+ADM,B + ADM,foot,3,28.7218,0.8985,
+component_ablation,rattags+ADM,B + ADM,pancreas,3,28.8388,0.9211,
+component_ablation,rattags+GAP,B + GAP,chest,3,26.1096,0.837,113829
+component_ablation,rattags+GAP,B + GAP,head,3,26.7288,0.9243,105504
+component_ablation,rattags+GAP,B + GAP,abdomen,3,29.2309,0.9376,105269
+component_ablation,rattags+GAP,B + GAP,foot,3,28.5987,0.8961,103944
+component_ablation,rattags+GAP,B + GAP,pancreas,3,28.8341,0.9235,106413
+component_ablation,rattags,Full RAttAGS,chest,3,26.9478,0.8409,
+component_ablation,rattags,Full RAttAGS,head,3,26.7267,0.9181,
+component_ablation,rattags,Full RAttAGS,abdomen,3,29.4578,0.9368,
+component_ablation,rattags,Full RAttAGS,foot,3,28.517,0.9003,
+component_ablation,rattags,Full RAttAGS,pancreas,3,29.3247,0.9245,
+sps_alpha_sweep,rattags+SPS,SPS α=0.0,chest,3,26.8378,0.843,
+sps_alpha_sweep,rattags+SPS,SPS α=0.1,chest,3,26.9256,0.8444,
+sps_alpha_sweep,rattags+SPS,SPS α=0.2,chest,3,26.934,0.8422,
+sps_alpha_sweep,rattags+SPS,SPS α=0.5,chest,3,26.6699,0.847,
+sps_alpha_sweep,rattags+SPS,SPS α=1.0,chest,3,27.0674,0.848,
+sps_alpha_sweep,rattags+SPS,SPS α=0.0,head,3,26.5703,0.9145,
+sps_alpha_sweep,rattags+SPS,SPS α=0.1,head,3,26.7325,0.9148,
+sps_alpha_sweep,rattags+SPS,SPS α=0.2,head,3,26.582,0.916,
+sps_alpha_sweep,rattags+SPS,SPS α=0.5,head,3,26.6554,0.9162,
+sps_alpha_sweep,rattags+SPS,SPS α=1.0,head,3,26.6648,0.9167,
+sps_alpha_sweep,rattags+SPS,SPS α=0.0,abdomen,3,29.3444,0.9352,
+sps_alpha_sweep,rattags+SPS,SPS α=0.1,abdomen,3,29.4457,0.9341,
+sps_alpha_sweep,rattags+SPS,SPS α=0.2,abdomen,3,29.4769,0.9352,
+sps_alpha_sweep,rattags+SPS,SPS α=0.5,abdomen,3,29.4095,0.9354,
+sps_alpha_sweep,rattags+SPS,SPS α=1.0,abdomen,3,29.1595,0.9357,
+sps_alpha_sweep,rattags+SPS,SPS α=0.0,foot,3,28.6261,0.9026,
+sps_alpha_sweep,rattags+SPS,SPS α=0.1,foot,3,28.5996,0.9031,
+sps_alpha_sweep,rattags+SPS,SPS α=0.2,foot,3,28.5697,0.9008,
+sps_alpha_sweep,rattags+SPS,SPS α=0.5,foot,3,28.6858,0.9015,
+sps_alpha_sweep,rattags+SPS,SPS α=1.0,foot,3,28.3805,0.8999,
+sps_alpha_sweep,rattags+SPS,SPS α=0.0,pancreas,3,29.0755,0.9227,
+sps_alpha_sweep,rattags+SPS,SPS α=0.1,pancreas,3,28.9517,0.9208,
+sps_alpha_sweep,rattags+SPS,SPS α=0.2,pancreas,3,29.1172,0.9218,
+sps_alpha_sweep,rattags+SPS,SPS α=0.5,pancreas,3,29.1174,0.9214,
+sps_alpha_sweep,rattags+SPS,SPS α=1.0,pancreas,3,29.0313,0.9215,
+gap_tau_sweep,rattags+GAP,GAP τ=0.005,chest,3,26.2193,0.8342,
+gap_tau_sweep,rattags+GAP,GAP τ=0.010,chest,3,27.1131,0.8426,
+gap_tau_sweep,rattags+GAP,GAP τ=0.015,chest,3,27.1985,0.8437,
+gap_tau_sweep,rattags+GAP,GAP τ=0.020,chest,3,27.2365,0.8453,
+gap_tau_sweep,rattags+GAP,GAP τ=0.030,chest,3,26.8585,0.8432,
+gap_tau_sweep,rattags+GAP,GAP τ=0.005,head,3,26.7425,0.9248,
+gap_tau_sweep,rattags+GAP,GAP τ=0.010,head,3,26.6944,0.9166,
+gap_tau_sweep,rattags+GAP,GAP τ=0.015,head,3,26.629,0.9149,
+gap_tau_sweep,rattags+GAP,GAP τ=0.020,head,3,26.4372,0.9146,
+gap_tau_sweep,rattags+GAP,GAP τ=0.030,head,3,26.741,0.9237,
+gap_tau_sweep,rattags+GAP,GAP τ=0.005,abdomen,3,29.0724,0.9355,
+gap_tau_sweep,rattags+GAP,GAP τ=0.010,abdomen,3,29.6883,0.9362,
+gap_tau_sweep,rattags+GAP,GAP τ=0.015,abdomen,3,29.725,0.9362,
+gap_tau_sweep,rattags+GAP,GAP τ=0.020,abdomen,3,29.6459,0.936,
+gap_tau_sweep,rattags+GAP,GAP τ=0.030,abdomen,3,29.5295,0.9369,
+gap_tau_sweep,rattags+GAP,GAP τ=0.005,foot,3,28.4955,0.8972,
+gap_tau_sweep,rattags+GAP,GAP τ=0.010,foot,3,28.5332,0.9023,
+gap_tau_sweep,rattags+GAP,GAP τ=0.015,foot,3,28.6665,0.9026,
+gap_tau_sweep,rattags+GAP,GAP τ=0.020,foot,3,28.356,0.9014,
+gap_tau_sweep,rattags+GAP,GAP τ=0.030,foot,3,28.5878,0.8953,
+gap_tau_sweep,rattags+GAP,GAP τ=0.005,pancreas,3,28.7668,0.9235,
+gap_tau_sweep,rattags+GAP,GAP τ=0.010,pancreas,3,29.3917,0.9227,
+gap_tau_sweep,rattags+GAP,GAP τ=0.015,pancreas,3,29.435,0.9234,
+gap_tau_sweep,rattags+GAP,GAP τ=0.020,pancreas,3,29.4023,0.9231,
+gap_tau_sweep,rattags+GAP,GAP τ=0.030,pancreas,3,29.0392,0.9261,
+adm_iter_sweep,rattags,ADM warmup=0,chest,3,27.165,0.8422,
+adm_iter_sweep,rattags,ADM warmup=5000,chest,3,26.8177,0.8394,
+adm_iter_sweep,rattags,ADM warmup=10000,chest,3,26.9313,0.84,
+adm_iter_sweep,rattags,ADM warmup=15000,chest,3,26.9464,0.84,
+adm_iter_sweep,rattags,ADM warmup=20000,chest,3,26.906,0.8403,
+adm_iter_sweep,rattags,ADM warmup=25000,chest,3,26.4585,0.839,
+adm_iter_sweep,rattags,ADM warmup=0,head,3,26.852,0.9248,
+adm_iter_sweep,rattags,ADM warmup=5000,head,3,26.7846,0.9244,
+adm_iter_sweep,rattags,ADM warmup=10000,head,3,26.9138,0.924,
+adm_iter_sweep,rattags,ADM warmup=15000,head,3,26.8039,0.9244,
+adm_iter_sweep,rattags,ADM warmup=20000,head,3,26.832,0.9245,
+adm_iter_sweep,rattags,ADM warmup=25000,head,3,26.862,0.9239,
+adm_iter_sweep,rattags,ADM warmup=0,abdomen,3,29.3961,0.9378,
+adm_iter_sweep,rattags,ADM warmup=5000,abdomen,3,29.2456,0.9373,
+adm_iter_sweep,rattags,ADM warmup=10000,abdomen,3,29.1792,0.9368,
+adm_iter_sweep,rattags,ADM warmup=15000,abdomen,3,29.2934,0.9368,
+adm_iter_sweep,rattags,ADM warmup=20000,abdomen,3,29.3358,0.9369,
+adm_iter_sweep,rattags,ADM warmup=25000,abdomen,3,29.263,0.9368,
+adm_iter_sweep,rattags,ADM warmup=0,foot,3,29.0228,0.8993,
+adm_iter_sweep,rattags,ADM warmup=5000,foot,3,28.6958,0.8993,
+adm_iter_sweep,rattags,ADM warmup=10000,foot,3,28.604,0.899,
+adm_iter_sweep,rattags,ADM warmup=15000,foot,3,28.6798,0.8994,
+adm_iter_sweep,rattags,ADM warmup=20000,foot,3,28.7293,0.8992,
+adm_iter_sweep,rattags,ADM warmup=25000,foot,3,28.6779,0.8992,
+adm_iter_sweep,rattags,ADM warmup=0,pancreas,3,29.057,0.9221,
+adm_iter_sweep,rattags,ADM warmup=5000,pancreas,3,28.8919,0.921,
+adm_iter_sweep,rattags,ADM warmup=10000,pancreas,3,28.9076,0.9213,
+adm_iter_sweep,rattags,ADM warmup=15000,pancreas,3,28.9458,0.9214,
+adm_iter_sweep,rattags,ADM warmup=20000,pancreas,3,29.0118,0.9217,
+adm_iter_sweep,rattags,ADM warmup=25000,pancreas,3,28.9533,0.9214,"""
 
 ORGANS = ["chest", "head", "abdomen", "foot", "pancreas"]
 VIEWS = [2, 3, 4]
-METHODS_ORDER = ["corgs", "dngaussian", "fsgs", "xgaussian", "r2_gaussian", "xfield", "xrags"]
+METHODS_ORDER = ["corgs", "dngaussian", "fsgs", "xgaussian", "r2_gaussian", "xfield", "rattags"]
 
 METHOD_LABELS = {
     "corgs": r"CoR-GS~\cite{zhang2024cor} {\tiny[ECCV'24]}",
@@ -228,7 +228,7 @@ METHOD_LABELS = {
     "xgaussian": r"X-Gaussian~\cite{cai2024xgaussian} {\tiny[ECCV'24]}",
     "r2_gaussian": r"\rtwo~\cite{hu2024r2} {\tiny[NeurIPS'24]}",
     "xfield": r"X-Field~\cite{xfield2025} {\tiny[NeurIPS'25]}",
-    "xrags": r"\textbf{\XRAGS}\ (Ours)",
+    "rattags": r"\textbf{\RAttAGS}\ (Ours)",
 }
 
 COLORS = {1: "FF9396", 2: "FFC991", 3: "FFF6A9"}
@@ -342,7 +342,7 @@ def generate_comparison_table(data, metric, caption, label):
         lines.append(_format_method_row(m, data, avgs, col_ranks, columns, fmt, metric))
 
     lines.append(r"\midrule")
-    lines.append(_format_method_row("xrags", data, avgs, col_ranks, columns, fmt, metric))
+    lines.append(_format_method_row("rattags", data, avgs, col_ranks, columns, fmt, metric))
 
     lines.append(r"\bottomrule")
     lines.append(r"\end{tabular}%")
@@ -435,7 +435,7 @@ def generate_ablation_table(ablation_data):
         ("B + SPS", r"B\,+\,\sps", False),
         ("B + GAP", r"B\,+\,\gap", False),
         ("B + ADM", r"B\,+\,\adm", False),
-        ("Full XRA-GS", r"\textbf{Full \XRAGS}", False),
+        ("Full RAttAGS", r"\textbf{Full \RAttAGS}", False),
     ]
 
     comp_vals = {}
@@ -577,14 +577,14 @@ def main():
 
     # Print summary of key changes
     print("\n=== Key data summary ===")
-    print("\nXRAGS averages:")
+    print("\nRAttAGS averages:")
     for v in VIEWS:
-        psnr_avg = compute_averages(main_data, "psnr")[("xrags", v)]
-        ssim_avg = compute_averages(main_data, "ssim")[("xrags", v)]
+        psnr_avg = compute_averages(main_data, "psnr")[("rattags", v)]
+        ssim_avg = compute_averages(main_data, "ssim")[("rattags", v)]
         print(f"  {v}-view: PSNR={psnr_avg:.2f}, SSIM={ssim_avg:.4f}")
 
     print("\nAblation component (5-organ avg, 3-view):")
-    for config in ["Baseline (R²-Gaussian)", "B + SPS", "B + GAP", "B + ADM", "Full XRA-GS"]:
+    for config in ["Baseline (R²-Gaussian)", "B + SPS", "B + GAP", "B + ADM", "Full RAttAGS"]:
         p = avg_5organ(ablation_data["component"], config, "psnr")
         s = avg_5organ(ablation_data["component"], config, "ssim")
         print(f"  {config}: PSNR={p:.2f}, SSIM={s:.4f}")

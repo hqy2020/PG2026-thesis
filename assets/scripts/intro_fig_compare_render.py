@@ -305,7 +305,7 @@ def main():
                       "Conventional 3DGS — gradient-driven densification",
                       GRAY_DARK)
     add_rotated_label(fig, 0.005, bot_y, label_w, row_h,
-                      "XRA-GS (Ours) — attenuation-aligned evolution",
+                      "RAttAGS (Ours) — attenuation-aligned evolution",
                       BLUE)
 
     # Column titles centered above each panel.

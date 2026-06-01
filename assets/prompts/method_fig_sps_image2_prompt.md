@@ -2,7 +2,7 @@
 
 ## 用途
 
-- 论文：`XRA-GS: X-ray Attenuation-Aligned Gaussian Splatting for Sparse Tomographic View Synthesis`（PG2026 投稿）
+- 论文：`RAttAGS: X-Ray Attenuation-Aligned 3D Gaussian Splatting for Sparse Tomographic View Synthesis`（PG2026 投稿）
 - §3.3 Support-Profile Seeding 配图。展示 SPS 如何把 FDK 体积转成密度加权采样分布，再得到路径锚定的初始高斯集。
 - 与 pipeline / GAP / ADM 三图视觉统一：同一调色板体系、同一无衬线字体、同一箭头粗细。SPS 主色蓝 `#1F77B4`。
 - 输出文件名：`method_fig_sps.png`，落地 `assets/fig/`。

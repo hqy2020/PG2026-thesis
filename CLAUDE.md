@@ -1,4 +1,4 @@
-# PG2026 / XRA-GS — 协作约定（主索引）
+# PG2026 / RAttAGS — 协作约定（主索引）
 
 > 本文件是**索引 + 高频硬结论**，详细规则在 `.claude/docs/` 中。每对话生效。
 > 主文件硬上限 **< 200 行**（见 §16 meta 工作流）。
@@ -7,17 +7,17 @@
 
 ## 1. 方法名 / 任务名 / 标题 → [.claude/docs/naming.md](.claude/docs/naming.md)
 
-- 方法名：`XRA-GS`
+- 方法名：`RAttAGS`
 - 任务名：`Sparse Tomographic View Synthesis`（`Sparse` 在前）
-- 标题：`XRA-GS: X-ray Attenuation-Aligned Gaussian Splatting for Sparse Tomographic View Synthesis`
-- 物理关键词默认 `attenuation`；`X-ray Attenuation-XXX Gaussian Splatting` 默认 `XXX = Aligned`
+- 标题：`RAttAGS: X-Ray Attenuation-Aligned 3D Gaussian Splatting for Sparse Tomographic View Synthesis`
+- 物理关键词默认 `attenuation`；`X-Ray Attenuation-XXX 3D Gaussian Splatting` 默认 `XXX = Aligned`
 - CT 缩写定义统一 `Computed tomography (CT) is ...`，**不写** `X-ray computed tomography (CT)` 同位语
 
 ## 2. 三个创新模块 SPS / GAP / ADM → [.claude/docs/modules.md](.claude/docs/modules.md)
 
 - `SPS`（初始化）/ `GAP`（结构控制）/ `ADM`（细化）
-- 顺序固定 `SPS → GAP → ADM`；消融命名 `w/o SPS / w/o GAP / w/o ADM / full XRA-GS`
-- `XRA-GS` 是总方法名，三模块是其内部创新点，不互相替代
+- 顺序固定 `SPS → GAP → ADM`；消融命名 `w/o SPS / w/o GAP / w/o ADM / full RAttAGS`
+- `RAttAGS` 是总方法名，三模块是其内部创新点，不互相替代
 
 ## 3. 资产分离 → [.claude/docs/assets_layout.md](.claude/docs/assets_layout.md)
 
@@ -85,7 +85,7 @@ latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex
 
 ## 13. 科研链路完整性 → [.claude/docs/research_chain.md](.claude/docs/research_chain.md)
 
-- 数据链 / 证据链 / 逻辑链必须闭合；所有结论回扣 `XRA-GS` 与 `SPS / GAP / ADM`
+- 数据链 / 证据链 / 逻辑链必须闭合；所有结论回扣 `RAttAGS` 与 `SPS / GAP / ADM`
 - 投稿路线图：`assets/todolist/project_research_chain_todolist.md`
 
 ## 14. 物理论证骨架 → [.claude/docs/physics_argument.md](.claude/docs/physics_argument.md)

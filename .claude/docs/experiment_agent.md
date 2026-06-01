@@ -21,7 +21,7 @@
 ## 期望输出
 - 具体文件列表，含格式和路径
 - 例如：
-  - `assets/data/tab_efficiency_3view.csv`（training time, #Gaussians, GPU memory for X-Gaussian, R2-Gaussian, XRA-GS）
+  - `assets/data/tab_efficiency_3view.csv`（training time, #Gaussians, GPU memory for X-Gaussian, R2-Gaussian, RAttAGS）
   - `assets/fig/fig_experiment_gaussian_count.png`（Gaussian count 变化曲线）
 
 ## 优先级

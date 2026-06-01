@@ -54,7 +54,7 @@
 ## attenuation-aligned 命名硬规则
 
 全文统一使用 `attenuation-aligned`，**不用** `attenuation-aware`：
-- 与标题 `X-ray Attenuation-Aligned Gaussian Splatting` 严格对齐
+- 与标题 `X-Ray Attenuation-Aligned 3D Gaussian Splatting` 严格对齐
 - 改稿后默认抽查 `grep -n -i "attenuation-aware" main.tex` 必须无命中
 
 ## 适用范围

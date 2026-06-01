@@ -2,10 +2,10 @@
 
 ## 方法名 / 任务名 / 标题（默认准绳）
 
-- 方法名：`XRA-GS`
+- 方法名：`RAttAGS`
 - 任务名：`Sparse Tomographic View Synthesis`（`Sparse` 在前、`Tomographic` 在后）
-- 标题：`XRA-GS: X-ray Attenuation-Aligned Gaussian Splatting for Sparse Tomographic View Synthesis`
-- 物理关键词：`attenuation`；标题里 `X-ray Attenuation-XXX Gaussian Splatting` 默认 `XXX = Aligned`
+- 标题：`RAttAGS: X-Ray Attenuation-Aligned 3D Gaussian Splatting for Sparse Tomographic View Synthesis`
+- 物理关键词：`attenuation`；标题里 `X-Ray Attenuation-XXX 3D Gaussian Splatting` 默认 `XXX = Aligned`
 - 英文拼写默认 `X-ray`（与论文标题、CT 术语一致；不要漂成 `X-Ray` / `Xray`）
 
 ## sparse-view 用法

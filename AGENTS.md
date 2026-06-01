@@ -6,7 +6,7 @@
 
 当前稿件的统一方法名是：
 
-`XRA-GS`
+`RAttAGS`
 
 当前稿件的统一任务名是：
 
@@ -19,11 +19,11 @@
 
 当前论文标题的默认准绳是：
 
-`XRA-GS: X-ray Attenuation-Aligned Gaussian Splatting for Sparse Tomographic View Synthesis`
+`RAttAGS: X-Ray Attenuation-Aligned 3D Gaussian Splatting for Sparse Tomographic View Synthesis`
 
 标题命名补充约束：
 - 默认使用 `attenuation` 作为核心物理关键词
-- 在 `X-ray Attenuation-XXX Gaussian Splatting` 这组命名里，固定使用 `XXX = Aligned`
+- 在 `X-Ray Attenuation-XXX 3D Gaussian Splatting` 这组命名里，固定使用 `XXX = Aligned`
 - 英文拼写默认使用 `X-ray`，与现有论文标题和 CT 术语用法保持一致；除非投稿模板或用户另行指定，否则不要改成其他大小写变体
 
 CT 描述口径固定要求：
@@ -38,11 +38,11 @@ CT 描述口径固定要求：
 - 图中的方法标签
 - 所有实验说明文档中的方法名
 
-如果用户后续明确改标题，以用户最新指令为最高优先级；否则默认保持 `XRA-GS` 与上述标题不变。
+如果用户后续明确改标题，以用户最新指令为最高优先级；否则默认保持 `RAttAGS` 与上述标题不变。
 
 ### 2. 三个创新点固定为 SPS / GAP / ADM
 
-`XRA-GS` 的方法主体默认由三个创新模块组成，不要在后续改稿中漂移成别的三件套，也不要遗漏其中任何一个：
+`RAttAGS` 的方法主体默认由三个创新模块组成，不要在后续改稿中漂移成别的三件套，也不要遗漏其中任何一个：
 
 - `SPS`：初始化模块，负责基于 FDK 粗重建提供的前景支撑与粗衰减轮廓进行路径锚定初始化
 - `GAP`：结构控制模块，负责回收边界附近由误差/梯度驱动带来的冗余高斯
@@ -51,8 +51,8 @@ CT 描述口径固定要求：
 后续写作统一要求：
 - 正文介绍创新点时，默认就是这三个模块，顺序也默认按 `SPS -> GAP -> ADM`
 - 图中模块名、表格中的 ablation 行名、补充材料中的小节名，统一使用 `SPS / GAP / ADM`
-- 如果做消融，优先使用 `w/o SPS`、`w/o GAP`、`w/o ADM`、`full XRA-GS` 这类一致命名
-- 不要把 `XRA-GS` 和三个模块写成互相替代关系；`XRA-GS` 是总方法名，`SPS / GAP / ADM` 是其内部三个核心创新点
+- 如果做消融，优先使用 `w/o SPS`、`w/o GAP`、`w/o ADM`、`full RAttAGS` 这类一致命名
+- 不要把 `RAttAGS` 和三个模块写成互相替代关系；`RAttAGS` 是总方法名，`SPS / GAP / ADM` 是其内部三个核心创新点
 
 ### 3. 图片、表格、数据、脚本必须分离
 
@@ -98,7 +98,7 @@ latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex
 ```
 
 验证目标：
-- 标题正确显示为 `XRA-GS: X-ray Attenuation-Aligned Gaussian Splatting for Sparse Tomographic View Synthesis`
+- 标题正确显示为 `RAttAGS: X-Ray Attenuation-Aligned 3D Gaussian Splatting for Sparse Tomographic View Synthesis`
 - figure 引用正常
 - table 引用正常
 - 没有因为图表拆分造成缺图、缺表、编号错乱
@@ -122,7 +122,7 @@ latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex
 
 使用原则：
 - 这些论文首先是“风格锚点”和“呈现锚点”，用于对齐论文行文、图片组织、表格设计、版式节奏
-- 这些论文不是 `XRA-GS` 的事实源替代品；涉及我们方法、实验、数据、结论时，仍以 `PG2026-thesis/main.tex`、当前图、当前表为准
+- 这些论文不是 `RAttAGS` 的事实源替代品；涉及我们方法、实验、数据、结论时，仍以 `PG2026-thesis/main.tex`、当前图、当前表为准
 - 可以借鉴它们的叙述密度、图表结构、caption 写法和主文/补充材料取舍，但不要直接复制其措辞、贡献表达或视觉排版细节
 
 ### 8. 默认按英文顶会论文要求组织文字、图片、表格、排版
@@ -132,7 +132,7 @@ latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex
 行文要求：
 - 论文全文文字默认使用英文撰写；若当前草稿含有中文，只将其视为中间过渡稿，后续定稿需统一改写为符合英文顶会要求的英文表述。这一要求覆盖标题、摘要、引言、related work、method、experiments、conclusion 以及图注、表注等全文文字部分
 - 摘要优先采用英文顶会论文可接受的 `problem -> gap -> core insight -> method -> strongest evidence` 骨架
-- 引言优先先交代任务价值与难点，再指出已有方法缺口，再引出 `XRA-GS` 的核心思想与三点贡献
+- 引言优先先交代任务价值与难点，再指出已有方法缺口，再引出 `RAttAGS` 的核心思想与三点贡献
 - 正文默认使用克制、证据对齐、审稿人友好的学术语气，不写成教程口吻、经验分享口吻或产品介绍口吻
 - 不写博客式铺垫，不用“我们来看看”“下面详细聊聊”“这个技巧非常直观”这类技术博客衔接语
 - 小节名、图注、表注优先使用论文式功能命名，不用吸睛标题、口语化标题或营销式表达

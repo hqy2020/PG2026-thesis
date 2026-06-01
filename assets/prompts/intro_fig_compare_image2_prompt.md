@@ -11,9 +11,9 @@ output: assets/fig/intro_fig_compare.png
 
 **参考素材（image-to-image）**:
 - 可见光场景物体: `assets/data/light.jpg`（博物馆展厅中的三角龙化石头骨，正面特写，灰棕色骨质纹理）
-- X-ray 投影图像: `assets/data/chest.png`（XRA-GS 实验数据 chest X-ray 投影，深底灰度肋骨/心影）
+- X-ray 投影图像: `assets/data/chest.png`（RAttAGS 实验数据 chest X-ray 投影，深底灰度肋骨/心影）
 
-**论文标题**: XRA-GS: X-ray Attenuation-Aligned Gaussian Splatting for Sparse Tomographic View Synthesis
+**论文标题**: RAttAGS: X-Ray Attenuation-Aligned 3D Gaussian Splatting for Sparse Tomographic View Synthesis
 
 **图类型**: 物理对比 — 可见光反射/折射 vs X-ray 穿透/衰减
 

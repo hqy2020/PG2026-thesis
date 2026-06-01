@@ -2,7 +2,7 @@
 
 ## 用途
 
-- 论文：`XRA-GS: X-ray Attenuation-Aligned Gaussian Splatting for Sparse Tomographic View Synthesis`（PG2026 投稿）
+- 论文：`RAttAGS: X-Ray Attenuation-Aligned 3D Gaussian Splatting for Sparse Tomographic View Synthesis`（PG2026 投稿）
 - §3.5 Adaptive Density Modulation 配图。展示 ADM 如何通过 K-Planes 三平面空间编码 + 双头 MLP 实现 position-dependent density modulation。
 - 与 pipeline / SPS / GAP 三图视觉统一。ADM 主色绿 `#388E3C`。
 - 输出文件名：`method_fig_adm.png`，落地 `assets/fig/`。

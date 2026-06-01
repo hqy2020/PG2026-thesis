@@ -2,7 +2,7 @@
 
 ## 用途
 
-- 论文：`XRA-GS: X-ray Attenuation-Aligned Gaussian Splatting for Sparse Tomographic View Synthesis`（PG2026 投稿）
+- 论文：`RAttAGS: X-Ray Attenuation-Aligned 3D Gaussian Splatting for Sparse Tomographic View Synthesis`（PG2026 投稿）
 - §3.4 Geometry-aware Pruning 配图。展示 GAP 如何通过 KNN proximity + gradient 双判据回收边界冗余 Gaussians。
 - 与 pipeline / SPS / ADM 三图视觉统一。GAP 主色琥珀 `#F57F17`。
 - 输出文件名：`method_fig_gap.png`，落地 `assets/fig/`。

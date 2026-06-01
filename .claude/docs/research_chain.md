@@ -1,13 +1,13 @@
 # AI agent 辅助科研的链路完整性原则
 
-后续使用 AI agent 辅助 `PG2026` 论文科研与写作时，默认目标不是把文字写得更顺，而是建立和检查完整的科研链路：数据链、证据链、逻辑链必须闭合，并且最终表达要突出 `XRA-GS` 的核心创新点。
+后续使用 AI agent 辅助 `PG2026` 论文科研与写作时，默认目标不是把文字写得更顺，而是建立和检查完整的科研链路：数据链、证据链、逻辑链必须闭合，并且最终表达要突出 `RAttAGS` 的核心创新点。
 
 ## 执行要求
 
 - **数据链**：所有实验数值、定量表、实验图和结论性描述都必须能追溯到 `assets/data/`、`assets/answer/` 或明确的实验 agent 输出；缺失数据按 [[experiment_agent]] 通过 `assets/ask/` 发起请求，不编造数据
 - **证据链**：每个主文核心结论都要对应至少一种明确证据，优先是 quantitative table、qualitative figure、ablation、efficiency result、failure / limitation analysis
 - **逻辑链**：写作与改稿默认检查 `problem → gap → method → evidence → limitation/discussion` 是否连贯，避免只堆结果或只润色局部句子
-- **创新点**：所有摘要、引言贡献、方法概述、消融分析和结论总结都要回扣 `XRA-GS` 以及 `SPS / GAP / ADM`，避免把创新点写散、写弱或漂移成其他模块
+- **创新点**：所有摘要、引言贡献、方法概述、消融分析和结论总结都要回扣 `RAttAGS` 以及 `SPS / GAP / ADM`，避免把创新点写散、写弱或漂移成其他模块
 - **Agent 协作**：需要实验、复核、风格对齐、图表设计或逻辑审查时可分工，但每次协作都要保留输入、输出、路径与未解决问题，确保后续可追踪
 - **可见待办**：投稿推进路线图统一维护在 `assets/todolist/project_research_chain_todolist.md`；每次阶段性工作完成后必须同步更新，及时把已完成事项勾选为 `☑`，并记录当前版本、验收状态与下一步
 

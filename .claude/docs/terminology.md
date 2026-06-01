@@ -11,9 +11,9 @@
 
 ## framework vs pipeline
 
-- **framework** = XRA-GS 方法本身。描述 XRA-GS 时一律用 `framework`
+- **framework** = RAttAGS 方法本身。描述 RAttAGS 时一律用 `framework`
 - **pipeline** = 3DGS / R2-GS 等外部 NVS 处理流程。如 `3DGS pipeline`、`adaptive density control pipeline`
-- 验证：`grep -n "pipeline" main.tex` 出现时，主语不应是 XRA-GS
+- 验证：`grep -n "pipeline" main.tex` 出现时，主语不应是 RAttAGS
 
 ## adaptive density control（3DGS 原文术语）
 
@@ -29,7 +29,7 @@
 
 ## 基于 R2-GS
 
-- Method 中明确 XRA-GS 构建在 R2-Gaussian framework 之上（renderer + voxelizer 不动，仅改 density control）
+- Method 中明确 RAttAGS 构建在 R2-Gaussian framework 之上（renderer + voxelizer 不动，仅改 density control）
 
 ## 兼容词组（继续使用，不需要改）
 

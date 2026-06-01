@@ -6,7 +6,7 @@
 
 - 全文默认英文；当前草稿中文部分仅视为过渡稿，定稿统一改写为顶会英文表达。覆盖标题/摘要/引言/related/method/experiments/conclusion 以及图注表注
 - 摘要骨架：`problem → gap → core insight → method → strongest evidence`
-- 引言骨架：先交代任务价值与难点 → 指出已有方法缺口 → 引出 `XRA-GS` 核心思想与三点贡献
+- 引言骨架：先交代任务价值与难点 → 指出已有方法缺口 → 引出 `RAttAGS` 核心思想与三点贡献
 - 学术语气：克制、证据对齐、审稿人友好；不要教程口吻 / 经验分享口吻 / 产品介绍口吻
 - 不写博客式铺垫，不用「我们来看看」「下面详细聊聊」「这个技巧非常直观」等衔接语
 - 小节名、图注、表注使用论文式功能命名，不用吸睛标题或营销表达
@@ -36,11 +36,11 @@
    - 末段收束到「这些 sparse-view 方案仍共享 error/gradient-driven densification + 高对比度表面优先」
 3. `Tomographic Novel View Synthesis` — X-ray/CT 物理特殊性
    - 传统 (FDK / SART) → 隐式 (IntraTomo / NAF / SAX-NeRF / Geometry-Aware) → 显式 radiative (X-Gaussian / R²-Gaussian / X-Field) + 旁支 (DGR / GR-Gaussian / X²-Gaussian / Layer-Based) 并附「不进入主比较」免责
-   - 末段必须收束到「三阶段错误分配 → SPS/GAP/ADM」与 `XRA-GS`，与 §3 Method 硬连接
+   - 末段必须收束到「三阶段错误分配 → SPS/GAP/ADM」与 `RAttAGS`，与 §3 Method 硬连接
 
 每段末尾用**一句轻量桥接句**点出局限、引出下一段；不重复 intro 论点，不预告 method 细节。
 
-句式可借鉴 R²-Gaussian §2 / CoR-GS §2 / X-Field §2 / X²-Gaussian §2 的扩展列举节奏，但全部改写为 `XRA-GS` 口径，**保持 §14 物理论证骨架**（attenuation-aligned，不写 attenuation-aware；禁用 fortunate coupling / replace the densification mechanism）与 §15 术语（`Gaussians` 不写 `primitive`）。
+句式可借鉴 R²-Gaussian §2 / CoR-GS §2 / X-Field §2 / X²-Gaussian §2 的扩展列举节奏，但全部改写为 `RAttAGS` 口径，**保持 §14 物理论证骨架**（attenuation-aligned，不写 attenuation-aware；禁用 fortunate coupling / replace the densification mechanism）与 §15 术语（`Gaussians` 不写 `primitive`）。
 
 引用建议合并到一个 `\cite{a,b,c}`，避免单段散落 5+ 个 `\cite`。
 
@@ -58,7 +58,7 @@ X-ray Gaussian / 隐式神经场同类工作在 Related Work 中按 implicit / e
 2. 一句 implicit 族：4 类技术路线（self-supervised sinogram / hash encoding / transformer 结构建模 / population-level encoder–decoder），单 `\cite{...}` 引一组；
 3. 一句 explicit 族：3 类主线 (radiative kernel + rasterizer / integration-bias + voxelization / material-aware + segment-length) + 旁支 4 个 (discretized voxel / artifact-suppression / 4D / slice-wise) 括号内一笔免责"outside our sparse-view novel-view protocol, omitted from main comparison"；
 4. 一句共性问题（focus 落在 imaging equation 或 kernel 上，不在 evolution rule）；
-5. 一句 `\XRAGS\` 代入（`\sps` / `\gap` / `\adm` 对齐 initialization / pruning / refinement 到 attenuation path）。
+5. 一句 `\RAttAGS\` 代入（`\sps` / `\gap` / `\adm` 对齐 initialization / pruning / refinement 到 attenuation path）。
 
 末尾不再展开三阶段诊断（这是与 §3 Method 的硬连接，但要简短），避免重复 intro。
 
@@ -135,6 +135,6 @@ latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex
 ```
 
 验证目标：
-- 标题正确显示为 `XRA-GS: X-ray Attenuation-Aligned Gaussian Splatting for Sparse Tomographic View Synthesis`
+- 标题正确显示为 `RAttAGS: X-Ray Attenuation-Aligned 3D Gaussian Splatting for Sparse Tomographic View Synthesis`
 - figure / table 引用正常
 - 没有因图表拆分造成缺图、缺表、编号错乱

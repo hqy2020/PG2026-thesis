@@ -50,7 +50,7 @@
 
 - 蓝 `#1F77B4`：X-ray 路径 / SPS
 - 橙 `#FF7F0E`：可见光路径 / GAP
-- 绿 `#2CA02C`：XRA-GS（我们方法）/ ADM
+- 绿 `#2CA02C`：RAttAGS（我们方法）/ ADM
 - 红 `#D62728`：naïve baseline 的失效现象（仅用于误差/失败标注）
 - 灰 `#888888` / `#BFBFBF`：物体轮廓、辅助线、参考网格
 
@@ -78,7 +78,7 @@
 
 - 比较类 (intro teaser)：列 = `Imaging Physics | Where Capacity Sits | Method`，行 = `Visible Light | X-ray`
 - pipeline 图：横向 `Input → SPS → GAP → ADM → Output`，每模块一个 badge，下方对应中间产物缩略
-- 定性对比 (experiments)：行 = method（`XRA-GS` + 6 baseline + `GT`），列 = view 数或 organ；不混合行列含义
+- 定性对比 (experiments)：行 = method（`RAttAGS` + 6 baseline + `GT`），列 = view 数或 organ；不混合行列含义
 - 误差/失败案例：用红色 `#D62728` 描边或叠加误差热力图，仅在 experiments 或 discussion 出现
 
 ## 迭代纪律

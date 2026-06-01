@@ -22,7 +22,7 @@ COLS = [
     ("DNGaussian",    "dngs"),
     (r"R²-Gaussian",  "r2gs"),
     ("X-Field",       "xfield"),
-    ("XRA-GS (Ours)", "xrags"),
+    ("RAttAGS (Ours)", "rattags"),
 ]
 
 RED = (255, 68, 68)

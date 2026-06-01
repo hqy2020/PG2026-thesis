@@ -1,9 +1,9 @@
-# method_fig_pipeline — image2 绘图提示词（XRA-GS Overall Framework）
+# method_fig_pipeline — image2 绘图提示词（RAttAGS Overall Framework）
 
 ## 用途
 
-- 论文：`XRA-GS: X-ray Attenuation-Aligned Gaussian Splatting for Sparse Tomographic View Synthesis`（PG2026 投稿）
-- §3.2 Overall Framework 配图。展示 XRA-GS 整体 pipeline：三个模块（SPS/GAP/ADM）如何在训练的三个阶段重组 Radiative Gaussian 骨干网络的密度控制。
+- 论文：`RAttAGS: X-Ray Attenuation-Aligned 3D Gaussian Splatting for Sparse Tomographic View Synthesis`（PG2026 投稿）
+- §3.2 Overall Framework 配图。展示 RAttAGS 整体 pipeline：三个模块（SPS/GAP/ADM）如何在训练的三个阶段重组 Radiative Gaussian 骨干网络的密度控制。
 - 与 SPS / GAP / ADM 三张模块图视觉统一：SPS 蓝 `#1F77B4`、GAP 琥珀 `#F57F17`、ADM 绿 `#388E3C`。
 - 输出文件名：`method_fig_pipeline.png`，落地 `assets/fig/`。
 
@@ -17,7 +17,7 @@
 
 绘制一张学术论文方法总览 pipeline 示意图，白色背景(#FFFFFF)，现代扁平矢量风格，Apple 式圆润美感，CVPR/NeurIPS 顶会论文级别质量。
 
-**方法名**: XRA-GS
+**方法名**: RAttAGS
 
 **整体布局**: 从左到右水平流动的 pipeline 图，宽高比约 16:6（约 1600×600 px），纯白底。整个 pipeline 分为五个视觉区域从左到右排列：Input → SPS → Training Backbone (含 GAP) → ADM → Output。三个创新模块分别用蓝/琥珀/绿三种颜色的面板背景区分。区域间用黑色实线圆润箭头(2px)连接。
 
