@@ -97,6 +97,15 @@ Neural Radiance Fields (NeRF) recover a continuous volumetric field through coor
 
 Sparse-view tomographic novel view synthesis aims to recover unseen X-ray projections, and the underlying density volume, from a small number of input projections~\cite{wang2008image,willemink2019evolution}, in contrast to analytical (FDK) and iterative (SART) reconstructions that either suffer severe streak artifacts under sparse views or require many iterations~\cite{feldkamp1984practical,andersen1984simultaneous}. Learning-based methods fall into two families with complementary entry points. Implicit methods adapt neural attenuation fields to X-ray imaging, including self-supervised sinogram synthesis, hash-encoded acceleration, transformer-based structural modeling, or population-level encoder--decoder inference~\cite{zang2021intratomo,guan2024naf,cai2024saxnerf,liu2025geometryaware}. Explicit methods redesign Gaussians around X-ray attenuation, covering radiative kernels with X-ray rasterization, integration-bias correction with differentiable voxelization, material-aware ellipsoids with explicit segment-length physics, and discretized voxel representations~\cite{cai2024xgaussian,hu2024r2,xfield2025,dgr2025}. Across both families, improvements have concentrated on the imaging equation or the kernel itself rather than on the density control strategy that decides where Gaussians accumulate, leaving sparse-view CT still bottlenecked by capacity misallocation inherited from visible-light densification. \RAttAGS\ addresses this density control strategy directly, with \sps, \gap, and \adm\ aligning initialization, pruning, and refinement to the X-ray attenuation path.
 
+\begin{figure*}[t]
+\centering
+\IfFileExists{assets/fig/method_fig_pipeline.png}{%
+\includegraphics[width=0.98\textwidth]{assets/fig/method_fig_pipeline.png}%
+}{\fbox{\parbox[c][4cm][c]{0.95\textwidth}{\centering Placeholder: \texttt{assets/fig/method\_fig\_pipeline.png}}}}
+\caption{\textbf{Overall framework of \RAttAGS.} Sparse X-ray projections together with a coarse FDK reconstruction enter a radiative Gaussian backbone whose adaptive density control is reorganized by \sps\ (seed), \gap\ (prune), and \adm\ (refine). The three modules act at initialization, inside the densification loop, and during later optimization, respectively, leaving inference unchanged.}
+\label{fig:pipeline}
+\end{figure*}
+
 \section{Method}
 \label{sec:method}
 
@@ -133,11 +142,11 @@ As illustrated in Figure~\ref{fig:pipeline}, \RAttAGS\ instantiates the attenuat
 
 \begin{figure*}[t]
 \centering
-\IfFileExists{assets/fig/method_fig_pipeline.png}{%
-\includegraphics[width=0.98\textwidth]{assets/fig/method_fig_pipeline.png}%
-}{\fbox{\parbox[c][4cm][c]{0.95\textwidth}{\centering Placeholder: \texttt{assets/fig/method\_fig\_pipeline.png}}}}
-\caption{\textbf{Overall framework of \RAttAGS.} Sparse X-ray projections together with a coarse FDK reconstruction enter a radiative Gaussian backbone whose adaptive density control is reorganized by \sps\ (seed), \gap\ (prune), and \adm\ (refine). The three modules act at initialization, inside the densification loop, and during later optimization, respectively, leaving inference unchanged.}
-\label{fig:pipeline}
+\IfFileExists{assets/fig/method_fig_sps.png}{%
+\includegraphics[width=\linewidth]{assets/fig/method_fig_sps.png}%
+}{\fbox{\parbox[c][3.5cm][c]{0.95\linewidth}{\centering Placeholder: \texttt{assets/fig/method\_fig\_sps.png}}}}
+\caption{\textbf{Support-Profile Seeding (\sps).} From the coarse FDK volume, \sps\ builds a density-weighted mixture distribution that interpolates between a uniform prior and the attenuation profile. Sampling from this mixture seeds Gaussians along the anatomical support before any optimization step.}
+\label{fig:sps}
 \end{figure*}
 
 \subsection{Support-Profile Seeding (\sps)}
@@ -161,11 +170,11 @@ where $\boldsymbol{\mu}_i$ is the center position, $\sigma_i$ the initial attenu
 
 \begin{figure*}[t]
 \centering
-\IfFileExists{assets/fig/method_fig_sps.png}{%
-\includegraphics[width=\linewidth]{assets/fig/method_fig_sps.png}%
-}{\fbox{\parbox[c][3.5cm][c]{0.95\linewidth}{\centering Placeholder: \texttt{assets/fig/method\_fig\_sps.png}}}}
-\caption{\textbf{Support-Profile Seeding (\sps).} From the coarse FDK volume, \sps\ builds a density-weighted mixture distribution that interpolates between a uniform prior and the attenuation profile. Sampling from this mixture seeds Gaussians along the anatomical support before any optimization step.}
-\label{fig:sps}
+\IfFileExists{assets/fig/method_fig_gap.png}{%
+\includegraphics[width=\linewidth]{assets/fig/method_fig_gap.png}%
+}{\fbox{\parbox[c][3.5cm][c]{0.95\linewidth}{\centering Placeholder: \texttt{assets/fig/method\_fig\_gap.png}}}}
+\caption{\textbf{Geometry-aware Pruning (\gap).} After gradient-driven densification, Gaussians cluster around high-contrast boundaries. \gap\ flags a Gaussian as a redundancy candidate only when it is both locally crowded ($d_i<\tau$) and recently inactive ($\bar{g}_i<\delta$), so that capacity is reclaimed from saturated boundaries without removing Gaussians that are still learning structure.}
+\label{fig:gap}
 \end{figure*}
 
 \subsection{Geometry-aware Pruning (\gap)}
@@ -184,15 +193,6 @@ c_i=\mathbf{1}\!\left[d_i<\tau\ \land\ \bar{g}_i<\delta\right],
 \label{eq:gap-mask}
 \end{equation}
 where $c_i\!=\!1$ marks a prune candidate. \gap\ removes a bounded fraction of the flagged Gaussians per cycle and slightly contracts the covariance of their retained neighbors to avoid creating local support holes. The dual criterion distinguishes \gap\ from purely density-based pruning: gradient activity prevents deleting Gaussians that are still learning a boundary, while proximity prevents over-densified regions from continuously monopolizing capacity.
-
-\begin{figure*}[t]
-\centering
-\IfFileExists{assets/fig/method_fig_gap.png}{%
-\includegraphics[width=\linewidth]{assets/fig/method_fig_gap.png}%
-}{\fbox{\parbox[c][3.5cm][c]{0.95\linewidth}{\centering Placeholder: \texttt{assets/fig/method\_fig\_gap.png}}}}
-\caption{\textbf{Geometry-aware Pruning (\gap).} After gradient-driven densification, Gaussians cluster around high-contrast boundaries. \gap\ flags a Gaussian as a redundancy candidate only when it is both locally crowded ($d_i<\tau$) and recently inactive ($\bar{g}_i<\delta$), so that capacity is reclaimed from saturated boundaries without removing Gaussians that are still learning structure.}
-\label{fig:gap}
-\end{figure*}
 
 \subsection{Adaptive Density Modulation (\adm)}
 \label{sec:adm}
@@ -214,16 +214,7 @@ The concatenated feature $F(\mathbf{x})$ is fed into a lightweight dual-head MLP
 \rho_{\text{final}}(\mathbf{x})=\rho_{\text{base}}(\mathbf{x})\cdot\Big(1+g(\mathbf{x})\cdot\big(\Delta\sigma(\mathbf{x})-\overline{\Delta\sigma}\big)\Big).
 \label{eq:adm-density}
 \end{equation}
-The plane features and the MLP parameters are trained end-to-end under the rendering loss alone, with no extra density supervision. \adm\ is activated only after the backbone has converged to a stable geometric estimate, so that density modulation refines an already reasonable layout rather than interfering with early-stage optimization. Batch centering ensures that $\Delta\sigma$ acts as a relative correction: \adm\ amplifies density where the local attenuation evidence warrants finer detail and suppresses modulation where evidence is insufficient.
-
-\begin{figure*}[t]
-\centering
-\IfFileExists{assets/fig/method_fig_adm.png}{%
-\includegraphics[width=\linewidth]{assets/fig/method_fig_adm.png}%
-}{\fbox{\parbox[c][3.5cm][c]{0.95\linewidth}{\centering Placeholder: \texttt{assets/fig/method\_fig\_adm.png}}}}
-\caption{\textbf{Adaptive Density Modulation (\adm).} For each Gaussian center, three orthogonal K-Planes feature planes are bilinearly sampled and concatenated; a dual-head MLP outputs a density offset and a confidence gate, which together apply a batch-centered relative correction $\rho_{\text{final}}=\rho_{\text{base}}(1+g(\Delta\sigma-\overline{\Delta\sigma}))$.}
-\label{fig:adm}
-\end{figure*}
+The plane features and the MLP parameters are trained jointly with the backbone Gaussians from the start of optimization under the rendering loss alone, with no extra density supervision. This joint training allows \adm\ to impose spatial regularization on capacity allocation while the backbone is still learning the geometric layout, rather than correcting a frozen density distribution post hoc. Batch centering ensures that $\Delta\sigma$ acts as a relative correction: \adm\ amplifies density where the local attenuation evidence warrants finer detail and suppresses modulation where evidence is insufficient.
 
 \subsection{Training Loss}
 \label{sec:loss}
@@ -235,27 +226,37 @@ The plane features and the MLP parameters are trained end-to-end under the rende
 \end{equation}
 The first two terms are the standard $L_1$ and $D$-SSIM losses between rendered and observed projections; $\mathcal{L}_{\text{3DTV}}$ is a total-variation prior on the volumetric density retrieved by the differentiable voxelizer of \rtwo, and $\mathcal{L}_{\text{pTV}}$ is a planar total-variation prior on the K-Planes features used by \adm. The K-Planes features and the MLP parameters of \adm\ are jointly updated with the backbone Gaussian parameters under $\mathcal{L}$, so density modulation is learned online rather than fixed in advance.
 
+\begin{figure*}[t]
+\centering
+\IfFileExists{assets/fig/method_fig_adm.png}{%
+\includegraphics[width=\linewidth]{assets/fig/method_fig_adm.png}%
+}{\fbox{\parbox[c][3.5cm][c]{0.95\linewidth}{\centering Placeholder: \texttt{assets/fig/method\_fig\_adm.png}}}}
+\caption{\textbf{Adaptive Density Modulation (\adm).} For each Gaussian center, three orthogonal K-Planes feature planes are bilinearly sampled and concatenated; a dual-head MLP outputs a density offset and a confidence gate, which together apply a batch-centered relative correction $\rho_{\text{final}}=\rho_{\text{base}}(1+g(\Delta\sigma-\overline{\Delta\sigma}))$.}
+\label{fig:adm}
+\end{figure*}
+
 \section{Experiments}
 \label{sec:experiments}
 
 \subsection{Experimental Settings}
 \label{sec:exp_settings}
 
-\textbf{Dataset.} Following NAF~\cite{guan2024naf} and X-Gaussian~\cite{cai2024xgaussian}, we adopt the public datasets of human organ CTs, \emph{i.e.}, LIDC-IDRI and the open scientific visualization dataset, to evaluate our method. The test scenes include Chest, Foot, Head, Abdomen, and Pancreas. We adopt the open-source tomographic toolbox TIGRE to capture 100 projections with 3\% noise in the range of $0 \sim 180^{\circ}$. In the sparse-view NVS task, we retain only 2, 3, or 4 projections for training, and the remaining projections are used for testing. The CT volumes are used for testing in the sparse-view CT reconstruction task.
+\textbf{Dataset.} Following NAF~\cite{guan2024naf} and X-Gaussian~\cite{cai2024xgaussian}, we adopt the public datasets of human organ CTs, \emph{i.e.}, LIDC-IDRI and the open scientific visualization dataset, to evaluate our method. The test scenes include Chest, Foot, Head, Abdomen, and Pancreas. We adopt the open-source tomographic toolbox TIGRE to capture 100 projections with 3\% noise in the range of $0 \sim 180^{\circ}$. In the sparse-view NVS task, we retain only 2, 3, or 4 projections for training, and the remaining projections are used for testing.
 
 \textbf{Baselines.} We compare \RAttAGS\ with six state-of-the-art methods from two categories. \emph{X-ray/CT reconstruction methods:} X-Gaussian~\cite{cai2024xgaussian} {\small[ECCV'24]} introduces radiative Gaussian splatting for X-ray NVS; \rtwo~\cite{hu2024r2} {\small[NeurIPS'24]} rectifies the integration bias in 3DGS and develops a differentiable voxelizer for tomographic reconstruction; and X-Field~\cite{xfield2025} {\small[NeurIPS'25]} employs physically informed ellipsoids with material-aware optimization. \emph{Natural-scene sparse-view 3DGS methods:} CoR-GS~\cite{zhang2024cor} {\small[ECCV'24]} introduces co-regularization to stabilize sparse-view training; DNGaussian~\cite{li2024dn} {\small[CVPR'24]} injects depth normalization for geometric guidance; and FSGS~\cite{zhu2024fsgs} {\small[ECCV'24]} augments densification with proximity-guided unpooling. All methods are evaluated under the same sparse-view protocol on the same dataset.
 
 \textbf{Metrics.} We adopt peak signal-to-noise ratio (PSNR) and structural similarity index measure (SSIM) to evaluate the performance. Both metrics are computed on $[0,1]$-normalized projections, averaged over all held-out views of each scene and then over the five organs.
 
-\textbf{Implementation Details.} Our \RAttAGS\ is implemented in PyTorch and CUDA. The model is trained with the Adam optimizer for $3\!\times\!10^{4}$ iterations. \sps\ uses mixture coefficient $\alpha\!=\!0.2$, power exponent $\gamma\!=\!1.0$, and 50K initial Gaussians. \gap\ uses $K\!=\!5$ nearest neighbors, proximity threshold $\tau\!=\!0.015$, maximum pruning ratio $\beta_{\text{prune}}\!=\!2\%$, and gradient threshold $\delta\!=\!0.0002$. \adm\ uses K-Planes at resolution $64\!\times\!32$ and activates after 15K iterations. All experiments are conducted on a single NVIDIA RTX A6000 GPU.
+\textbf{Implementation Details.} Our \RAttAGS\ is implemented in PyTorch and CUDA. The model is trained with the Adam optimizer for $3\!\times\!10^{4}$ iterations. \sps\ uses mixture coefficient $\alpha\!=\!0.2$, power exponent $\gamma\!=\!1.0$, and 50K initial Gaussians. \gap\ uses $K\!=\!5$ nearest neighbors, proximity threshold $\tau\!=\!0.015$, maximum pruning ratio $\beta_{\text{prune}}\!=\!2\%$, and gradient threshold $\delta\!=\!0.0002$. \adm\ uses K-Planes at resolution $64\!\times\!32$ and is jointly trained from the start of optimization. All experiments are conducted on a single NVIDIA RTX A6000 GPU.
 
 \subsection{Comparison with State-of-the-Art Methods}
 \label{sec:comparison}
 
 \input{assets/tables/tab_experiment_quantitative_nvs_psnr.tex}
-\input{assets/tables/tab_experiment_quantitative_nvs_ssim.tex}
 
-\textbf{Discussion on NVS Quantitative Results.} Tables~\ref{tab:psnr_nvs} and~\ref{tab:ssim_nvs} report the PSNR and SSIM comparisons between our \RAttAGS\ and six state-of-the-art methods on the NVS task under the 2-view, 3-view, and 4-view sparse settings. The natural-scene sparse-view 3DGS methods (CoR-GS, DNGaussian, FSGS) struggle under the X-ray imaging regime, since their densification strategies and geometric priors are designed for visible-light reflection and scattering rather than X-ray penetration and attenuation. Among the X-ray-specific methods, X-Gaussian achieves reasonable performance but remains limited by the lack of integration bias correction. \rtwo\ provides strong baseline results through its rectified rasterization and differentiable voxelizer. Our \RAttAGS\ achieves the best average PSNR and SSIM across all three sparsity levels, ranking first in 12 out of 15 per-organ PSNR cells and 9 out of 15 SSIM cells. The margin over \rtwo\ is most pronounced under the 2-view setting (+1.55\,dB PSNR), indicating that attenuation-aligned density control is especially effective in the most severely under-determined regime where capacity misallocation is most damaging; the advantage persists at 3-view (+0.34\,dB) and 4-view (+0.38\,dB). X-Field shows competitive results in the human organ reconstruction setting, but its material-based optimization faces challenges under extremely sparse views where material boundaries are ambiguous.
+\textbf{Discussion on NVS Quantitative Results.} Tables~\ref{tab:psnr_nvs} and~\ref{tab:ssim_nvs} report the PSNR and SSIM comparisons under the 2-view, 3-view, and 4-view sparse settings. \RAttAGS\ consistently achieves the best average PSNR and SSIM across all three sparsity levels, ranking first in 12 out of 15 per-organ PSNR entries and 9 out of 15 SSIM entries. The natural-scene sparse-view 3DGS methods (CoR-GS, DNGaussian, FSGS) struggle under X-ray imaging, as their densification strategies and geometric priors are designed for visible-light reflection and scattering rather than X-ray penetration and attenuation, resulting in substantially lower scores across all organs. Among the X-ray-specific methods, X-Gaussian achieves reasonable PSNR on individual organs (\emph{e.g.}, Foot and Pancreas under 2-view) but lacks integration-bias correction, limiting its overall performance. \rtwo\ provides strong results through its rectified rasterization and differentiable voxelizer, serving as the strongest baseline. X-Field, despite its physically informed ellipsoid representation, shows limited effectiveness under highly sparse views: its multi-stage iterative initialization degrades when only 2--4 projections are available, producing the lowest SSIM among all methods at 2-view (0.7168) and PSNR consistently below \rtwo\ by 2--3\,dB across all view budgets. Our \RAttAGS\ surpasses \rtwo\ by +1.58\,dB PSNR under 2-view, where capacity misallocation is most damaging; the advantage persists at 3-view (+0.34\,dB) and 4-view (+0.37\,dB).
+
+\input{assets/tables/tab_experiment_quantitative_nvs_ssim.tex}
 
 \begin{figure*}[t]
 \centering
@@ -263,25 +264,25 @@ The first two terms are the standard $L_1$ and $D$-SSIM losses between rendered 
 \renewcommand{\arraystretch}{0.6}
 \begin{tabular}{@{}c ccccc@{}}
   & \footnotesize\textbf{GT} & \footnotesize\textbf{DNGaussian} & \footnotesize\textbf{\rtwo} & \footnotesize\textbf{X-Field} & \footnotesize\textbf{\RAttAGS\ (Ours)} \\[2pt]
-\rotatebox{90}{\footnotesize\textbf{~Chest~}}
+\rotatebox[origin=c]{90}{\footnotesize\textbf{Chest}}
   & \includegraphics[width=0.18\textwidth]{assets/data/cell_chest_01_gt.png}
   & \includegraphics[width=0.18\textwidth]{assets/data/cell_chest_01_dngs.png}
   & \includegraphics[width=0.18\textwidth]{assets/data/cell_chest_01_r2gs.png}
   & \includegraphics[width=0.18\textwidth]{assets/data/cell_chest_01_xfield.png}
   & \includegraphics[width=0.18\textwidth]{assets/data/cell_chest_01_rattags.png} \\
-\rotatebox{90}{\footnotesize\textbf{~~Foot~~}}
+\rotatebox[origin=c]{90}{\footnotesize\textbf{Foot}}
   & \includegraphics[width=0.18\textwidth]{assets/data/cell_foot_00_gt.png}
   & \includegraphics[width=0.18\textwidth]{assets/data/cell_foot_00_dngs.png}
   & \includegraphics[width=0.18\textwidth]{assets/data/cell_foot_00_r2gs.png}
   & \includegraphics[width=0.18\textwidth]{assets/data/cell_foot_00_xfield.png}
   & \includegraphics[width=0.18\textwidth]{assets/data/cell_foot_00_rattags.png} \\
-\rotatebox{90}{\footnotesize\textbf{~~Head~~}}
+\rotatebox[origin=c]{90}{\footnotesize\textbf{Head}}
   & \includegraphics[width=0.18\textwidth]{assets/data/cell_head_46_gt.png}
   & \includegraphics[width=0.18\textwidth]{assets/data/cell_head_46_dngs.png}
   & \includegraphics[width=0.18\textwidth]{assets/data/cell_head_46_r2gs.png}
   & \includegraphics[width=0.18\textwidth]{assets/data/cell_head_46_xfield.png}
   & \includegraphics[width=0.18\textwidth]{assets/data/cell_head_46_rattags.png} \\
-\rotatebox{90}{\footnotesize\textbf{Pancreas}}
+\rotatebox[origin=c]{90}{\footnotesize\textbf{Pancreas}}
   & \includegraphics[width=0.18\textwidth]{assets/data/cell_pancreas_00_gt.png}
   & \includegraphics[width=0.18\textwidth]{assets/data/cell_pancreas_00_dngs.png}
   & \includegraphics[width=0.18\textwidth]{assets/data/cell_pancreas_00_r2gs.png}
@@ -289,11 +290,11 @@ The first two terms are the standard $L_1$ and $D$-SSIM losses between rendered 
   & \includegraphics[width=0.18\textwidth]{assets/data/cell_pancreas_00_rattags.png} \\
 \end{tabular}
 \renewcommand{\arraystretch}{1.0}
-\caption{\textbf{Qualitative comparison of NVS.} We present visual examples of rendered X-ray projections across four organs (Chest, Foot, Head, Pancreas). Columns: GT, DNGaussian, \rtwo, X-Field, and \RAttAGS\ (Ours). Our method produces clearer structural details, smoother textures in homogeneous regions, and fewer artifacts near anatomical boundaries. Red and blue boxes highlight zoomed-in regions of interest.}
+\caption{\textbf{Qualitative comparison of novel view synthesis} on four organs under the sparse-view setting. DNGaussian produces noticeable streak and speckle artifacts; \rtwo\ preserves the overall structure but exhibits blurring at anatomical boundaries; X-Field introduces severe blurring and banding artifacts, particularly in the Head and Foot scenes. \RAttAGS\ recovers sharper structural details with fewer artifacts. Red and blue boxes highlight zoomed-in regions of interest.}
 \label{fig:qual_nvs}
 \end{figure*}
 
-\textbf{Discussion on NVS Qualitative Results.} Figure~\ref{fig:qual_nvs} depicts the qualitative comparisons of NVS on four representative organs (Chest, Head, Foot, and Pancreas) under the 2-view, 3-view, and 4-view settings. Under highly sparse view settings, all methods face challenges from limited input information. DNGaussian produces noticeable blurry artifacts due to its depth-normalization scheme being misaligned with the X-ray transmission model. \rtwo\ reconstructs the overall anatomical structure better than the natural-scene baselines, but still exhibits boundary over-accumulation artifacts, particularly visible as streak patterns near high-contrast bone--soft-tissue interfaces. X-Field produces competitive results with reduced artifacts in organ interiors, though under the 2-view setting it introduces wave-pattern artifacts in the head scene. Our \RAttAGS\ effectively mitigates these artifacts by reallocating Gaussian capacity from over-densified boundaries to interior attenuation-relevant structures. In particular, \RAttAGS\ recovers smoother soft-tissue regions in the Chest, sharper bone details in the Foot, and cleaner background in the Head, while maintaining structural consistency across all three view budgets.
+\textbf{Discussion on NVS Qualitative Results.} Figure~\ref{fig:qual_nvs} presents visual comparisons on four representative organs. DNGaussian produces severe streak and speckle artifacts across all organs: the Chest scene shows heavy noise overlaying the rib structures, the Head scene exhibits granular noise that obscures cranial details, and the Pancreas scene displays pronounced vertical streak artifacts. \rtwo\ reconstructs the overall anatomical structure substantially better, but still exhibits blurring at bone--soft-tissue boundaries, particularly visible in the zoomed-in regions of the Foot and Pancreas scenes. X-Field introduces the most prominent blurring among the X-ray-specific methods: fine bone details are nearly lost in the Foot scene, internal cranial structures are unrecoverable in the Head scene where horizontal banding artifacts further degrade quality, and the Pancreas anatomy becomes difficult to discern. These visual observations are consistent with its lowest SSIM scores in the quantitative evaluation. Our \RAttAGS\ effectively mitigates these artifacts by reallocating Gaussian capacity from over-densified boundaries to interior attenuation-relevant structures, recovering clearer rib boundaries in the Chest, sharper bone edges in the Foot, smoother cranial transitions in the Head, and better-preserved soft-tissue detail in the Pancreas.
 
 \subsection{Ablation Study}
 \label{sec:ablation}
@@ -302,7 +303,7 @@ The first two terms are the standard $L_1$ and $D$-SSIM losses between rendered 
 
 \input{assets/tables/tab_experiment_ablation_component.tex}
 
-\textbf{Parameter Analysis.} We further investigate the sensitivity of one representative hyperparameter from each module in Table~\ref{tab:ablation_component}. \textbf{(i)} The \sps\ mixture coefficient $\alpha$ balances the FDK-derived attenuation support against random initialization; $\alpha\!=\!0.2$ offers sufficient path-anchored guidance without over-constraining the initial distribution. \textbf{(ii)} The \gap\ proximity threshold $\tau$ controls how aggressively crowded boundary Gaussians are pruned; a larger $\tau$ retains more crowded Gaussians and reduces the pruning effect, while a smaller $\tau$ prunes more aggressively and risks removing useful Gaussians near legitimate boundary structures. \textbf{(iii)} The \adm\ activation iteration determines when density modulation is introduced; among the tested schedules, earlier activation (Iter\,=\,0) achieves the highest PSNR, and performance remains stable across the 10K--20K range, while activating too late (Iter\,=\,25K) leaves insufficient iterations for the modulation to take effect. The default configuration ($\alpha\!=\!0.2$, $\tau\!=\!0.015$, \adm\ activation at 15K) achieves robust performance across the swept range, demonstrating that \RAttAGS\ is not sensitive to individual hyperparameter choices.
+\textbf{Parameter Analysis.} We further investigate the sensitivity of one representative hyperparameter from each module in Table~\ref{tab:ablation_component}. \textbf{(i)} The \sps\ mixture coefficient $\alpha$ balances the FDK-derived attenuation support against random initialization; $\alpha\!=\!0.2$ offers sufficient path-anchored guidance without over-constraining the initial distribution, while pure attenuation-weighted sampling ($\alpha\!=\!0.0$) drops PSNR to 28.09 and pure random initialization ($\alpha\!=\!1.0$) to 28.06. \textbf{(ii)} The \gap\ proximity threshold $\tau$ controls how aggressively crowded boundary Gaussians are pruned; $\tau\!=\!0.015$ achieves the best PSNR (28.17) and SSIM (0.9036), while a smaller $\tau\!=\!0.005$ prunes too aggressively and drops PSNR to 27.86. \textbf{(iii)} The \adm\ activation iteration determines when density modulation is introduced; joint training from the start (Iter\,=\,0) achieves the highest PSNR (28.17) and SSIM (0.9036), and performance remains stable across the 5K--20K range (28.09--28.16). The adopted configuration ($\alpha\!=\!0.2$, $\tau\!=\!0.015$, \adm\ from Iter\,=\,0) achieves the best performance across all swept ranges, and the small variance across different settings demonstrates that \RAttAGS\ is not sensitive to individual hyperparameter choices.
 
 \FloatBarrier
 
